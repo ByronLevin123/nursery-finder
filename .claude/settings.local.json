@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(unzip:*)",
+      "Bash(node --version:*)",
+      "Bash(npm --version:*)",
+      "Bash(git --version:*)",
+      "Bash(export:*)",
+      "Bash(chmod:*)",
+      "Bash(/usr/bin/git init)",
+      "Bash(/usr/bin/git add:*)",
+      "Bash(/usr/bin/git status)"
+    ]
+  }
+}

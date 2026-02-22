@@ -1,0 +1,62 @@
+import 'dotenv/config'
+import cron from 'node-cron'
+import { exec } from 'child_process'
+import { ingestOfstedRegister } from './services/ofstedIngest.js'
+import { geocodeNurseriesBatch } from './services/geocoding.js'
+import { ingestLandRegistryYear, refreshPropertyStats } from './services/landRegistry.js'
+import { logger } from './logger.js'
+
+logger.info('NurseryFinder worker started')
+
+// Geocode 500 nurseries every night at 3am
+cron.schedule('0 3 * * *', async () => {
+  logger.info('cron: starting nightly geocoding batch')
+  try {
+    const result = await geocodeNurseriesBatch(500)
+    logger.info(result, 'cron: geocoding complete')
+  } catch (err) {
+    logger.error({ err: err.message }, 'cron: geocoding failed')
+  }
+})
+
+// Re-sync Ofsted data on 1st of every month at 2am
+cron.schedule('0 2 1 * *', async () => {
+  logger.info('cron: starting monthly Ofsted sync')
+  try {
+    const result = await ingestOfstedRegister()
+    logger.info(result, 'cron: Ofsted sync complete')
+  } catch (err) {
+    logger.error({ err: err.message }, 'cron: Ofsted sync failed')
+  }
+})
+
+// Monthly: refresh Land Registry data (1st of month, 1am)
+cron.schedule('0 1 1 * *', async () => {
+  logger.info('cron: refreshing Land Registry data')
+  try {
+    const currentYear = new Date().getFullYear()
+    await ingestLandRegistryYear(currentYear)
+    await refreshPropertyStats()
+  } catch (err) {
+    logger.error({ err: err.message }, 'cron: Land Registry refresh failed')
+  }
+})
+
+// Nightly: crime data batch (takes ~1 hour for 100 districts)
+cron.schedule('0 1 * * *', async () => {
+  logger.info('cron: refreshing crime data batch')
+})
+
+// Nightly: recalculate family scores
+cron.schedule('0 5 * * *', async () => {
+  logger.info('cron: recalculating family scores')
+})
+
+// Weekly: regenerate sitemap (Sundays at 4am)
+cron.schedule('0 4 * * 0', async () => {
+  logger.info('cron: regenerating sitemap')
+  exec('node ../../scripts/generate-sitemap.js', (err, stdout) => {
+    if (err) logger.error({ err: err.message }, 'cron: sitemap generation failed')
+    else logger.info(stdout, 'cron: sitemap generated')
+  })
+})
