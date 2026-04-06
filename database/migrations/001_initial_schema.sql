@@ -46,10 +46,7 @@ CREATE TABLE IF NOT EXISTS nurseries (
       ELSE NULL
     END
   ) STORED,
-  inspection_date_warning     BOOLEAN GENERATED ALWAYS AS (
-    last_inspection_date IS NOT NULL
-    AND last_inspection_date < CURRENT_DATE - INTERVAL '4 years'
-  ) STORED,
+  inspection_date_warning     BOOLEAN DEFAULT FALSE,
   created_at                  TIMESTAMPTZ DEFAULT NOW(),
   updated_at                  TIMESTAMPTZ DEFAULT NOW()
 );
@@ -149,6 +146,22 @@ CREATE TABLE IF NOT EXISTS nursery_reviews (
   published_at    TIMESTAMPTZ,
   UNIQUE(user_id, nursery_id)
 );
+
+-- Section I-a: Inspection date warning trigger (non-immutable, so uses trigger instead of generated column)
+CREATE OR REPLACE FUNCTION set_inspection_warning()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.inspection_date_warning := (
+    NEW.last_inspection_date IS NOT NULL
+    AND NEW.last_inspection_date < CURRENT_DATE - INTERVAL '4 years'
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER nurseries_inspection_warning
+  BEFORE INSERT OR UPDATE ON nurseries
+  FOR EACH ROW EXECUTE FUNCTION set_inspection_warning();
 
 -- Section I: Updated_at trigger
 CREATE OR REPLACE FUNCTION update_updated_at()

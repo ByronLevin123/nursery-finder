@@ -86,6 +86,21 @@ export async function submitFee(params: {
   if (!res.ok) throw new Error('Failed to submit fee')
 }
 
+export async function compareNurseries(urns: string[]): Promise<Nursery[]> {
+  const res = await fetch(`${API_URL}/api/v1/nurseries/compare`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ urns }),
+    cache: 'no-store',
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `Compare failed: ${res.status}`)
+  }
+  const result = await res.json()
+  return result.data
+}
+
 export async function getNurseriesInDistrict(district: string) {
   const res = await fetch(
     `${API_URL}/api/v1/areas/${encodeURIComponent(district)}/nurseries`,

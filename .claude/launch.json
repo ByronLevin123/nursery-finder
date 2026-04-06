@@ -1,0 +1,22 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Frontend (Next.js)",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd frontend && /usr/local/bin/node node_modules/.bin/next dev"],
+      "port": 3000
+    },
+    {
+      "name": "Backend API (Express)",
+      "runtimeExecutable": "/usr/local/bin/node",
+      "runtimeArgs": ["backend/node_modules/.bin/nodemon", "backend/src/index.js"],
+      "port": 3001
+    },
+    {
+      "name": "Backend Worker (Cron)",
+      "runtimeExecutable": "/usr/local/bin/node",
+      "runtimeArgs": ["backend/node_modules/.bin/nodemon", "backend/src/worker.js"]
+    }
+  ]
+}

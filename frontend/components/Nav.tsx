@@ -3,16 +3,24 @@
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { getShortlistCount } from '@/lib/shortlist'
+import { getCompareCount, getCompareList } from '@/lib/compare'
 
 export default function Nav() {
   const [shortlistCount, setShortlistCount] = useState(0)
+  const [compareCount, setCompareCount] = useState(0)
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     setShortlistCount(getShortlistCount())
-    const handler = () => setShortlistCount(getShortlistCount())
-    window.addEventListener('shortlist-updated', handler)
-    return () => window.removeEventListener('shortlist-updated', handler)
+    setCompareCount(getCompareCount())
+    const shortlistHandler = () => setShortlistCount(getShortlistCount())
+    const compareHandler = () => setCompareCount(getCompareCount())
+    window.addEventListener('shortlist-updated', shortlistHandler)
+    window.addEventListener('compare-updated', compareHandler)
+    return () => {
+      window.removeEventListener('shortlist-updated', shortlistHandler)
+      window.removeEventListener('compare-updated', compareHandler)
+    }
   }, [])
 
   return (
@@ -35,6 +43,17 @@ export default function Nav() {
             {shortlistCount > 0 && (
               <span className="bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                 {shortlistCount}
+              </span>
+            )}
+          </Link>
+          <Link
+            href={compareCount >= 2 ? `/compare?urns=${getCompareList().join(',')}` : '/compare'}
+            className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
+          >
+            Compare
+            {compareCount > 0 && (
+              <span className="bg-purple-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {compareCount}
               </span>
             )}
           </Link>

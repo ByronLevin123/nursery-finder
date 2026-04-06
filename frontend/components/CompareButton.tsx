@@ -1,0 +1,41 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { isInCompare, addToCompare, removeFromCompare } from '@/lib/compare'
+
+interface Props {
+  urn: string
+}
+
+export default function CompareButton({ urn }: Props) {
+  const [inCompare, setInCompare] = useState(false)
+
+  useEffect(() => {
+    setInCompare(isInCompare(urn))
+    const handler = () => setInCompare(isInCompare(urn))
+    window.addEventListener('compare-updated', handler)
+    return () => window.removeEventListener('compare-updated', handler)
+  }, [urn])
+
+  function toggle() {
+    if (inCompare) {
+      removeFromCompare(urn)
+    } else {
+      addToCompare(urn)
+    }
+  }
+
+  return (
+    <button
+      onClick={toggle}
+      className={`text-lg transition-all ${
+        inCompare
+          ? 'text-blue-600 scale-110'
+          : 'text-gray-300 hover:text-blue-400'
+      }`}
+      title={inCompare ? 'Remove from comparison' : 'Add to comparison'}
+    >
+      &#9878;
+    </button>
+  )
+}

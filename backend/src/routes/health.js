@@ -4,6 +4,18 @@ import db from '../db.js'
 const router = express.Router()
 
 router.get('/', async (req, res) => {
+  if (!db) {
+    return res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      version: '1.0.0',
+      database: 'not configured',
+      nursery_count: 0,
+      geocoded_count: 0,
+      message: 'Server running. Set SUPABASE_URL and SUPABASE_SERVICE_KEY in .env to enable database.',
+    })
+  }
+
   try {
     const { count } = await db
       .from('nurseries')

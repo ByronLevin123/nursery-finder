@@ -2,6 +2,7 @@ import Link from 'next/link'
 import GradeBadge from './GradeBadge'
 import { Nursery } from '@/lib/api'
 import ShortlistButton from './ShortlistButton'
+import CompareButton from './CompareButton'
 
 interface Props {
   nursery: Nursery
@@ -18,7 +19,10 @@ export default function NurseryCard({ nursery, showDistance = true }: Props) {
         >
           {nursery.name}
         </Link>
-        <ShortlistButton urn={nursery.urn} />
+        <div className="flex items-center gap-1.5">
+          <CompareButton urn={nursery.urn} />
+          <ShortlistButton urn={nursery.urn} />
+        </div>
       </div>
 
       <div className="flex items-center gap-2 mb-2 flex-wrap">
