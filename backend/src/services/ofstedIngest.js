@@ -1,5 +1,5 @@
 // Ofsted Early Years Register ingestion
-// The CSV filename changes monthly — we scrape the page to find the current link
+// Uses the GOV.UK management information CSV — column names updated Jan 2025
 
 import axios from 'axios'
 import * as cheerio from 'cheerio'
@@ -8,8 +8,8 @@ import { Readable } from 'stream'
 import db from '../db.js'
 import { logger } from '../logger.js'
 
-const OFSTED_PAGE_URL =
-  'https://www.gov.uk/government/statistical-data-sets/monthly-management-information-ofsteds-early-years-register'
+const OFSTED_STATS_PAGE =
+  'https://www.gov.uk/government/statistical-data-sets/childcare-providers-and-inspections-management-information'
 
 const BATCH_SIZE = 200
 
@@ -20,25 +20,31 @@ function parseOfstedDate(str) {
   return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`
 }
 
+// Numeric grades in CSV: 1=Outstanding, 2=Good, 3=RI, 4=Inadequate
+const GRADE_MAP = {
+  '1': 'Outstanding',
+  '2': 'Good',
+  '3': 'Requires Improvement',
+  '4': 'Inadequate',
+}
+
 async function findCurrentCsvUrl() {
-  logger.info('ofsted: fetching register page to find current CSV URL')
-  const { data: html } = await axios.get(OFSTED_PAGE_URL, {
+  logger.info('ofsted: fetching stats page to find current CSV URL')
+  const { data: html } = await axios.get(OFSTED_STATS_PAGE, {
     headers: { 'User-Agent': 'NurseryFinder/1.0 (data@nurseryfinder.co.uk)' }
   })
   const $ = cheerio.load(html)
 
   let csvUrl = null
-  $('a[href$=".csv"], a[href*=".csv"]').each((_, el) => {
+  $('a[href*=".csv"]').each((_, el) => {
     const href = $(el).attr('href')
-    if (href && href.toLowerCase().includes('early_year')) {
-      if (!csvUrl) {
-        csvUrl = href.startsWith('http') ? href : `https://www.gov.uk${href}`
-      }
+    if (href && href.toLowerCase().includes('most_recent') && !csvUrl) {
+      csvUrl = href.startsWith('http') ? href : `https://www.gov.uk${href}`
     }
   })
 
   if (!csvUrl) {
-    throw new Error('Could not find Early Years Register CSV on GOV.UK page. Check the page manually.')
+    throw new Error('Could not find most-recent inspections CSV on GOV.UK page. Check the page manually.')
   }
 
   logger.info({ csvUrl }, 'ofsted: found CSV URL')
@@ -46,29 +52,33 @@ async function findCurrentCsvUrl() {
 }
 
 function mapRow(row) {
-  const grade = row['Overall Effectiveness']?.trim() || null
-  const validGrades = ['Outstanding', 'Good', 'Requires Improvement', 'Inadequate']
+  const gradeRaw = row['Most Recent Full: Overall Effectiveness']?.trim()
+  const grade = GRADE_MAP[gradeRaw] || null
+
+  // Skip childminders with REDACTED addresses — we can't geocode them
+  const address = row['Provider Address Line 1']?.trim()
+  if (address === 'REDACTED' || !address) return null
 
   return {
-    urn: row['URN']?.trim(),
+    urn: row['Provider URN']?.trim(),
     name: row['Provider Name']?.trim(),
     provider_type: row['Provider Type']?.trim(),
-    registration_status: row['Registration Status']?.trim(),
-    address_line1: row['Address 1']?.trim() || null,
-    address_line2: row['Address 2']?.trim() || null,
-    town: row['Town']?.trim() || null,
-    postcode: row['Postcode']?.trim().toUpperCase() || null,
+    registration_status: row['Provider Status']?.trim(),
+    address_line1: address || null,
+    address_line2: row['Provider Address Line 2']?.trim() || null,
+    town: row['Provider Town']?.trim() || null,
+    postcode: row['Provider Postcode']?.trim().toUpperCase() || null,
     local_authority: row['Local Authority']?.trim() || null,
     region: row['Region']?.trim() || null,
-    phone: row['Telephone Number']?.trim() || null,
-    email: row['Email Address']?.trim() || null,
-    ofsted_overall_grade: validGrades.includes(grade) ? grade : null,
-    last_inspection_date: parseOfstedDate(row['Inspection Date']),
-    inspection_report_url: row['Web Link']?.trim() || null,
-    enforcement_notice: !!(row['Action']?.trim()),
-    total_places: parseInt(row['Registered places']) || null,
-    places_funded_2yr: parseInt(row['Places Funded 2yr']) || null,
-    places_funded_3_4yr: parseInt(row['Places Funded 3 or 4yr']) || null,
+    phone: null,
+    email: null,
+    ofsted_overall_grade: grade,
+    last_inspection_date: parseOfstedDate(row['Most Recent Full: Inspection Date']),
+    inspection_report_url: null,
+    enforcement_notice: false,
+    total_places: parseInt(row['Places']) || null,
+    places_funded_2yr: null,
+    places_funded_3_4yr: null,
   }
 }
 
@@ -86,14 +96,19 @@ export async function ingestOfstedRegister() {
     headers: { 'User-Agent': 'NurseryFinder/1.0 (data@nurseryfinder.co.uk)' }
   })
 
+  // CSV has 2 info rows before the header row — skip them
+  const rawCsv = Buffer.from(response.data).toString('utf-8')
+  const lines = rawCsv.split('\n')
+  const csvWithoutPreamble = lines.slice(2).join('\n')
+
   const records = []
   await new Promise((resolve, reject) => {
-    Readable.from(Buffer.from(response.data).toString('utf-8'))
+    Readable.from(csvWithoutPreamble)
       .pipe(csv())
       .on('data', row => {
-        if (row['Registration Status']?.trim() === 'Active') {
+        if (row['Provider Status']?.trim() === 'Active') {
           const mapped = mapRow(row)
-          if (mapped.urn) records.push(mapped)
+          if (mapped?.urn) records.push(mapped)
         } else {
           skipped++
         }
