@@ -2,6 +2,7 @@
 
 const STORAGE_KEY = 'nursery-shortlist'
 const MAX_SHORTLIST = 10
+export const FREE_SHORTLIST_LIMIT = 3
 
 export function getShortlist(): string[] {
   if (typeof window === 'undefined') return []
@@ -12,12 +13,16 @@ export function getShortlist(): string[] {
   }
 }
 
-export function addToShortlist(urn: string): boolean {
+export type AddResult = 'added' | 'duplicate' | 'full' | 'auth_required'
+
+export function addToShortlist(urn: string, isAuthed = false): AddResult {
   const list = getShortlist()
-  if (list.includes(urn) || list.length >= MAX_SHORTLIST) return false
+  if (list.includes(urn)) return 'duplicate'
+  if (!isAuthed && list.length >= FREE_SHORTLIST_LIMIT) return 'auth_required'
+  if (list.length >= MAX_SHORTLIST) return 'full'
   localStorage.setItem(STORAGE_KEY, JSON.stringify([...list, urn]))
   window.dispatchEvent(new Event('shortlist-updated'))
-  return true
+  return 'added'
 }
 
 export function removeFromShortlist(urn: string): void {

@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { isInCompare, addToCompare, removeFromCompare } from '@/lib/compare'
+import { useRouter } from 'next/navigation'
+import { isInCompare, addToCompare, removeFromCompare, FREE_COMPARE_LIMIT } from '@/lib/compare'
+import { useSession } from '@/components/SessionProvider'
 
 interface Props {
   urn: string
@@ -9,6 +11,8 @@ interface Props {
 
 export default function CompareButton({ urn }: Props) {
   const [inCompare, setInCompare] = useState(false)
+  const { user } = useSession()
+  const router = useRouter()
 
   useEffect(() => {
     setInCompare(isInCompare(urn))
@@ -20,8 +24,16 @@ export default function CompareButton({ urn }: Props) {
   function toggle() {
     if (inCompare) {
       removeFromCompare(urn)
-    } else {
-      addToCompare(urn)
+      return
+    }
+    const result = addToCompare(urn, !!user)
+    if (result === 'auth_required') {
+      const ok = window.confirm(
+        `Free comparison holds ${FREE_COMPARE_LIMIT} nurseries. Sign in (free) to compare more. Continue to sign in?`
+      )
+      if (ok) router.push('/login?next=/compare')
+    } else if (result === 'full') {
+      window.alert('Comparison is full (5 max).')
     }
   }
 

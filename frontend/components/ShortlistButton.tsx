@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { addToShortlist, removeFromShortlist, isInShortlist } from '@/lib/shortlist'
+import { useRouter } from 'next/navigation'
+import { addToShortlist, removeFromShortlist, isInShortlist, FREE_SHORTLIST_LIMIT } from '@/lib/shortlist'
+import { useSession } from '@/components/SessionProvider'
 
 interface Props {
   urn: string
@@ -9,6 +11,8 @@ interface Props {
 
 export default function ShortlistButton({ urn }: Props) {
   const [saved, setSaved] = useState(false)
+  const { user } = useSession()
+  const router = useRouter()
 
   useEffect(() => {
     setSaved(isInShortlist(urn))
@@ -20,8 +24,16 @@ export default function ShortlistButton({ urn }: Props) {
   function toggle() {
     if (saved) {
       removeFromShortlist(urn)
-    } else {
-      addToShortlist(urn)
+      return
+    }
+    const result = addToShortlist(urn, !!user)
+    if (result === 'auth_required') {
+      const ok = window.confirm(
+        `Free shortlist holds ${FREE_SHORTLIST_LIMIT} nurseries. Sign in (free) to save more. Continue to sign in?`
+      )
+      if (ok) router.push('/login?next=/shortlist')
+    } else if (result === 'full') {
+      window.alert('Shortlist is full (10 max).')
     }
   }
 
