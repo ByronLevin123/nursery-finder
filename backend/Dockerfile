@@ -1,5 +1,8 @@
 FROM node:20-alpine
 
+# curl is used by the healthcheck and by Render cron jobs that hit the API
+RUN apk add --no-cache curl
+
 WORKDIR /app
 
 # Copy package files

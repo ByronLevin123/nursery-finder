@@ -24,3 +24,97 @@ services:
       - key: FRONTEND_URL
         sync: false
     healthCheckPath: /api/v1/health
+
+  # ─── Cron jobs ───────────────────────────────────────────────────────
+  # All crons hit the existing /api/v1/ingest/* endpoints with basic auth.
+  # Free-tier safe: only run while needed, no extra worker process.
+
+  - type: cron
+    name: cron-geocode-nightly
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    schedule: "0 2 * * *"  # 02:00 UTC nightly — catches new nurseries
+    envVars:
+      - key: ADMIN_USER
+        sync: false
+      - key: ADMIN_PASS
+        sync: false
+      - key: API_BASE
+        value: https://nursery-finder-6u7r.onrender.com
+    dockerCommand: sh -c 'curl -fsS -u "$ADMIN_USER:$ADMIN_PASS" -X POST "$API_BASE/api/v1/ingest/geocode?limit=2000"'
+
+  - type: cron
+    name: cron-aggregate-areas
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    schedule: "30 2 * * *"  # 02:30 UTC nightly — after geocoding
+    envVars:
+      - key: ADMIN_USER
+        sync: false
+      - key: ADMIN_PASS
+        sync: false
+      - key: API_BASE
+        value: https://nursery-finder-6u7r.onrender.com
+    dockerCommand: sh -c 'curl -fsS -u "$ADMIN_USER:$ADMIN_PASS" -X POST "$API_BASE/api/v1/ingest/aggregate-areas"'
+
+  - type: cron
+    name: cron-ofsted-weekly
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    schedule: "0 3 * * 1"  # 03:00 UTC every Monday — Ofsted publishes monthly
+    envVars:
+      - key: ADMIN_USER
+        sync: false
+      - key: ADMIN_PASS
+        sync: false
+      - key: API_BASE
+        value: https://nursery-finder-6u7r.onrender.com
+    dockerCommand: sh -c 'curl -fsS --max-time 1800 -u "$ADMIN_USER:$ADMIN_PASS" -X POST "$API_BASE/api/v1/ingest/ofsted"'
+
+  - type: cron
+    name: cron-crime-monthly
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    schedule: "0 4 1 * *"  # 04:00 UTC on the 1st of each month
+    envVars:
+      - key: ADMIN_USER
+        sync: false
+      - key: ADMIN_PASS
+        sync: false
+      - key: API_BASE
+        value: https://nursery-finder-6u7r.onrender.com
+    dockerCommand: sh -c 'curl -fsS --max-time 1800 -u "$ADMIN_USER:$ADMIN_PASS" -X POST "$API_BASE/api/v1/ingest/crime"'
+
+  - type: cron
+    name: cron-land-registry-monthly
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    schedule: "0 5 2 * *"  # 05:00 UTC on the 2nd of each month — LR publishes 1st
+    envVars:
+      - key: ADMIN_USER
+        sync: false
+      - key: ADMIN_PASS
+        sync: false
+      - key: API_BASE
+        value: https://nursery-finder-6u7r.onrender.com
+    dockerCommand: sh -c 'curl -fsS --max-time 7200 -u "$ADMIN_USER:$ADMIN_PASS" -X POST "$API_BASE/api/v1/ingest/land-registry"'
+
+  - type: cron
+    name: cron-family-scores-weekly
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    schedule: "0 6 * * 1"  # 06:00 UTC every Monday
+    envVars:
+      - key: ADMIN_USER
+        sync: false
+      - key: ADMIN_PASS
+        sync: false
+      - key: API_BASE
+        value: https://nursery-finder-6u7r.onrender.com
+    dockerCommand: sh -c 'curl -fsS --max-time 600 -u "$ADMIN_USER:$ADMIN_PASS" -X POST "$API_BASE/api/v1/ingest/family-scores"'
