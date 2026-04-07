@@ -26,6 +26,9 @@ export interface Nursery {
   google_review_count: number | null
   fee_avg_monthly: number | null
   fee_report_count: number
+  review_count?: number | null
+  review_avg_rating?: number | null
+  review_recommend_pct?: number | null
   lat: number | null
   lng: number | null
   distance_km?: number
@@ -158,6 +161,68 @@ export function postcodeDistrict(postcode: string | null | undefined): string | 
   if (!postcode) return null
   const trimmed = postcode.trim().toUpperCase()
   return trimmed.split(' ')[0] || null
+}
+
+export interface Review {
+  id: string
+  urn: string
+  rating: number
+  title: string
+  body: string
+  would_recommend: boolean
+  child_age_months: number | null
+  attended_from: string | null
+  attended_to: string | null
+  author_display_name: string | null
+  status: string
+  created_at: string
+}
+
+export interface ReviewSummary {
+  reviews: Review[]
+  total: number
+  avg_rating: number | null
+  recommend_pct: number | null
+}
+
+export interface SubmitReviewInput {
+  rating: number
+  title: string
+  body: string
+  would_recommend: boolean
+  child_age_months?: number | null
+  attended_from?: string | null
+  attended_to?: string | null
+  author_display_name?: string | null
+}
+
+export async function getReviews(
+  urn: string,
+  limit = 20,
+  offset = 0
+): Promise<ReviewSummary> {
+  const res = await fetch(
+    `${API_URL}/api/v1/nurseries/${encodeURIComponent(urn)}/reviews?limit=${limit}&offset=${offset}`,
+    { cache: 'no-store' }
+  )
+  if (!res.ok) throw new Error(`Failed to load reviews: ${res.status}`)
+  return res.json()
+}
+
+export async function submitReview(
+  urn: string,
+  input: SubmitReviewInput
+): Promise<Review> {
+  const res = await fetch(`${API_URL}/api/v1/nurseries/${encodeURIComponent(urn)}/reviews`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `Failed to submit review: ${res.status}`)
+  }
+  return res.json()
 }
 
 export async function getNurseriesInDistrict(district: string) {

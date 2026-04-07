@@ -10,6 +10,7 @@ import EnforcementBanner from './EnforcementBanner'
 import FeeModal from './FeeModal'
 import ShortlistButton from './ShortlistButton'
 import OglAttribution from './OglAttribution'
+import ReviewStars from './ReviewStars'
 
 const SingleNurseryMap = dynamic(() => import('./SingleNurseryMap'), { ssr: false })
 
@@ -124,6 +125,24 @@ export default function NurseryModal({ urn, onClose }: Props) {
                       <a href={nursery.website} target="_blank" rel="noopener noreferrer"
                         className="text-sm text-blue-600 hover:underline">🌐 Website</a>
                     )}
+                  </div>
+                )}
+
+                {nursery.review_count != null && nursery.review_count > 0 && (
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-xs text-gray-500 uppercase font-medium mb-1">Parent reviews</p>
+                    <div className="flex items-center gap-2">
+                      <ReviewStars rating={Number(nursery.review_avg_rating ?? 0)} size="sm" />
+                      <span className="text-sm">
+                        {Number(nursery.review_avg_rating ?? 0).toFixed(1)} ({nursery.review_count})
+                      </span>
+                    </div>
+                    <a
+                      href={`/nursery/${nursery.urn}#reviews`}
+                      className="text-xs text-blue-600 hover:underline mt-1 block"
+                    >
+                      See full reviews →
+                    </a>
                   </div>
                 )}
 

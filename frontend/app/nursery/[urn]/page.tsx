@@ -7,6 +7,7 @@ import EnforcementBanner from '@/components/EnforcementBanner'
 import FeeModal from '@/components/FeeModal'
 import ShortlistButton from '@/components/ShortlistButton'
 import OglAttribution from '@/components/OglAttribution'
+import ReviewSection from '@/components/ReviewSection'
 import dynamic from 'next/dynamic'
 
 const SingleNurseryMap = dynamic(() => import('@/components/SingleNurseryMap'), { ssr: false })
@@ -161,6 +162,8 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
           }),
         }}
       />
+
+      <ReviewSection urn={nursery.urn} />
 
       <OglAttribution />
     </div>

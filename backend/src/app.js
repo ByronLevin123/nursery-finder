@@ -20,6 +20,7 @@ import nurseriesRouter from './routes/nurseries.js'
 import ingestRouter from './routes/ingest.js'
 import areasRouter from './routes/areas.js'
 import sitemapRouter from './routes/sitemap.js'
+import reviewsRouter from './routes/reviews.js'
 
 const app = express()
 
@@ -51,6 +52,7 @@ app.use(express.json({ limit: '1mb' }))
 // Routes
 app.use('/api/v1/health', healthRouter)
 app.use('/api/v1/nurseries', nurseriesRouter)
+app.use('/api/v1/nurseries', reviewsRouter)
 app.use('/api/v1/ingest', ingestRouter)
 app.use('/api/v1/areas', areasRouter)
 app.use('/api/v1/sitemap', sitemapRouter)
