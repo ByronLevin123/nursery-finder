@@ -52,7 +52,7 @@ export default function NurseryModal({ urn, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 z-[100] flex items-start justify-center overflow-y-auto p-4"
+      className="fixed inset-0 bg-black/50 z-[2000] flex items-start justify-center overflow-y-auto p-4"
       onClick={onClose}
     >
       <div
