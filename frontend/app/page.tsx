@@ -51,7 +51,23 @@ export default function HomePage() {
           <p className="text-lg md:text-xl text-gray-600 mb-10">
             Compare 27,000+ UK nurseries with real Ofsted ratings, live market data, and parent reviews.
           </p>
-          <HomeSearch />
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+            <a
+              href="#nursery-search"
+              className="inline-flex items-center justify-center gap-2 px-6 py-4 bg-indigo-600 text-white rounded-xl font-semibold text-lg shadow-md hover:bg-indigo-700 transition"
+            >
+              <span className="text-2xl">🏫</span> Find a nursery
+            </a>
+            <a
+              href="/property-search"
+              className="inline-flex items-center justify-center gap-2 px-6 py-4 bg-white border-2 border-purple-300 text-purple-800 rounded-xl font-semibold text-lg shadow-sm hover:bg-purple-50 transition"
+            >
+              <span className="text-2xl">🏠</span> Find a home
+            </a>
+          </div>
+          <div id="nursery-search">
+            <HomeSearch />
+          </div>
           <PriorityWizardButton />
           <p className="text-xs text-gray-500 mt-6">
             <span className="font-semibold text-gray-700">27,808</span> nurseries

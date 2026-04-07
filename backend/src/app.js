@@ -22,6 +22,7 @@ import areasRouter from './routes/areas.js'
 import sitemapRouter from './routes/sitemap.js'
 import reviewsRouter from './routes/reviews.js'
 import profileRouter from './routes/profile.js'
+import propertiesRouter from './routes/properties.js'
 import { optionalAuth } from './middleware/supabaseAuth.js'
 
 // AI feature routes (Claude-powered) — separate block, do not merge with mounts above
@@ -64,6 +65,7 @@ app.use('/api/v1/nurseries', nurseriesRouter)
 app.use('/api/v1/nurseries', reviewsRouter)
 app.use('/api/v1/ingest', ingestRouter)
 app.use('/api/v1/areas', areasRouter)
+app.use('/api/v1/properties', propertiesRouter)
 app.use('/api/v1/sitemap', sitemapRouter)
 
 // AI routes — mounted at /api/v1 so router defines its own subpaths
