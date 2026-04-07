@@ -2,6 +2,7 @@ import express from 'express'
 import db from '../db.js'
 import { geocodePostcode } from '../services/geocoding.js'
 import { searchCache, searchCacheKey } from '../services/cache.js'
+import { smartSearch } from '../services/smartSearch.js'
 import { logger } from '../logger.js'
 
 const router = express.Router()
@@ -68,6 +69,30 @@ router.post('/search', async (req, res, next) => {
     logger.info({ postcode, radius_km, results: data.length }, 'search completed')
     res.json(result)
 
+  } catch (err) {
+    if (err.message?.includes('not found')) {
+      return res.status(404).json({ error: 'Postcode not found' })
+    }
+    next(err)
+  }
+})
+
+// POST /api/v1/nurseries/smart-search — auto postcode vs text
+router.post('/smart-search', async (req, res, next) => {
+  try {
+    const { query, radius_km = 5, grade = null, funded_2yr = false, funded_3yr = false } = req.body
+    if (!query || !query.trim()) {
+      return res.status(400).json({ error: 'query is required' })
+    }
+
+    const cacheKey = searchCacheKey({ postcode: `smart:${query}`, radiusKm: radius_km, grade, funded2yr: funded_2yr, funded3yr: funded_3yr })
+    const cached = searchCache.get(cacheKey)
+    if (cached) return res.json({ ...cached, cached: true })
+
+    const result = await smartSearch({ query, radius_km, grade, funded_2yr, funded_3yr })
+    searchCache.set(cacheKey, result)
+    logger.info({ query, mode: result.meta.mode, results: result.meta.total }, 'smart-search completed')
+    res.json(result)
   } catch (err) {
     if (err.message?.includes('not found')) {
       return res.status(404).json({ error: 'Postcode not found' })

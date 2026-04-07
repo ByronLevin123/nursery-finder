@@ -2,17 +2,19 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { searchNurseries, Nursery, SearchResult } from '@/lib/api'
+import { smartSearchNurseries, Nursery, SearchResult } from '@/lib/api'
 import NurseryCard from '@/components/NurseryCard'
+import NurseryModal from '@/components/NurseryModal'
 import dynamic from 'next/dynamic'
 
 const NurseryMap = dynamic(() => import('@/components/NurseryMap'), { ssr: false })
 
 function SearchContent() {
   const searchParams = useSearchParams()
-  const initialPostcode = searchParams.get('postcode') || ''
+  const initialQuery = searchParams.get('q') || searchParams.get('postcode') || ''
 
-  const [postcode, setPostcode] = useState(initialPostcode)
+  const [query, setQuery] = useState(initialQuery)
+  const [selectedUrn, setSelectedUrn] = useState<string | null>(null)
   const [radiusKm, setRadiusKm] = useState(5)
   const [grade, setGrade] = useState<string | null>(null)
   const [funded2yr, setFunded2yr] = useState(false)
@@ -22,12 +24,12 @@ function SearchContent() {
   const [error, setError] = useState('')
 
   async function doSearch() {
-    if (!postcode.trim()) return
+    if (!query.trim()) return
     setLoading(true)
     setError('')
     try {
-      const data = await searchNurseries({
-        postcode: postcode.trim(),
+      const data = await smartSearchNurseries({
+        query: query.trim(),
         radius_km: radiusKm,
         grade,
         funded_2yr: funded2yr,
@@ -42,7 +44,7 @@ function SearchContent() {
   }
 
   useEffect(() => {
-    if (initialPostcode) doSearch()
+    if (initialQuery) doSearch()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
@@ -54,10 +56,10 @@ function SearchContent() {
           <div className="flex gap-2 mb-4">
             <input
               type="text"
-              value={postcode}
-              onChange={e => setPostcode(e.target.value)}
+              value={query}
+              onChange={e => setQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && doSearch()}
-              placeholder="Postcode..."
+              placeholder="Postcode, area, or nursery name..."
               className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
             />
             <button
@@ -141,7 +143,11 @@ function SearchContent() {
 
           <div className="space-y-3">
             {results?.data.map(nursery => (
-              <NurseryCard key={nursery.urn} nursery={nursery} />
+              <NurseryCard
+                key={nursery.urn}
+                nursery={nursery}
+                onClick={() => setSelectedUrn(nursery.urn)}
+              />
             ))}
           </div>
 
@@ -164,10 +170,12 @@ function SearchContent() {
           />
         ) : (
           <div className="h-full bg-gray-100 flex items-center justify-center">
-            <p className="text-gray-400">Enter a postcode to see nurseries on the map</p>
+            <p className="text-gray-400">Search by postcode, area, or nursery name</p>
           </div>
         )}
       </div>
+
+      <NurseryModal urn={selectedUrn} onClose={() => setSelectedUrn(null)} />
     </div>
   )
 }

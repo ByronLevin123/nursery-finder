@@ -7,18 +7,28 @@ import CompareButton from './CompareButton'
 interface Props {
   nursery: Nursery
   showDistance?: boolean
+  onClick?: () => void
 }
 
-export default function NurseryCard({ nursery, showDistance = true }: Props) {
+export default function NurseryCard({ nursery, showDistance = true, onClick }: Props) {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start gap-2 mb-2">
-        <Link
-          href={`/nursery/${nursery.urn}`}
-          className="font-semibold text-gray-900 hover:text-blue-600 line-clamp-2 flex-1"
-        >
-          {nursery.name}
-        </Link>
+        {onClick ? (
+          <button
+            onClick={onClick}
+            className="font-semibold text-gray-900 hover:text-blue-600 line-clamp-2 flex-1 text-left"
+          >
+            {nursery.name}
+          </button>
+        ) : (
+          <Link
+            href={`/nursery/${nursery.urn}`}
+            className="font-semibold text-gray-900 hover:text-blue-600 line-clamp-2 flex-1"
+          >
+            {nursery.name}
+          </Link>
+        )}
         <div className="flex items-center gap-1.5">
           <CompareButton urn={nursery.urn} />
           <ShortlistButton urn={nursery.urn} />

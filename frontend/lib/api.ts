@@ -64,6 +64,26 @@ export async function searchNurseries(params: {
   return res.json()
 }
 
+export async function smartSearchNurseries(params: {
+  query: string
+  radius_km?: number
+  grade?: string | null
+  funded_2yr?: boolean
+  funded_3yr?: boolean
+}): Promise<SearchResult> {
+  const res = await fetch(`${API_URL}/api/v1/nurseries/smart-search`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+    cache: 'no-store',
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `Search failed: ${res.status}`)
+  }
+  return res.json()
+}
+
 export async function getNursery(urn: string): Promise<Nursery> {
   const res = await fetch(`${API_URL}/api/v1/nurseries/${urn}`, {
     next: { revalidate: 3600 },
