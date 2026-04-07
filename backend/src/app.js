@@ -25,6 +25,9 @@ import profileRouter from './routes/profile.js'
 import propertiesRouter from './routes/properties.js'
 import emailRouter from './routes/email.js'
 import savedSearchesRouter from './routes/savedSearches.js'
+import overlaysRouter from './routes/overlays.js'
+import claimsRouter from './routes/claims.js'
+import providerRouter from './routes/provider.js'
 import { optionalAuth } from './middleware/supabaseAuth.js'
 
 // AI feature routes (Claude-powered) — separate block, do not merge with mounts above
@@ -72,6 +75,9 @@ app.use('/api/v1/properties', propertiesRouter)
 app.use('/api/v1/sitemap', sitemapRouter)
 app.use('/api/v1/email', emailRouter)
 app.use('/api/v1/saved-searches', savedSearchesRouter)
+app.use('/api/v1/overlays', overlaysRouter)
+app.use('/api/v1/claims', claimsRouter)
+app.use('/api/v1/provider', providerRouter)
 
 // AI routes — mounted at /api/v1 so router defines its own subpaths
 app.use('/api/v1', aiRouter)

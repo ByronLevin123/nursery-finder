@@ -89,6 +89,22 @@ export default function Nav() {
                   >
                     Account
                   </Link>
+                  <Link
+                    href="/provider"
+                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    onClick={() => setAccountOpen(false)}
+                  >
+                    Provider
+                  </Link>
+                  {typeof window !== 'undefined' && window.location.search.includes('admin=1') && (
+                    <Link
+                      href="/admin/claims"
+                      className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      onClick={() => setAccountOpen(false)}
+                    >
+                      Admin
+                    </Link>
+                  )}
                   <button
                     onClick={async () => {
                       setAccountOpen(false)

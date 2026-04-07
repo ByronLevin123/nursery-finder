@@ -51,6 +51,11 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{nursery.name}</h1>
           <p className="text-gray-500 mt-1">{nursery.town}{nursery.local_authority ? `, ${nursery.local_authority}` : ''}</p>
+          {nursery.claimed_by_user_id && (
+            <span className="inline-block mt-2 text-xs px-2 py-1 bg-green-50 text-green-700 border border-green-200 rounded-full font-medium">
+              Claimed by provider
+            </span>
+          )}
         </div>
         <div className="flex flex-col items-end gap-2">
           <GradeBadge grade={nursery.ofsted_overall_grade} size="lg" />
@@ -124,13 +129,47 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         <FeeModal nurseryId={nursery.id} />
       </div>
 
-      {/* Claim CTA */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6 text-center">
-        <p className="text-sm text-gray-600 mb-2">Is this your nursery?</p>
-        <a href={`/claim/${nursery.urn}`} className="text-sm text-blue-600 hover:text-blue-800 font-medium">
-          Claim this listing →
-        </a>
-      </div>
+      {/* Provider-supplied content */}
+      {nursery.description && (
+        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
+          <h2 className="font-semibold text-gray-900 mb-2">About this nursery</h2>
+          <p className="text-sm text-gray-700 whitespace-pre-wrap">{nursery.description}</p>
+        </div>
+      )}
+
+      {nursery.photos && nursery.photos.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-6">
+          {nursery.photos.map((src, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={i} src={src} alt={`${nursery.name} photo ${i + 1}`} className="w-full h-32 object-cover rounded-lg border border-gray-200" />
+          ))}
+        </div>
+      )}
+
+      {(nursery.website_url || nursery.contact_email || nursery.contact_phone) && (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+          <p className="text-xs text-gray-500 uppercase font-medium mb-2">Provider contact</p>
+          {nursery.website_url && (
+            <p className="text-sm">
+              <a href={nursery.website_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                {nursery.website_url}
+              </a>
+            </p>
+          )}
+          {nursery.contact_email && <p className="text-sm">{nursery.contact_email}</p>}
+          {nursery.contact_phone && <p className="text-sm">{nursery.contact_phone}</p>}
+        </div>
+      )}
+
+      {/* Claim CTA — only if not currently claimed */}
+      {!nursery.claimed_by_user_id && (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6 text-center">
+          <p className="text-sm text-gray-600 mb-2">Is this your nursery?</p>
+          <a href={`/claim/${nursery.urn}`} className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+            Claim this nursery →
+          </a>
+        </div>
+      )}
 
       {/* Map */}
       {nursery.lat && nursery.lng && (

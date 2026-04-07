@@ -1,7 +1,32 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { AreaSummary, getAreaSummary } from '@/lib/api'
+import { AreaSummary, getAreaSummary, API_URL } from '@/lib/api'
+
+interface NearbySchool {
+  urn: number
+  name: string
+  phase: string | null
+  ofsted_grade: string | null
+  distance_km: number
+}
+
+function floodBadgeClasses(level: string | null | undefined) {
+  const v = (level || '').toLowerCase()
+  if (v.includes('high')) return 'bg-red-200 text-red-900'
+  if (v.includes('medium')) return 'bg-amber-200 text-amber-900'
+  if (v.includes('low')) return 'bg-green-200 text-green-900'
+  return 'bg-gray-200 text-gray-700'
+}
+
+function gradeBadgeClasses(grade: string | null) {
+  const g = (grade || '').toLowerCase()
+  if (g === 'outstanding') return 'bg-purple-200 text-purple-900'
+  if (g === 'good') return 'bg-green-200 text-green-900'
+  if (g.includes('requires')) return 'bg-amber-200 text-amber-900'
+  if (g === 'inadequate') return 'bg-red-200 text-red-900'
+  return 'bg-gray-200 text-gray-700'
+}
 
 interface Props {
   district: string | null
@@ -19,6 +44,7 @@ export default function AreaSummaryCard({ district, variant = 'compact' }: Props
   const [area, setArea] = useState<AreaSummary | null>(null)
   const [loading, setLoading] = useState(false)
   const [tried, setTried] = useState(false)
+  const [schools, setSchools] = useState<NearbySchool[] | null>(null)
 
   useEffect(() => {
     if (!district) return
@@ -28,6 +54,23 @@ export default function AreaSummaryCard({ district, variant = 'compact' }: Props
       .catch(() => setArea(null))
       .finally(() => { setLoading(false); setTried(true) })
   }, [district])
+
+  useEffect(() => {
+    if (variant !== 'full' || !area || area.lat == null || area.lng == null) return
+    let cancelled = false
+    fetch(
+      `${API_URL}/api/v1/overlays/schools/near?lat=${area.lat}&lng=${area.lng}&radius_km=2`
+    )
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (cancelled || !j) return
+        setSchools(Array.isArray(j.data) ? j.data.slice(0, 5) : [])
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [variant, area])
 
   if (!district) return null
   if (loading) return null
@@ -105,13 +148,6 @@ export default function AreaSummaryCard({ district, variant = 'compact' }: Props
           <div>
             <p className="text-xs text-purple-700 uppercase">Crime rate</p>
             <p className="font-medium text-purple-900">{area.crime_rate_per_1000}/1000</p>
-          </div>
-        )}
-
-        {variant === 'full' && area?.flood_risk_level && (
-          <div>
-            <p className="text-xs text-purple-700 uppercase">Flood risk</p>
-            <p className="font-medium text-purple-900">{area.flood_risk_level}</p>
           </div>
         )}
 
@@ -204,6 +240,69 @@ export default function AreaSummaryCard({ district, variant = 'compact' }: Props
               )
             })}
           </div>
+        </div>
+      )}
+
+      {variant === 'full' && (
+        <div className="mt-3 pt-3 border-t border-purple-200 space-y-3">
+          <div>
+            <p className="text-xs text-purple-700 uppercase mb-1 font-semibold">Flood risk</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span
+                className={`text-xs px-2 py-0.5 rounded-full font-semibold ${floodBadgeClasses(area?.flood_risk_level)}`}
+              >
+                {area?.flood_risk_level || 'Unknown'}
+              </span>
+              {area?.flood_updated_at && (
+                <span className="text-xs text-purple-700">
+                  Updated {new Date(area.flood_updated_at).toLocaleDateString()}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {(area?.nearest_park_name || area?.park_count_within_1km != null) && (
+            <div>
+              <p className="text-xs text-purple-700 uppercase mb-1 font-semibold">Parks & greenspace</p>
+              {area?.nearest_park_name && (
+                <p className="text-sm text-purple-900">
+                  Nearest: <span className="font-medium">{area.nearest_park_name}</span>
+                  {area.nearest_park_distance_m != null
+                    ? ` (${area.nearest_park_distance_m}m)`
+                    : ''}
+                </p>
+              )}
+              {area?.park_count_within_1km != null && (
+                <p className="text-xs text-purple-700">
+                  {area.park_count_within_1km} parks within 1km
+                </p>
+              )}
+            </div>
+          )}
+
+          {schools && schools.length > 0 && (
+            <div>
+              <p className="text-xs text-purple-700 uppercase mb-1 font-semibold">Nearest schools</p>
+              <ul className="space-y-1">
+                {schools.map((s) => (
+                  <li key={s.urn} className="flex items-center gap-2 text-sm">
+                    <span className="text-purple-900 flex-1 truncate">{s.name}</span>
+                    {s.phase && (
+                      <span className="text-xs text-purple-700">{s.phase}</span>
+                    )}
+                    {s.ofsted_grade && (
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full font-semibold ${gradeBadgeClasses(s.ofsted_grade)}`}
+                      >
+                        {s.ofsted_grade}
+                      </span>
+                    )}
+                    <span className="text-xs text-purple-700">{s.distance_km}km</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 

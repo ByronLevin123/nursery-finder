@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
 export interface Nursery {
   id: string
@@ -32,6 +32,15 @@ export interface Nursery {
   lat: number | null
   lng: number | null
   distance_km?: number
+  claimed_by_user_id?: string | null
+  claimed_at?: string | null
+  description?: string | null
+  opening_hours?: Record<string, string> | null
+  photos?: string[] | null
+  website_url?: string | null
+  contact_email?: string | null
+  contact_phone?: string | null
+  provider_updated_at?: string | null
 }
 
 export interface SearchResult {
@@ -140,6 +149,11 @@ export interface AreaSummary {
   crime_rate_per_1000: number | null
   imd_decile: number | null
   flood_risk_level: string | null
+  flood_updated_at?: string | null
+  nearest_park_name?: string | null
+  nearest_park_distance_m?: number | null
+  park_count_within_1km?: number | null
+  parks_updated_at?: string | null
   asking_price_avg: number | null
   rent_avg_weekly: number | null
   gross_yield_pct: number | null
