@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Analytics } from '@vercel/analytics/react'
 import Footer from '@/components/Footer'
 import Nav from '@/components/Nav'
 import './globals.css'
@@ -15,20 +16,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <head>
-        {/* Plausible Analytics — GDPR compliant, cookieless */}
-        <script
-          defer
-          data-domain="nursery-finder.vercel.app"
-          src="https://plausible.io/js/plausible.js"
-        />
-      </head>
       <body className="font-sans antialiased">
         <Nav />
         <main className="min-h-screen">
           {children}
         </main>
         <Footer />
+        <Analytics />
       </body>
     </html>
   )
