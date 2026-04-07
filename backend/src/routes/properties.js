@@ -88,6 +88,67 @@ router.get('/search', async (req, res, next) => {
   }
 })
 
+// GET /api/v1/properties/districts — Land Registry-backed district browser
+// Free, no PropertyData credits needed. Ranks districts by affordability + nursery quality.
+router.get('/districts', async (req, res, next) => {
+  try {
+    const {
+      max_price,
+      min_price,
+      property_type = 'all',
+      region,
+      sort = 'price_asc',
+      limit = 60,
+    } = req.query
+
+    const priceCol =
+      property_type === 'flat'
+        ? 'avg_sale_price_flat'
+        : property_type === 'terraced'
+          ? 'avg_sale_price_terraced'
+          : property_type === 'semi'
+            ? 'avg_sale_price_semi'
+            : property_type === 'detached'
+              ? 'avg_sale_price_detached'
+              : 'avg_sale_price_all'
+
+    let query = db
+      .from('postcode_areas')
+      .select(
+        `
+        postcode_district, local_authority, region,
+        avg_sale_price_all, avg_sale_price_flat, avg_sale_price_terraced,
+        avg_sale_price_semi, avg_sale_price_detached,
+        rent_avg_weekly, gross_yield_pct, demand_rating, price_growth_1yr_pct,
+        nursery_count_total, nursery_count_outstanding, nursery_outstanding_pct,
+        family_score, crime_rate_per_1000, imd_decile, lat, lng
+      `
+      )
+      .not(priceCol, 'is', null)
+
+    if (region) query = query.eq('region', region)
+    if (min_price) query = query.gte(priceCol, Number(min_price))
+    if (max_price) query = query.lte(priceCol, Number(max_price))
+
+    const ascending = sort !== 'price_desc' && sort !== 'family_score' && sort !== 'yield'
+    if (sort === 'family_score') query = query.order('family_score', { ascending: false })
+    else if (sort === 'yield') query = query.order('gross_yield_pct', { ascending: false })
+    else query = query.order(priceCol, { ascending })
+
+    query = query.limit(Math.min(Number(limit) || 60, 200))
+
+    const { data, error } = await query
+    if (error) throw error
+
+    res.json({
+      data: (data || []).map((d) => ({ ...d, price_displayed: d[priceCol] })),
+      meta: { total: (data || []).length, price_column: priceCol, sort },
+    })
+  } catch (err) {
+    next(err)
+  }
+})
+
 // POST /api/v1/properties/:district/refresh — admin force refresh
 router.post('/:district/refresh', adminAuth, async (req, res, next) => {
   try {

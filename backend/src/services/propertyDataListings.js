@@ -125,11 +125,13 @@ export async function fetchListingsForDistrict(district, listingType) {
     return []
   }
 
-  const endpoint = listingType === 'rent' ? '/properties-to-rent' : '/properties-for-sale'
+  // PropertyData uses /sourced-properties with list_type=for-sale|to-rent
+  const endpoint = '/sourced-properties'
+  const list_type = listingType === 'rent' ? 'to-rent' : 'for-sale'
   const start = Date.now()
   let json
   try {
-    json = await fetchJson(endpoint, { postcode: samplePostcode })
+    json = await fetchJson(endpoint, { postcode: samplePostcode, list_type })
   } catch (err) {
     logger.warn(
       { err: err.message, endpoint, district: districtUpper },
