@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import { getNurseriesInDistrict } from '@/lib/api'
+import AreaSummaryCard from '@/components/AreaSummaryCard'
 import NurseryCard from '@/components/NurseryCard'
 import OglAttribution from '@/components/OglAttribution'
 import Link from 'next/link'
@@ -52,6 +53,8 @@ export default async function AreaPage({ params }: Props) {
           {stats.total} registered nurseries — {stats.outstanding} Outstanding, {stats.good} Good
         </p>
       </div>
+
+      <AreaSummaryCard district={district} variant="full" />
 
       {/* Quick stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">

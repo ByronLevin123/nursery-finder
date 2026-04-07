@@ -5,6 +5,33 @@ import { logger } from '../logger.js'
 
 const router = express.Router()
 
+// GET /api/v1/areas/:district — area summary (stats + property + score)
+router.get('/:district', async (req, res, next) => {
+  try {
+    const district = req.params.district.toUpperCase()
+
+    const { data: area, error } = await db
+      .from('postcode_areas')
+      .select(`
+        postcode_district, local_authority, region,
+        nursery_count_total, nursery_count_outstanding, nursery_count_good,
+        nursery_outstanding_pct,
+        avg_sale_price_all, avg_sale_price_flat, avg_sale_price_terraced,
+        avg_sale_price_semi, avg_sale_price_detached,
+        crime_rate_per_1000, imd_decile, flood_risk_level,
+        family_score, family_score_breakdown, lat, lng, updated_at
+      `)
+      .eq('postcode_district', district)
+      .maybeSingle()
+
+    if (error) throw error
+    if (!area) return res.status(404).json({ error: 'District not found' })
+    res.json(area)
+  } catch (err) {
+    next(err)
+  }
+})
+
 // GET /api/v1/areas/:district/nurseries
 router.get('/:district/nurseries', async (req, res, next) => {
   try {

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { getNursery, Nursery } from '@/lib/api'
+import { getNursery, Nursery, postcodeDistrict } from '@/lib/api'
+import AreaSummaryCard from './AreaSummaryCard'
 import GradeBadge from './GradeBadge'
 import StaleGradeBanner from './StaleGradeBanner'
 import EnforcementBanner from './EnforcementBanner'
@@ -141,6 +142,8 @@ export default function NurseryModal({ urn, onClose }: Props) {
                   )}
                 </div>
               </div>
+
+              <AreaSummaryCard district={postcodeDistrict(nursery.postcode)} />
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                 <p className="font-medium text-blue-900 mb-1">💷 Fees</p>

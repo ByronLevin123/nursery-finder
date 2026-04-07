@@ -37,6 +37,18 @@ router.post('/geocode', async (req, res, next) => {
   }
 })
 
+// POST /api/v1/ingest/aggregate-areas — refresh nursery counts per postcode district
+router.post('/aggregate-areas', async (req, res, next) => {
+  try {
+    const { data, error } = await db.rpc('refresh_postcode_area_nursery_stats')
+    if (error) throw error
+    logger.info({ districts: data }, 'ingest: aggregate-areas complete')
+    res.json({ districts_updated: data })
+  } catch (err) {
+    next(err)
+  }
+})
+
 // POST /api/v1/ingest/land-registry
 router.post('/land-registry', async (req, res, next) => {
   try {

@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import GradeBadge from './GradeBadge'
-import { Nursery } from '@/lib/api'
+import { Nursery, AreaSummary, getAreaSummary, postcodeDistrict } from '@/lib/api'
 
 interface Props {
   nurseries: Nursery[]
@@ -74,7 +75,35 @@ function cellClass(isHighlighted: boolean): string {
     : ''
 }
 
+function gbp(n: number | null | undefined) {
+  if (n == null) return null
+  if (n >= 1_000_000) return `£${(n / 1_000_000).toFixed(1)}m`
+  if (n >= 1_000) return `£${Math.round(n / 1000)}k`
+  return `£${n}`
+}
+
 export default function ComparisonTable({ nurseries, onRemove }: Props) {
+  const [areas, setAreas] = useState<Record<string, AreaSummary | null>>({})
+
+  useEffect(() => {
+    const districts = Array.from(new Set(
+      nurseries.map(n => postcodeDistrict(n.postcode)).filter(Boolean) as string[]
+    ))
+    Promise.all(districts.map(d =>
+      getAreaSummary(d).then(a => [d, a] as const).catch(() => [d, null] as const)
+    )).then(pairs => setAreas(Object.fromEntries(pairs)))
+  }, [nurseries])
+
+  function areaFor(n: Nursery): AreaSummary | null {
+    const d = postcodeDistrict(n.postcode)
+    return d ? areas[d] || null : null
+  }
+
+  const hasAnyAreaData = nurseries.some(n => {
+    const a = areaFor(n)
+    return a && (a.family_score != null || a.avg_sale_price_all != null)
+  })
+
   if (nurseries.length === 0) return null
 
   const gradeWinners = bestGradeUrns(nurseries)
@@ -238,6 +267,35 @@ export default function ComparisonTable({ nurseries, onRemove }: Props) {
                 </td>
               ))}
             </Row>
+          )}
+
+          {hasAnyAreaData && (
+            <>
+              <Row label="Area Family Score">
+                {nurseries.map(n => {
+                  const a = areaFor(n)
+                  return (
+                    <td key={n.urn} className="border-b border-gray-200 p-3 text-sm">
+                      {a?.family_score != null
+                        ? <span className="font-medium">{a.family_score}/10</span>
+                        : <span className="text-gray-400">No data</span>}
+                    </td>
+                  )
+                })}
+              </Row>
+              <Row label="Area Avg Sold Price">
+                {nurseries.map(n => {
+                  const a = areaFor(n)
+                  return (
+                    <td key={n.urn} className="border-b border-gray-200 p-3 text-sm">
+                      {a?.avg_sale_price_all != null
+                        ? <span className="font-medium">{gbp(a.avg_sale_price_all)}</span>
+                        : <span className="text-gray-400">No data</span>}
+                    </td>
+                  )
+                })}
+              </Row>
+            </>
           )}
 
           {/* View Full Profile links */}

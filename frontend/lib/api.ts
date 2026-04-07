@@ -121,6 +121,45 @@ export async function compareNurseries(urns: string[]): Promise<Nursery[]> {
   return result.data
 }
 
+export interface AreaSummary {
+  postcode_district: string
+  local_authority: string | null
+  region: string | null
+  nursery_count_total: number | null
+  nursery_count_outstanding: number | null
+  nursery_count_good: number | null
+  nursery_outstanding_pct: number | null
+  avg_sale_price_all: number | null
+  avg_sale_price_flat: number | null
+  avg_sale_price_terraced: number | null
+  avg_sale_price_semi: number | null
+  avg_sale_price_detached: number | null
+  crime_rate_per_1000: number | null
+  imd_decile: number | null
+  flood_risk_level: string | null
+  family_score: number | null
+  family_score_breakdown: any
+  lat: number | null
+  lng: number | null
+  updated_at: string | null
+}
+
+export async function getAreaSummary(district: string): Promise<AreaSummary | null> {
+  const res = await fetch(
+    `${API_URL}/api/v1/areas/${encodeURIComponent(district.toUpperCase())}`,
+    { next: { revalidate: 3600 } }
+  )
+  if (res.status === 404) return null
+  if (!res.ok) throw new Error(`Area lookup failed: ${res.status}`)
+  return res.json()
+}
+
+export function postcodeDistrict(postcode: string | null | undefined): string | null {
+  if (!postcode) return null
+  const trimmed = postcode.trim().toUpperCase()
+  return trimmed.split(' ')[0] || null
+}
+
 export async function getNurseriesInDistrict(district: string) {
   const res = await fetch(
     `${API_URL}/api/v1/areas/${encodeURIComponent(district)}/nurseries`,
