@@ -7,7 +7,7 @@ import db from '../db.js'
 import { logger } from '../logger.js'
 
 const BATCH_SIZE = 1000
-const BASE_URL = 'http://prod.publicdata.landregistry.gov.uk'
+const BASE_URL = 'https://price-paid-data.publicdata.landregistry.gov.uk'
 
 function extractDistrict(postcode) {
   if (!postcode) return null

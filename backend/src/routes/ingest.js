@@ -54,9 +54,15 @@ router.post('/land-registry', async (req, res, next) => {
   try {
     const currentYear = new Date().getFullYear()
     const results = []
+    // Try current year (may 404 if early in year), then last 2
     for (const year of [currentYear, currentYear - 1, currentYear - 2]) {
-      const result = await ingestLandRegistryYear(year)
-      results.push(result)
+      try {
+        const result = await ingestLandRegistryYear(year)
+        results.push(result)
+      } catch (err) {
+        logger.warn({ year, err: err.message }, 'land_registry: year skipped')
+        results.push({ year, skipped: true, error: err.message })
+      }
     }
     await refreshPropertyStats()
     res.json({ years: results })
