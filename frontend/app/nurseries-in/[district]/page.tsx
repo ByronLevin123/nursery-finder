@@ -3,7 +3,9 @@ import { getNurseriesInDistrict } from '@/lib/api'
 import AreaSummaryCard from '@/components/AreaSummaryCard'
 import NurseryCard from '@/components/NurseryCard'
 import OglAttribution from '@/components/OglAttribution'
+import Breadcrumbs from '@/components/Breadcrumbs'
 import Link from 'next/link'
+import { placeSchema, breadcrumbSchema, faqSchema, jsonLdScript } from '@/lib/schema'
 
 interface Props {
   params: { district: string }
@@ -13,11 +15,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const district = params.district.toUpperCase()
   try {
     const { stats } = await getNurseriesInDistrict(district)
+    const title = `Nurseries in ${district} — ${stats.total} Found`
+    const description = `${stats.total} Ofsted-rated nurseries in ${district}. ${stats.outstanding} rated Outstanding. Compare grades, funded places and inspection dates.`
+    const url = `/nurseries-in/${district.toLowerCase()}`
     return {
-      title: `Nurseries in ${district} — ${stats.total} Found | NurseryFinder`,
-      description: `${stats.total} Ofsted-rated nurseries in ${district}. ${stats.outstanding} rated Outstanding. Compare grades, funded places and inspection dates.`,
-      alternates: {
-        canonical: `/nurseries-in/${district.toLowerCase()}`,
+      title,
+      description,
+      alternates: { canonical: url },
+      openGraph: {
+        title,
+        description,
+        url,
+        siteName: 'NurseryFinder',
+        type: 'website',
+        locale: 'en_GB',
+        images: [{ url: '/og-default.png', width: 1200, height: 630, alt: `Nurseries in ${district}` }],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+        images: ['/og-default.png'],
       },
     }
   } catch {
@@ -43,8 +61,29 @@ export default async function AreaPage({ params }: Props) {
     )
   }
 
+  const crumbs = [
+    { name: 'Home', href: '/' },
+    { name: `Nurseries in ${district}` },
+  ]
+
+  const faqs = [
+    {
+      question: `How many nurseries are in ${district}?`,
+      answer: `${district} has ${stats.total} Ofsted-registered nurseries, of which ${stats.outstanding} are rated Outstanding and ${stats.good} are rated Good.`,
+    },
+    {
+      question: `Which is the best-rated nursery in ${district}?`,
+      answer: `You can compare every Outstanding-rated nursery in ${district} on this page, sorted by Ofsted grade. Each listing links to the full Ofsted report.`,
+    },
+    {
+      question: `Are there funded nursery places in ${district}?`,
+      answer: `Yes — many nurseries in ${district} offer 15 or 30 hours of government-funded childcare for eligible 2, 3 and 4-year-olds. Each nursery profile shows the number of funded places available.`,
+    },
+  ]
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
+      <Breadcrumbs items={crumbs} />
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
           Nurseries in {district}
@@ -88,7 +127,25 @@ export default async function AreaPage({ params }: Props) {
         </Link>
       </div>
 
-      {/* JSON-LD structured data for SEO */}
+      {/* JSON-LD: Place + Breadcrumb + FAQ + ItemList */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(placeSchema({ district, postcode_district: district })) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLdScript(
+            breadcrumbSchema(
+              crumbs.map((c) => ({ name: c.name, url: c.href || `/nurseries-in/${district.toLowerCase()}` }))
+            )
+          ),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(faqSchema(faqs)) }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

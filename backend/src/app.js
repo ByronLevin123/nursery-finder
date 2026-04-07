@@ -23,6 +23,8 @@ import sitemapRouter from './routes/sitemap.js'
 import reviewsRouter from './routes/reviews.js'
 import profileRouter from './routes/profile.js'
 import propertiesRouter from './routes/properties.js'
+import publicMarkdownRouter from './routes/publicMarkdown.js'
+import openapi from './openapi.js'
 import emailRouter from './routes/email.js'
 import savedSearchesRouter from './routes/savedSearches.js'
 import overlaysRouter from './routes/overlays.js'
@@ -38,6 +40,19 @@ const app = express()
 
 // Security
 app.use(helmet())
+
+// Open CORS for public read endpoints (LLM agents + Custom GPT actions)
+const publicCorsPaths = [
+  '/api/v1/nurseries',
+  '/api/v1/areas',
+  '/api/v1/properties/districts',
+  '/api/v1/overlays',
+  '/api/v1/public',
+  '/api/openapi.json',
+]
+app.use(publicCorsPaths, cors({ origin: '*', methods: ['GET', 'POST'] }))
+
+// Default CORS for everything else (auth-protected etc.)
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || '*',
@@ -48,15 +63,19 @@ app.use(
 // Request logging
 app.use(pinoHttp({ logger }))
 
-// Rate limiting — public endpoints
-app.use(
-  '/api/v1/nurseries',
-  rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
-    message: { error: 'Too many requests, please try again later' },
-  })
-)
+// Rate limiting — public endpoints (100 req / 15 min per IP)
+const publicLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later' },
+})
+app.use('/api/v1/nurseries', publicLimiter)
+app.use('/api/v1/areas', publicLimiter)
+app.use('/api/v1/properties', publicLimiter)
+app.use('/api/v1/overlays', publicLimiter)
+app.use('/api/v1/public', publicLimiter)
 
 // Body parsing
 app.use(express.json({ limit: '1mb' }))
@@ -78,6 +97,16 @@ app.use('/api/v1/saved-searches', savedSearchesRouter)
 app.use('/api/v1/overlays', overlaysRouter)
 app.use('/api/v1/claims', claimsRouter)
 app.use('/api/v1/provider', providerRouter)
+app.use('/api/v1/public', publicMarkdownRouter)
+
+// Public OpenAPI spec for LLM agents + ChatGPT Custom GPT
+app.get('/api/openapi.json', (req, res, next) => {
+  try {
+    res.json(openapi)
+  } catch (err) {
+    next(err)
+  }
+})
 
 // AI routes — mounted at /api/v1 so router defines its own subpaths
 app.use('/api/v1', aiRouter)

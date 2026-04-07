@@ -8,6 +8,17 @@ export const metadata: Metadata = {
   title: 'NurseryFinder — Compare UK Nurseries by Ofsted Grade',
   description:
     'Compare 27,000+ UK nurseries with real Ofsted ratings, family scores by area, live property data, and anonymous parent reviews.',
+  alternates: { canonical: '/' },
+  openGraph: {
+    title: 'NurseryFinder — Compare UK Nurseries by Ofsted Grade',
+    description:
+      'Compare 27,000+ UK nurseries with real Ofsted ratings, family scores by area, live property data, and anonymous parent reviews.',
+    url: '/',
+    siteName: 'NurseryFinder',
+    type: 'website',
+    locale: 'en_GB',
+    images: [{ url: '/og-default.png', width: 1200, height: 630, alt: 'NurseryFinder' }],
+  },
 }
 
 const POPULAR_DISTRICTS = [

@@ -1,6 +1,9 @@
 import { Metadata } from 'next'
-import { getNursery } from '@/lib/api'
+import { getNursery, getNurseriesInDistrict } from '@/lib/api'
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import Breadcrumbs from '@/components/Breadcrumbs'
+import { nurserySchema, breadcrumbSchema, jsonLdScript } from '@/lib/schema'
 import GradeBadge from '@/components/GradeBadge'
 import StaleGradeBanner from '@/components/StaleGradeBanner'
 import EnforcementBanner from '@/components/EnforcementBanner'
@@ -17,13 +20,38 @@ const SingleNurseryMap = dynamic(() => import('@/components/SingleNurseryMap'), 
 export async function generateMetadata({ params }: { params: { urn: string } }): Promise<Metadata> {
   try {
     const nursery = await getNursery(params.urn)
+    const title = `${nursery.name} — Ofsted ${nursery.ofsted_overall_grade || 'Rating Pending'}`
+    const description = `${nursery.name} in ${nursery.town} is rated ${nursery.ofsted_overall_grade || 'not yet rated'} by Ofsted. ${nursery.total_places ? `${nursery.total_places} places available.` : ''}`
+    const url = `/nursery/${nursery.urn}`
     return {
-      title: `${nursery.name} — Ofsted ${nursery.ofsted_overall_grade || 'Rating Pending'} | NurseryFinder`,
-      description: `${nursery.name} in ${nursery.town} is rated ${nursery.ofsted_overall_grade || 'not yet rated'} by Ofsted. ${nursery.total_places ? `${nursery.total_places} places available.` : ''}`,
+      title,
+      description,
+      alternates: { canonical: url },
+      openGraph: {
+        title,
+        description,
+        url,
+        siteName: 'NurseryFinder',
+        type: 'website',
+        locale: 'en_GB',
+        images: [{ url: '/og-default.png', width: 1200, height: 630, alt: nursery.name }],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+        images: ['/og-default.png'],
+      },
     }
   } catch {
     return { title: 'Nursery not found | NurseryFinder' }
   }
+}
+
+function districtFromPostcode(postcode: string | null | undefined): string | null {
+  if (!postcode) return null
+  const m = postcode.toUpperCase().match(/^([A-Z]{1,2}\d[A-Z\d]?)/)
+  return m ? m[1] : null
 }
 
 export default async function NurseryPage({ params }: { params: { urn: string } }) {
@@ -34,8 +62,30 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
     notFound()
   }
 
+  const district = districtFromPostcode(nursery.postcode)
+  let relatedNurseries: any[] = []
+  if (district) {
+    try {
+      const data = await getNurseriesInDistrict(district)
+      relatedNurseries = (data?.nurseries || [])
+        .filter((n: any) => n.urn !== nursery.urn)
+        .slice(0, 5)
+    } catch {
+      relatedNurseries = []
+    }
+  }
+
+  const crumbs = [
+    { name: 'Home', href: '/' },
+    ...(district
+      ? [{ name: `Nurseries in ${district}`, href: `/nurseries-in/${district.toLowerCase()}` }]
+      : []),
+    { name: nursery.name },
+  ]
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
+      <Breadcrumbs items={crumbs} />
       {/* Banners */}
       <EnforcementBanner
         enforcementNotice={nursery.enforcement_notice}
@@ -178,32 +228,70 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         </div>
       )}
 
+      {/* More nurseries in this district — internal linking for SEO */}
+      {relatedNurseries.length > 0 && district && (
+        <section className="mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">
+            More nurseries in {district}
+          </h2>
+          <ul className="space-y-2">
+            {relatedNurseries.map((n) => (
+              <li key={n.urn}>
+                <Link
+                  href={`/nursery/${n.urn}`}
+                  className="text-sm text-blue-600 hover:underline"
+                >
+                  {n.name}
+                </Link>
+                {n.ofsted_overall_grade && (
+                  <span className="text-xs text-gray-500 ml-2">
+                    ({n.ofsted_overall_grade})
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+          <Link
+            href={`/nurseries-in/${district.toLowerCase()}`}
+            className="inline-block mt-3 text-sm text-indigo-600 hover:underline"
+          >
+            View all nurseries in {district} →
+          </Link>
+        </section>
+      )}
+
+      {/* Nearby Outstanding nurseries — falls back to district list */}
+      {relatedNurseries.some((n) => n.ofsted_overall_grade === 'Outstanding') && (
+        <section className="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <h2 className="font-semibold text-amber-900 mb-2">Nearby Outstanding nurseries</h2>
+          <ul className="space-y-1">
+            {relatedNurseries
+              .filter((n) => n.ofsted_overall_grade === 'Outstanding')
+              .slice(0, 3)
+              .map((n) => (
+                <li key={n.urn}>
+                  <Link
+                    href={`/nursery/${n.urn}`}
+                    className="text-sm text-amber-900 hover:underline"
+                  >
+                    {n.name}
+                  </Link>
+                </li>
+              ))}
+          </ul>
+        </section>
+      )}
+
       {/* JSON-LD structured data */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'ChildCare',
-            name: nursery.name,
-            address: {
-              '@type': 'PostalAddress',
-              streetAddress: nursery.address_line1,
-              addressLocality: nursery.town,
-              postalCode: nursery.postcode,
-              addressCountry: 'GB',
-            },
-            telephone: nursery.phone,
-            url: nursery.website,
-            ...(nursery.google_rating && {
-              aggregateRating: {
-                '@type': 'AggregateRating',
-                ratingValue: nursery.google_rating,
-                reviewCount: nursery.google_review_count,
-              }
-            }),
-          }),
+          __html: jsonLdScript(nurserySchema(nursery, district ? { district } : undefined)),
         }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbSchema(crumbs.map((c) => ({ name: c.name, url: c.href || `/nursery/${nursery.urn}` })))) }}
       />
 
       <AiReviewSynthesis urn={nursery.urn} />

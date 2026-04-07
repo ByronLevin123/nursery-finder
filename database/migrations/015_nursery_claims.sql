@@ -2,7 +2,9 @@
 -- Adds provider claim workflow and provider-managed fields on nurseries.
 -- Safe to re-run.
 
-CREATE TABLE IF NOT EXISTS nursery_claims (
+DROP TABLE IF EXISTS nursery_claims CASCADE;
+
+CREATE TABLE nursery_claims (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   urn             TEXT NOT NULL,
   user_id         UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
