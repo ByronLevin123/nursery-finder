@@ -2,7 +2,8 @@ import express from 'express'
 import { ingestOfstedRegister } from '../services/ofstedIngest.js'
 import { geocodeNurseriesBatch } from '../services/geocoding.js'
 import { ingestLandRegistryYear, refreshPropertyStats } from '../services/landRegistry.js'
-import { ingestCrimeDataBatch } from '../services/policeApi.js'
+import { refreshCrimeForDistricts } from '../services/policeApi.js'
+import { refreshImdForDistricts } from '../services/imdApi.js'
 import { refreshAllDistricts as refreshPropertyDataDistricts } from '../services/propertyData.js'
 import { adminAuth } from '../middleware/auth.js'
 import { logger } from '../logger.js'
@@ -84,42 +85,43 @@ router.post('/land-registry', async (req, res, next) => {
   }
 })
 
-// POST /api/v1/ingest/crime
+// POST /api/v1/ingest/crime?limit=50
 router.post('/crime', async (req, res, next) => {
   try {
-    const { data: districts } = await db
-      .from('postcode_areas')
-      .select('postcode_district')
-      .or(
-        'crime_last_updated.is.null,crime_last_updated.lt.' +
-          new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-      )
-      .not('lat', 'is', null)
-      .limit(100)
-
-    const result = await ingestCrimeDataBatch(districts.map((d) => d.postcode_district))
+    const limit = parseInt(req.query.limit) || 50
+    const staleDays = parseInt(req.query.stale_days) || 30
+    logger.info({ limit, staleDays }, 'ingest: starting crime refresh')
+    const result = await refreshCrimeForDistricts({ limit, staleDays })
     res.json(result)
   } catch (err) {
+    logger.error({ err: err.message }, 'ingest: crime refresh failed')
     next(err)
   }
 })
 
-// POST /api/v1/ingest/family-scores
+// POST /api/v1/ingest/imd?limit=200
+router.post('/imd', async (req, res, next) => {
+  try {
+    const limit = parseInt(req.query.limit) || 200
+    const staleDays = parseInt(req.query.stale_days) || 365
+    logger.info({ limit, staleDays }, 'ingest: starting imd refresh')
+    const result = await refreshImdForDistricts({ limit, staleDays })
+    res.json(result)
+  } catch (err) {
+    logger.error({ err: err.message }, 'ingest: imd refresh failed')
+    next(err)
+  }
+})
+
+// POST /api/v1/ingest/family-scores — batch recompute across every district
 router.post('/family-scores', async (req, res, next) => {
   try {
-    const { data: districts } = await db
-      .from('postcode_areas')
-      .select('postcode_district')
-      .not('nursery_count_total', 'is', null)
-
-    let calculated = 0
-    for (const { postcode_district } of districts) {
-      await db.rpc('calculate_family_score', { district: postcode_district })
-      calculated++
-    }
-
-    res.json({ calculated })
+    const { data, error } = await db.rpc('calculate_all_family_scores')
+    if (error) throw error
+    logger.info({ districts: data }, 'ingest: family-scores recomputed')
+    res.json({ districts_updated: data })
   } catch (err) {
+    logger.error({ err: err.message }, 'ingest: family-scores failed')
     next(err)
   }
 })

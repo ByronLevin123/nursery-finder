@@ -60,8 +60,16 @@ export default function AreaSummaryCard({ district, variant = 'compact' }: Props
       <div className="flex items-center justify-between mb-2">
         <p className="font-medium text-purple-900">📍 Area: {district}</p>
         {area?.family_score != null && (
-          <span className="text-xs bg-purple-200 text-purple-900 px-2 py-0.5 rounded-full font-semibold">
-            Family score {area.family_score}/10
+          <span
+            className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+              area.family_score >= 80
+                ? 'bg-green-200 text-green-900'
+                : area.family_score >= 60
+                  ? 'bg-amber-200 text-amber-900'
+                  : 'bg-red-200 text-red-900'
+            }`}
+          >
+            Family score {area.family_score}/100
           </span>
         )}
       </div>
@@ -152,6 +160,49 @@ export default function AreaSummaryCard({ district, variant = 'compact' }: Props
                 </p>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {variant === 'full' && area?.family_score_breakdown && (
+        <div className="mt-3 pt-3 border-t border-purple-200">
+          <p className="text-xs text-purple-700 uppercase mb-2 font-semibold">
+            Family score breakdown
+          </p>
+          <div className="space-y-1.5">
+            {(
+              [
+                ['Nurseries', 'nursery'],
+                ['Crime', 'crime'],
+                ['Deprivation', 'deprivation'],
+                ['Affordability', 'affordability'],
+              ] as const
+            ).map(([label, key]) => {
+              const raw = (area.family_score_breakdown as Record<string, unknown>)?.[key]
+              const value = typeof raw === 'number' ? raw : null
+              return (
+                <div key={key} className="flex items-center gap-2 text-xs">
+                  <span className="w-24 text-purple-700">{label}</span>
+                  <div className="flex-1 h-2 bg-purple-100 rounded-full overflow-hidden">
+                    {value != null && (
+                      <div
+                        className={`h-full ${
+                          value >= 80
+                            ? 'bg-green-500'
+                            : value >= 60
+                              ? 'bg-amber-500'
+                              : 'bg-red-500'
+                        }`}
+                        style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
+                      />
+                    )}
+                  </div>
+                  <span className="w-10 text-right font-medium text-purple-900">
+                    {value != null ? Math.round(value) : '—'}
+                  </span>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

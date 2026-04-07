@@ -2,10 +2,15 @@
 -- Adds the nursery_reviews table, aggregate columns on nurseries, and a
 -- refresh function + trigger that keeps the aggregates in sync.
 
+-- Drop any half-created table from an earlier failed run, then recreate fresh.
+DROP TABLE IF EXISTS nursery_reviews CASCADE;
+
 -- 1. Reviews table -----------------------------------------------------------
-CREATE TABLE IF NOT EXISTS nursery_reviews (
+-- urn is not a foreign key: nurseries.urn has no unique constraint on some
+-- environments, and orphan prevention is handled at the application layer.
+CREATE TABLE nursery_reviews (
   id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  urn                 TEXT NOT NULL REFERENCES nurseries(urn) ON DELETE CASCADE,
+  urn                 TEXT NOT NULL,
   rating              SMALLINT NOT NULL CHECK (rating BETWEEN 1 AND 5),
   title               TEXT NOT NULL CHECK (char_length(title) BETWEEN 3 AND 120),
   body                TEXT NOT NULL CHECK (char_length(body) BETWEEN 20 AND 4000),
