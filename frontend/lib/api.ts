@@ -372,6 +372,92 @@ export async function updateProfile(
   return res.json()
 }
 
+// AI Family Move Assistant ----------------------------------------------------
+
+export interface AssistantCriteria {
+  area: {
+    postcode: string | null
+    district: string | null
+    region: string | null
+    max_distance_km: number | null
+  }
+  budget: { type: 'sale' | 'rent' | null; min: number | null; max: number | null }
+  bedrooms: { min: number | null }
+  priorities: {
+    nursery_quality: 'required' | 'priority' | 'nice' | null
+    low_crime: 'required' | 'priority' | 'nice' | null
+    low_deprivation: 'required' | 'priority' | 'nice' | null
+    affordability: 'required' | 'priority' | 'nice' | null
+  }
+  notes: string[]
+}
+
+export const EMPTY_ASSISTANT_CRITERIA: AssistantCriteria = {
+  area: { postcode: null, district: null, region: null, max_distance_km: null },
+  budget: { type: null, min: null, max: null },
+  bedrooms: { min: null },
+  priorities: {
+    nursery_quality: null,
+    low_crime: null,
+    low_deprivation: null,
+    affordability: null,
+  },
+  notes: [],
+}
+
+export interface AssistantArea {
+  postcode_district: string
+  local_authority: string | null
+  region: string | null
+  family_score: number | null
+  nursery_count_total: number | null
+  nursery_count_outstanding: number | null
+  nursery_outstanding_pct: number | null
+  crime_rate_per_1000: number | null
+  imd_decile: number | null
+  flood_risk_level: string | null
+  avg_sale_price_all: number | null
+  lat: number | null
+  lng: number | null
+  distance_km?: number
+  score: number
+  breakdown: Record<string, { level: string | null; value: number | null; weight: number }>
+  match_rationale?: string | null
+}
+
+export async function assistantChat(
+  message: string,
+  criteria: AssistantCriteria
+): Promise<{ criteria: AssistantCriteria; assistant_message: string } | null> {
+  try {
+    const res = await fetch(`${API_URL}/api/v1/assistant/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, criteria }),
+    })
+    if (!res.ok) return null
+    return await res.json()
+  } catch {
+    return null
+  }
+}
+
+export async function assistantSearch(
+  criteria: AssistantCriteria
+): Promise<{ data: AssistantArea[]; meta: { total: number; criteria_used: AssistantCriteria } } | null> {
+  try {
+    const res = await fetch(`${API_URL}/api/v1/assistant/search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ criteria }),
+    })
+    if (!res.ok) return null
+    return await res.json()
+  } catch {
+    return null
+  }
+}
+
 export async function getNurseriesInDistrict(district: string) {
   const res = await fetch(
     `${API_URL}/api/v1/areas/${encodeURIComponent(district)}/nurseries`,

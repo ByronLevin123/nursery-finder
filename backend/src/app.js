@@ -27,6 +27,7 @@ import { optionalAuth } from './middleware/supabaseAuth.js'
 
 // AI feature routes (Claude-powered) — separate block, do not merge with mounts above
 import aiRouter from './routes/ai.js'
+import assistantRouter from './routes/assistant.js'
 
 const app = express()
 
@@ -70,6 +71,7 @@ app.use('/api/v1/sitemap', sitemapRouter)
 
 // AI routes — mounted at /api/v1 so router defines its own subpaths
 app.use('/api/v1', aiRouter)
+app.use('/api/v1/assistant', assistantRouter)
 
 // Sentry error handler — must be after routes, before our error handler
 if (process.env.SENTRY_DSN && typeof Sentry.setupExpressErrorHandler === 'function') {

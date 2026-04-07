@@ -64,6 +64,12 @@ export default function HomePage() {
             >
               <span className="text-2xl">🏠</span> Find a home
             </a>
+            <a
+              href="/assistant"
+              className="inline-flex items-center justify-center gap-2 px-6 py-4 bg-white border-2 border-indigo-300 text-indigo-800 rounded-xl font-semibold text-lg shadow-sm hover:bg-indigo-50 transition"
+            >
+              <span className="text-2xl">🤖</span> AI Move Assistant
+            </a>
           </div>
           <div id="nursery-search">
             <HomeSearch />
