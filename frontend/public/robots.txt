@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /account
+Disallow: /login
+Disallow: /shortlist
 
-Sitemap: https://nurseryfinder.co.uk/sitemap.xml
+Sitemap: https://nursery-finder.vercel.app/sitemap.xml

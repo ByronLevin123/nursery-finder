@@ -9,6 +9,7 @@ import healthRouter from './routes/health.js'
 import nurseriesRouter from './routes/nurseries.js'
 import ingestRouter from './routes/ingest.js'
 import areasRouter from './routes/areas.js'
+import sitemapRouter from './routes/sitemap.js'
 
 const app = express()
 
@@ -37,6 +38,7 @@ app.use('/api/v1/health', healthRouter)
 app.use('/api/v1/nurseries', nurseriesRouter)
 app.use('/api/v1/ingest', ingestRouter)
 app.use('/api/v1/areas', areasRouter)
+app.use('/api/v1/sitemap', sitemapRouter)
 
 // 404 + error handling
 app.use(notFound)

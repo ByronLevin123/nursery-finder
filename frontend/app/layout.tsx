@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     default: 'NurseryFinder — Compare UK Nurseries by Ofsted Grade',
   },
   description: 'Find and compare Ofsted-rated nurseries near you. Search by postcode, filter by grade, and find funded places.',
-  metadataBase: new URL('https://nurseryfinder.co.uk'),
+  metadataBase: new URL('https://nursery-finder.vercel.app'),
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -19,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Plausible Analytics — GDPR compliant, cookieless */}
         <script
           defer
-          data-domain="nurseryfinder.co.uk"
+          data-domain="nursery-finder.vercel.app"
           src="https://plausible.io/js/plausible.js"
         />
       </head>
