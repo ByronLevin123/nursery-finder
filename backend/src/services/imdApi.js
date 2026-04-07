@@ -1,21 +1,31 @@
 // Index of Multiple Deprivation (IMD) 2019 ingestion.
-// Free endpoint, no key:
-//   https://imd-by-postcode.opendatacommunities.org/imd/2019/postcode/{postcode}
-// Returns JSON with a `decile` (1 = most deprived, 10 = least deprived).
+// Uses findthatpostcode.uk (free, no key) which returns the IMD 2019 rank.
+// We convert rank → decile (1 = most deprived, 10 = least deprived).
+// Formula: 32,844 English LSOAs split into 10 equal groups of 3,284.4.
 
 import db from '../db.js'
 import { logger } from '../logger.js'
 
-const BASE_URL = 'https://imd-by-postcode.opendatacommunities.org/imd/2019/postcode'
+const TOTAL_LSOAS = 32844
 const RATE_LIMIT_MS = 250
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+// Convert IMD rank (1-32844, 1 = most deprived) to decile (1-10).
+export function imdRankToDecile(rank) {
+  if (rank == null || !Number.isFinite(Number(rank))) return null
+  const r = Number(rank)
+  if (r < 1 || r > TOTAL_LSOAS) return null
+  return Math.min(10, Math.ceil(r / (TOTAL_LSOAS / 10)))
+}
+
 export async function fetchImdDecileForPostcode(postcode) {
   if (!postcode) return null
-  const url = `${BASE_URL}/${encodeURIComponent(postcode.trim())}`
+  // findthatpostcode strips whitespace and uppercases, so "SW11 5QN" → "SW115QN"
+  const clean = postcode.trim().toUpperCase().replace(/\s+/g, '')
+  const url = `https://findthatpostcode.uk/postcodes/${encodeURIComponent(clean)}.json`
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 10000)
   try {
@@ -23,10 +33,8 @@ export async function fetchImdDecileForPostcode(postcode) {
     if (res.status === 404) return null
     if (!res.ok) throw new Error(`imd api ${res.status}`)
     const json = await res.json()
-    const decile = json?.decile ?? json?.data?.decile ?? null
-    if (decile == null) return null
-    const n = Number(decile)
-    return Number.isFinite(n) ? n : null
+    const rank = json?.data?.attributes?.imd ?? null
+    return imdRankToDecile(rank)
   } finally {
     clearTimeout(timeout)
   }
@@ -46,8 +54,8 @@ async function sampleFullPostcode(district) {
   const { data: nurseries } = await db
     .from('nurseries')
     .select('postcode')
-    .eq('postcode_district', district)
-    .eq('status', 'active')
+    .ilike('postcode', `${district} %`)
+    .eq('registration_status', 'Active')
     .not('postcode', 'is', null)
     .limit(1)
 
