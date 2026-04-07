@@ -83,7 +83,7 @@ export async function smartSearch({
   })
 
   // For text search, centre map on first geocoded result if available
-  const firstWithCoords = sorted.find(n => n.lat != null && n.lng != null)
+  const firstWithCoords = sorted.find((n) => n.lat != null && n.lng != null)
 
   return {
     data: sorted,

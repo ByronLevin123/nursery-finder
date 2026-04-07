@@ -9,7 +9,7 @@ const BASE_URL = 'https://data.police.uk/api'
 const RATE_LIMIT_MS = 600
 
 function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms))
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 async function getCrimesForPoint(lat, lng, date) {
@@ -45,22 +45,24 @@ export async function ingestCrimeDataBatch(districts) {
       const crimes = await getCrimesForPoint(area.lat, area.lng, dateStr)
 
       const byCategory = {}
-      crimes.forEach(crime => {
+      crimes.forEach((crime) => {
         byCategory[crime.category] = (byCategory[crime.category] || 0) + 1
       })
 
       const populationEstimate = 15000
       const crimeRate = (crimes.length / populationEstimate) * 1000
 
-      await db.from('postcode_areas').update({
-        crime_rate_per_1000: crimeRate,
-        crime_categories: byCategory,
-        crime_last_updated: new Date().toISOString().split('T')[0],
-      }).eq('postcode_district', district)
+      await db
+        .from('postcode_areas')
+        .update({
+          crime_rate_per_1000: crimeRate,
+          crime_categories: byCategory,
+          crime_last_updated: new Date().toISOString().split('T')[0],
+        })
+        .eq('postcode_district', district)
 
       processed++
       logger.debug({ district, crimes: crimes.length, crimeRate }, 'police: district processed')
-
     } catch (err) {
       logger.error({ district, err: err.message }, 'police: district failed')
       failed++

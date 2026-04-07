@@ -14,7 +14,10 @@ while (true) {
   const { geocoded, failed } = await geocodeNurseriesBatch(BATCH)
   totalGeocoded += geocoded
   totalFailed += failed
-  logger.info({ round, geocoded, failed, totalGeocoded, totalFailed }, 'geocode-all: round complete')
+  logger.info(
+    { round, geocoded, failed, totalGeocoded, totalFailed },
+    'geocode-all: round complete'
+  )
   if (geocoded === 0) break
 }
 

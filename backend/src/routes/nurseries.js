@@ -29,7 +29,13 @@ router.post('/search', async (req, res, next) => {
       return res.status(400).json({ error: 'Invalid UK postcode format' })
     }
 
-    const cacheKey = searchCacheKey({ postcode, radiusKm: radius_km, grade, funded2yr: funded_2yr, funded3yr: funded_3yr })
+    const cacheKey = searchCacheKey({
+      postcode,
+      radiusKm: radius_km,
+      grade,
+      funded2yr: funded_2yr,
+      funded3yr: funded_3yr,
+    })
     const cached = searchCache.get(cacheKey)
     if (cached) {
       return res.json({ ...cached, cached: true })
@@ -62,13 +68,12 @@ router.post('/search', async (req, res, next) => {
         pages: Math.ceil(data.length / limitNum),
         search_lat: lat,
         search_lng: lng,
-      }
+      },
     }
 
     searchCache.set(cacheKey, result)
     logger.info({ postcode, radius_km, results: data.length }, 'search completed')
     res.json(result)
-
   } catch (err) {
     if (err.message?.includes('not found')) {
       return res.status(404).json({ error: 'Postcode not found' })
@@ -85,13 +90,22 @@ router.post('/smart-search', async (req, res, next) => {
       return res.status(400).json({ error: 'query is required' })
     }
 
-    const cacheKey = searchCacheKey({ postcode: `smart:${query}`, radiusKm: radius_km, grade, funded2yr: funded_2yr, funded3yr: funded_3yr })
+    const cacheKey = searchCacheKey({
+      postcode: `smart:${query}`,
+      radiusKm: radius_km,
+      grade,
+      funded2yr: funded_2yr,
+      funded3yr: funded_3yr,
+    })
     const cached = searchCache.get(cacheKey)
     if (cached) return res.json({ ...cached, cached: true })
 
     const result = await smartSearch({ query, radius_km, grade, funded_2yr, funded_3yr })
     searchCache.set(cacheKey, result)
-    logger.info({ query, mode: result.meta.mode, results: result.meta.total }, 'smart-search completed')
+    logger.info(
+      { query, mode: result.meta.mode, results: result.meta.total },
+      'smart-search completed'
+    )
     res.json(result)
   } catch (err) {
     if (err.message?.includes('not found')) {
@@ -109,10 +123,7 @@ router.post('/compare', async (req, res, next) => {
       return res.status(400).json({ error: 'Provide 2-5 URNs to compare' })
     }
 
-    const { data, error } = await db
-      .from('nurseries')
-      .select('*')
-      .in('urn', urns)
+    const { data, error } = await db.from('nurseries').select('*').in('urn', urns)
 
     if (error) throw error
     res.json({ data })
@@ -134,7 +145,10 @@ router.post('/fees', async (req, res, next) => {
     }
 
     const { error } = await db.from('nursery_fees').insert({
-      nursery_id, fee_per_month, hours_per_week, age_group
+      nursery_id,
+      fee_per_month,
+      hours_per_week,
+      age_group,
     })
 
     if (error) throw error
@@ -146,10 +160,13 @@ router.post('/fees', async (req, res, next) => {
 
     if (fees?.length >= 3) {
       const avg = Math.round(fees.reduce((s, f) => s + f.fee_per_month, 0) / fees.length)
-      await db.from('nurseries').update({
-        fee_avg_monthly: avg,
-        fee_report_count: fees.length
-      }).eq('id', nursery_id)
+      await db
+        .from('nurseries')
+        .update({
+          fee_avg_monthly: avg,
+          fee_report_count: fees.length,
+        })
+        .eq('id', nursery_id)
     }
 
     res.json({ success: true, message: 'Fee submitted anonymously. Thank you!' })

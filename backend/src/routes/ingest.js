@@ -89,11 +89,14 @@ router.post('/crime', async (req, res, next) => {
     const { data: districts } = await db
       .from('postcode_areas')
       .select('postcode_district')
-      .or('crime_last_updated.is.null,crime_last_updated.lt.' + new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
+      .or(
+        'crime_last_updated.is.null,crime_last_updated.lt.' +
+          new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      )
       .not('lat', 'is', null)
       .limit(100)
 
-    const result = await ingestCrimeDataBatch(districts.map(d => d.postcode_district))
+    const result = await ingestCrimeDataBatch(districts.map((d) => d.postcode_district))
     res.json(result)
   } catch (err) {
     next(err)

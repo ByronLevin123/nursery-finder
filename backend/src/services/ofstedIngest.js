@@ -22,16 +22,16 @@ function parseOfstedDate(str) {
 
 // Numeric grades in CSV: 1=Outstanding, 2=Good, 3=RI, 4=Inadequate
 const GRADE_MAP = {
-  '1': 'Outstanding',
-  '2': 'Good',
-  '3': 'Requires Improvement',
-  '4': 'Inadequate',
+  1: 'Outstanding',
+  2: 'Good',
+  3: 'Requires Improvement',
+  4: 'Inadequate',
 }
 
 async function findCurrentCsvUrl() {
   logger.info('ofsted: fetching stats page to find current CSV URL')
   const { data: html } = await axios.get(OFSTED_STATS_PAGE, {
-    headers: { 'User-Agent': 'NurseryFinder/1.0 (data@nurseryfinder.co.uk)' }
+    headers: { 'User-Agent': 'NurseryFinder/1.0 (data@nurseryfinder.co.uk)' },
   })
   const $ = cheerio.load(html)
 
@@ -44,7 +44,9 @@ async function findCurrentCsvUrl() {
   })
 
   if (!csvUrl) {
-    throw new Error('Could not find most-recent inspections CSV on GOV.UK page. Check the page manually.')
+    throw new Error(
+      'Could not find most-recent inspections CSV on GOV.UK page. Check the page manually.'
+    )
   }
 
   logger.info({ csvUrl }, 'ofsted: found CSV URL')
@@ -93,7 +95,7 @@ export async function ingestOfstedRegister() {
   logger.info({ csvUrl }, 'ofsted: downloading CSV')
   const response = await axios.get(csvUrl, {
     responseType: 'arraybuffer',
-    headers: { 'User-Agent': 'NurseryFinder/1.0 (data@nurseryfinder.co.uk)' }
+    headers: { 'User-Agent': 'NurseryFinder/1.0 (data@nurseryfinder.co.uk)' },
   })
 
   // CSV has 2 info rows before the header row — skip them
@@ -105,7 +107,7 @@ export async function ingestOfstedRegister() {
   await new Promise((resolve, reject) => {
     Readable.from(csvWithoutPreamble)
       .pipe(csv())
-      .on('data', row => {
+      .on('data', (row) => {
         if (row['Provider Status']?.trim() === 'Active') {
           const mapped = mapRow(row)
           if (mapped?.urn) records.push(mapped)
@@ -121,12 +123,10 @@ export async function ingestOfstedRegister() {
 
   for (let i = 0; i < records.length; i += BATCH_SIZE) {
     const batch = records.slice(i, i + BATCH_SIZE)
-    const { error } = await db
-      .from('nurseries')
-      .upsert(batch, {
-        onConflict: 'urn',
-        ignoreDuplicates: false,
-      })
+    const { error } = await db.from('nurseries').upsert(batch, {
+      onConflict: 'urn',
+      ignoreDuplicates: false,
+    })
 
     if (error) {
       logger.error({ error: error.message, batchStart: i }, 'ofsted: batch upsert failed')

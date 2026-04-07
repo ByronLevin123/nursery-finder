@@ -7,14 +7,10 @@ import { createClient } from '@supabase/supabase-js'
 let db = null
 
 if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
-  db = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY,
-    {
-      auth: { persistSession: false },
-      db: { schema: 'public' },
-    }
-  )
+  db = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, {
+    auth: { persistSession: false },
+    db: { schema: 'public' },
+  })
 } else {
   console.warn('⚠️  SUPABASE_URL or SUPABASE_SERVICE_KEY not set — database features disabled')
   console.warn('   The server will start but API routes that need the database will return errors.')

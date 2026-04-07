@@ -24,7 +24,7 @@ router.get('/nurseries', async (req, res, next) => {
         .range(offset, offset + PAGE - 1)
       if (error) throw error
       if (!data || data.length === 0) break
-      all.push(...data.map(r => r.urn))
+      all.push(...data.map((r) => r.urn))
       if (data.length < PAGE) break
       offset += PAGE
     }
@@ -46,7 +46,7 @@ router.get('/districts', async (req, res, next) => {
     if (error) throw error
     setCache(res)
     res.json({
-      districts: (data || []).map(r => r.postcode_district),
+      districts: (data || []).map((r) => r.postcode_district),
       count: data?.length || 0,
     })
   } catch (err) {

@@ -10,6 +10,17 @@ const POSTCODES_IO_BULK = 'https://api.postcodes.io/postcodes'
 const BATCH_SIZE = 100
 const BATCH_DELAY_MS = 500
 
+// Pure helper: split a postcode list into bulk-API-sized chunks
+export function chunkPostcodes(postcodes, size = BATCH_SIZE) {
+  if (!Array.isArray(postcodes)) return []
+  if (!Number.isFinite(size) || size <= 0) size = BATCH_SIZE
+  const chunks = []
+  for (let i = 0; i < postcodes.length; i += size) {
+    chunks.push(postcodes.slice(i, i + size))
+  }
+  return chunks
+}
+
 // Geocode a single postcode (for search queries — uses cache)
 export async function geocodePostcode(postcode) {
   const cleaned = postcode.trim().toUpperCase().replace(/\s+/g, ' ')
@@ -55,7 +66,7 @@ export async function geocodeNurseriesBatch(limit = 500) {
   let totalFailed = 0
 
   for (const chunk of chunks) {
-    const postcodes = chunk.map(n => n.postcode)
+    const postcodes = chunk.map((n) => n.postcode)
 
     try {
       const response = await axios.post(POSTCODES_IO_BULK, { postcodes })
@@ -65,7 +76,7 @@ export async function geocodeNurseriesBatch(limit = 500) {
       for (const result of results) {
         if (result.result) {
           updates.push({
-            id: chunk.find(n => n.postcode === result.query)?.id,
+            id: chunk.find((n) => n.postcode === result.query)?.id,
             lat: result.result.latitude,
             lng: result.result.longitude,
           })
@@ -86,13 +97,12 @@ export async function geocodeNurseriesBatch(limit = 500) {
       }
 
       logger.info({ geocoded: totalGeocoded }, 'geocoding: chunk complete')
-
     } catch (err) {
       logger.error({ err: err.message }, 'geocoding: chunk failed')
       totalFailed += chunk.length
     }
 
-    await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS))
+    await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS))
   }
 
   return { geocoded: totalGeocoded, failed: totalFailed }
