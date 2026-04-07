@@ -72,8 +72,9 @@ export function scoreDistrict(area, criteria) {
     if (priorities[key] === 'required') {
       const v = components[key]
       if (v == null) {
-        excluded = true
-        reasons.push(`Missing data for required: ${key}`)
+        // Missing data is not a hard exclusion — soften to penalty so districts
+        // without crime/IMD coverage still surface. Reasons help debugging.
+        reasons.push(`Missing data for required: ${key} (not excluded)`)
       } else if (v < 40) {
         excluded = true
         reasons.push(`Required ${key} below threshold (${Math.round(v)})`)
