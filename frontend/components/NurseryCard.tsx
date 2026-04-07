@@ -3,14 +3,18 @@ import GradeBadge from './GradeBadge'
 import { Nursery } from '@/lib/api'
 import ShortlistButton from './ShortlistButton'
 import CompareButton from './CompareButton'
+import MatchBadge from './MatchBadge'
+import MatchRationale from './MatchRationale'
+import type { MatchResult } from '@/lib/preferences'
 
 interface Props {
   nursery: Nursery
   showDistance?: boolean
   onClick?: () => void
+  match?: MatchResult | null
 }
 
-export default function NurseryCard({ nursery, showDistance = true, onClick }: Props) {
+export default function NurseryCard({ nursery, showDistance = true, onClick, match }: Props) {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start gap-2 mb-2">
@@ -37,6 +41,7 @@ export default function NurseryCard({ nursery, showDistance = true, onClick }: P
 
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         <GradeBadge grade={nursery.ofsted_overall_grade} size="sm" />
+        {match && <MatchBadge score={match.excluded ? null : match.score} excluded={match.excluded} />}
         {nursery.inspection_date_warning && (
           <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
             ⚠️ Old inspection
@@ -71,6 +76,8 @@ export default function NurseryCard({ nursery, showDistance = true, onClick }: P
           Inspected {new Date(nursery.last_inspection_date).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
         </p>
       )}
+
+      {match && <MatchRationale match={match} />}
     </div>
   )
 }

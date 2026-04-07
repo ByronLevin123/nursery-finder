@@ -1,10 +1,21 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { smartSearchNurseries, Nursery, SearchResult } from '@/lib/api'
+import { smartSearchNurseries, Nursery, SearchResult, AreaSummary, getAreaSummary, postcodeDistrict } from '@/lib/api'
 import NurseryCard from '@/components/NurseryCard'
 import NurseryModal from '@/components/NurseryModal'
+import PreferencesPanel from '@/components/PreferencesPanel'
+import {
+  Preferences,
+  DEFAULT_PREFERENCES,
+  loadPreferences,
+  savePreferences,
+  clearPreferences,
+  scoreNursery,
+  hasActivePreferences,
+  MatchResult,
+} from '@/lib/preferences'
 import dynamic from 'next/dynamic'
 
 const NurseryMap = dynamic(() => import('@/components/NurseryMap'), { ssr: false })
@@ -22,6 +33,86 @@ function SearchContent() {
   const [results, setResults] = useState<SearchResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFERENCES)
+  const [prefsLoaded, setPrefsLoaded] = useState(false)
+  const [areas, setAreas] = useState<Map<string, AreaSummary | null>>(new Map())
+  const [showExcluded, setShowExcluded] = useState(false)
+  const [showMobilePrefs, setShowMobilePrefs] = useState(false)
+
+  useEffect(() => {
+    setPrefs(loadPreferences())
+    setPrefsLoaded(true)
+  }, [])
+
+  function updatePrefs(p: Preferences) {
+    setPrefs(p)
+    savePreferences(p)
+  }
+  function handleClear() {
+    clearPreferences()
+    setPrefs(DEFAULT_PREFERENCES)
+  }
+
+  // Fetch area data per district as results arrive (deduplicated)
+  useEffect(() => {
+    if (!results?.data) return
+    const districts = new Set<string>()
+    for (const n of results.data) {
+      const d = postcodeDistrict(n.postcode)
+      if (d && !areas.has(d)) districts.add(d)
+    }
+    if (districts.size === 0) return
+    let cancelled = false
+    Promise.all(
+      Array.from(districts).map(async d => {
+        try {
+          const a = await getAreaSummary(d)
+          return [d, a] as const
+        } catch {
+          return [d, null] as const
+        }
+      })
+    ).then(entries => {
+      if (cancelled) return
+      setAreas(prev => {
+        const next = new Map(prev)
+        for (const [d, a] of entries) next.set(d, a)
+        return next
+      })
+    })
+    return () => { cancelled = true }
+  }, [results]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const prefsActive = useMemo(() => prefsLoaded && hasActivePreferences(prefs), [prefs, prefsLoaded])
+
+  // Compute scored + sorted results
+  const scoredResults = useMemo(() => {
+    if (!results?.data) return [] as Array<{ nursery: Nursery; match: MatchResult | null }>
+    const list = results.data.map(n => {
+      if (!prefsActive) return { nursery: n, match: null as MatchResult | null }
+      const d = postcodeDistrict(n.postcode)
+      const area = d ? areas.get(d) ?? null : null
+      return { nursery: n, match: scoreNursery(n, area, prefs) }
+    })
+    if (prefsActive) {
+      list.sort((a, b) => {
+        const sa = a.match?.excluded ? -1 : a.match?.score ?? 0
+        const sb = b.match?.excluded ? -1 : b.match?.score ?? 0
+        return sb - sa
+      })
+    }
+    return list
+  }, [results, prefs, prefsActive, areas])
+
+  const visibleResults = useMemo(() => {
+    if (!prefsActive || showExcluded) return scoredResults
+    return scoredResults.filter(r => !r.match?.excluded)
+  }, [scoredResults, prefsActive, showExcluded])
+
+  const excludedCount = useMemo(
+    () => scoredResults.filter(r => r.match?.excluded).length,
+    [scoredResults]
+  )
 
   async function doSearch() {
     if (!query.trim()) return
@@ -131,33 +222,81 @@ function SearchContent() {
           </div>
         </div>
 
+        {/* Preferences panel (desktop) */}
+        <div className="hidden lg:block p-4 border-b border-gray-200">
+          <PreferencesPanel value={prefs} onChange={updatePrefs} onClear={handleClear} />
+        </div>
+
+        {/* Mobile prefs toggle */}
+        <div className="lg:hidden p-4 border-b border-gray-200">
+          <button
+            onClick={() => setShowMobilePrefs(true)}
+            className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg font-semibold"
+          >
+            {prefsActive ? 'Edit your priorities' : 'Tell us what matters to you'}
+          </button>
+        </div>
+
         {/* Results */}
         <div className="p-4">
           {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
           {results && (
-            <p className="text-sm text-gray-500 mb-3">
-              {results.meta.total} nurseries found within {radiusKm}km
-            </p>
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm text-gray-500">
+                {prefsActive
+                  ? `${visibleResults.length} of ${results.meta.total} match your priorities`
+                  : `${results.meta.total} nurseries found within ${radiusKm}km`}
+              </p>
+              {prefsActive && excludedCount > 0 && (
+                <button
+                  onClick={() => setShowExcluded(s => !s)}
+                  className="text-xs text-indigo-700 hover:underline font-medium"
+                >
+                  {showExcluded ? 'Hide' : 'Show'} {excludedCount} excluded
+                </button>
+              )}
+            </div>
           )}
 
           <div className="space-y-3">
-            {results?.data.map(nursery => (
+            {visibleResults.map(({ nursery, match }) => (
               <NurseryCard
                 key={nursery.urn}
                 nursery={nursery}
                 onClick={() => setSelectedUrn(nursery.urn)}
+                match={match}
               />
             ))}
           </div>
 
-          {results && results.data.length === 0 && !loading && (
+          {results && visibleResults.length === 0 && !loading && (
             <div className="text-center py-8">
-              <p className="text-gray-500">No nurseries found. Try increasing the search radius.</p>
+              <p className="text-gray-500">
+                {prefsActive
+                  ? 'No nurseries match your priorities. Try loosening the filters.'
+                  : 'No nurseries found. Try increasing the search radius.'}
+              </p>
             </div>
           )}
         </div>
       </div>
+
+      {/* Mobile prefs sheet */}
+      {showMobilePrefs && (
+        <div className="lg:hidden fixed inset-0 z-[2000] bg-black/50 flex items-end" onClick={() => setShowMobilePrefs(false)}>
+          <div
+            className="bg-white w-full max-h-[85vh] overflow-y-auto rounded-t-2xl p-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-bold text-gray-900">Your priorities</h3>
+              <button onClick={() => setShowMobilePrefs(false)} className="text-gray-500 text-xl">✕</button>
+            </div>
+            <PreferencesPanel value={prefs} onChange={updatePrefs} onClear={handleClear} />
+          </div>
+        </div>
+      )}
 
       {/* Right panel: map */}
       <div className="w-full lg:w-2/3 h-[400px] lg:h-auto">

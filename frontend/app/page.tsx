@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import HomeSearch from '@/components/HomeSearch'
 import AreaSummaryCard from '@/components/AreaSummaryCard'
 import OglAttribution from '@/components/OglAttribution'
+import PriorityWizardButton from '@/components/PriorityWizardButton'
 
 export const metadata: Metadata = {
   title: 'NurseryFinder — Compare UK Nurseries by Ofsted Grade',
@@ -51,6 +52,7 @@ export default function HomePage() {
             Compare 27,000+ UK nurseries with real Ofsted ratings, live market data, and parent reviews.
           </p>
           <HomeSearch />
+          <PriorityWizardButton />
           <p className="text-xs text-gray-500 mt-6">
             <span className="font-semibold text-gray-700">27,808</span> nurseries
             <span className="mx-2">·</span>

@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { getNursery, Nursery, postcodeDistrict } from '@/lib/api'
+import { getNursery, getAreaSummary, Nursery, AreaSummary, postcodeDistrict } from '@/lib/api'
 import AreaSummaryCard from './AreaSummaryCard'
+import MatchBadge from './MatchBadge'
+import MatchRationale from './MatchRationale'
+import { loadPreferences, scoreNursery, hasActivePreferences, MatchResult } from '@/lib/preferences'
 import GradeBadge from './GradeBadge'
 import StaleGradeBanner from './StaleGradeBanner'
 import EnforcementBanner from './EnforcementBanner'
@@ -23,16 +26,28 @@ export default function NurseryModal({ urn, onClose }: Props) {
   const [nursery, setNursery] = useState<Nursery | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [match, setMatch] = useState<MatchResult | null>(null)
 
   useEffect(() => {
     if (!urn) {
       setNursery(null)
+      setMatch(null)
       return
     }
     setLoading(true)
     setError(null)
     getNursery(urn)
-      .then(setNursery)
+      .then(async n => {
+        setNursery(n)
+        const prefs = loadPreferences()
+        if (!hasActivePreferences(prefs)) { setMatch(null); return }
+        const d = postcodeDistrict(n.postcode)
+        let area: AreaSummary | null = null
+        if (d) {
+          try { area = await getAreaSummary(d) } catch {}
+        }
+        setMatch(scoreNursery(n, area, prefs))
+      })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
   }, [urn])
@@ -90,6 +105,7 @@ export default function NurseryModal({ urn, onClose }: Props) {
                 </div>
                 <div className="flex flex-col items-end gap-2">
                   <GradeBadge grade={nursery.ofsted_overall_grade} size="lg" />
+                  {match && <MatchBadge score={match.excluded ? null : match.score} excluded={match.excluded} size="md" />}
                   <ShortlistButton urn={nursery.urn} />
                 </div>
               </div>
@@ -161,6 +177,12 @@ export default function NurseryModal({ urn, onClose }: Props) {
                   )}
                 </div>
               </div>
+
+              {match && (
+                <div className="mb-4">
+                  <MatchRationale match={match} defaultOpen />
+                </div>
+              )}
 
               <AreaSummaryCard district={postcodeDistrict(nursery.postcode)} />
 
