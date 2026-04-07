@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import AreaCard from '@/components/AreaCard'
+import SaveSearchButton from '@/components/SaveSearchButton'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
@@ -130,13 +131,26 @@ export default function FindAnAreaPage() {
           </div>
         </div>
 
-        <button
-          onClick={doSearch}
-          disabled={loading}
-          className="mt-4 w-full md:w-auto px-8 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 disabled:opacity-50"
-        >
-          {loading ? 'Searching...' : 'Search areas'}
-        </button>
+        <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
+          <button
+            onClick={doSearch}
+            disabled={loading}
+            className="w-full sm:w-auto px-8 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 disabled:opacity-50"
+          >
+            {loading ? 'Searching...' : 'Search areas'}
+          </button>
+          <SaveSearchButton
+            criteria={{
+              type: 'areas',
+              postcode,
+              radius_km: radiusKm,
+              min_family_score: minFamilyScore,
+              min_nursery_pct: minNurseryPct,
+              sort,
+            }}
+            defaultName={postcode ? `Areas near ${postcode}` : 'Area search'}
+          />
+        </div>
       </div>
 
       {error && <p className="text-red-500 text-sm mb-4">{error}</p>}

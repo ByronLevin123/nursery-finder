@@ -18,6 +18,8 @@ import {
 } from '@/lib/preferences'
 import dynamic from 'next/dynamic'
 
+import SaveSearchButton from '@/components/SaveSearchButton'
+
 const NurseryMap = dynamic(() => import('@/components/NurseryMap'), { ssr: false })
 
 function SearchContent() {
@@ -219,6 +221,21 @@ function SearchContent() {
             >
               Apply filters
             </button>
+
+            <div className="pt-2">
+              <SaveSearchButton
+                criteria={{
+                  type: 'nurseries',
+                  query,
+                  radius_km: radiusKm,
+                  grade,
+                  funded_2yr: funded2yr,
+                  funded_3yr: funded3yr,
+                  preferences: prefs,
+                }}
+                defaultName={query ? `Nurseries near ${query}` : 'Nursery search'}
+              />
+            </div>
           </div>
         </div>
 

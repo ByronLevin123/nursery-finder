@@ -6,6 +6,9 @@ import { compareNurseries, Nursery } from '@/lib/api'
 import { getCompareList, removeFromCompare, clearCompare } from '@/lib/compare'
 import ComparisonTable from '@/components/ComparisonTable'
 import Link from 'next/link'
+import { useSession } from '@/components/SessionProvider'
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
 function CompareContent() {
   const searchParams = useSearchParams()
@@ -14,6 +17,9 @@ function CompareContent() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [emailing, setEmailing] = useState(false)
+  const [emailToast, setEmailToast] = useState<string | null>(null)
+  const { session, user } = useSession()
 
   useEffect(() => {
     async function load() {
@@ -54,6 +60,35 @@ function CompareContent() {
     clearCompare()
     setNurseries([])
     router.replace('/compare')
+  }
+
+  async function handleEmail() {
+    if (!session) return
+    const defaultEmail = user?.email || ''
+    const to = window.prompt('Send comparison to which email?', defaultEmail)
+    if (!to) return
+    setEmailing(true)
+    setEmailToast(null)
+    try {
+      const res = await fetch(`${API_URL}/api/v1/email/comparison`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ to, urns: nurseries.map(n => n.urn) }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || 'Failed to send email')
+      }
+      setEmailToast('Email sent!')
+    } catch (err: any) {
+      setEmailToast(err.message || 'Failed to send')
+    } finally {
+      setEmailing(false)
+      setTimeout(() => setEmailToast(null), 4000)
+    }
   }
 
   function handleShare() {
@@ -125,6 +160,22 @@ function CompareContent() {
           </p>
         </div>
         <div className="flex gap-2">
+          {session ? (
+            <button
+              onClick={handleEmail}
+              disabled={emailing}
+              className="px-4 py-2 text-sm border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50"
+            >
+              {emailing ? 'Sending…' : 'Email this comparison'}
+            </button>
+          ) : (
+            <Link
+              href="/login?next=/compare"
+              className="px-4 py-2 text-sm border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors"
+            >
+              Sign in to email
+            </Link>
+          )}
           <button
             onClick={handleShare}
             className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
@@ -146,8 +197,14 @@ function CompareContent() {
         </div>
       </div>
 
-      {/* Comparison Table */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      {emailToast && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+          {emailToast}
+        </div>
+      )}
+
+      {/* Comparison Table — horizontal scroll on mobile, sticky first column */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
         <ComparisonTable nurseries={nurseries} onRemove={handleRemove} />
       </div>
 

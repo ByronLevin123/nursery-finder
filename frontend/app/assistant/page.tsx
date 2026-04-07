@@ -12,6 +12,9 @@ import ChatPanel, { type ChatMessage } from '@/components/assistant/ChatPanel'
 import CriteriaChips from '@/components/assistant/CriteriaChips'
 import DistrictMatchMap from '@/components/assistant/DistrictMatchMap'
 import AssistantResultCard from '@/components/assistant/AssistantResultCard'
+import SaveSearchButton from '@/components/SaveSearchButton'
+
+type MobileTab = 'chat' | 'criteria' | 'map' | 'results'
 
 export default function AssistantPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -20,6 +23,7 @@ export default function AssistantPage() {
   const [loadingChat, setLoadingChat] = useState(false)
   const [loadingSearch, setLoadingSearch] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [mobileTab, setMobileTab] = useState<MobileTab>('chat')
 
   const runSearch = useCallback(async (c: AssistantCriteria) => {
     setLoadingSearch(true)
@@ -88,30 +92,58 @@ export default function AssistantPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-8">
-          <div className="lg:col-span-4">
+        {/* Desktop: 3-column grid */}
+        <div className="hidden lg:grid grid-cols-12 gap-4 mb-8">
+          <div className="col-span-4">
             <ChatPanel messages={messages} loading={loadingChat} onSend={onSend} />
           </div>
-          <div className="lg:col-span-5">
+          <div className="col-span-5">
             <DistrictMatchMap results={results} />
           </div>
-          <div className="lg:col-span-3">
+          <div className="col-span-3">
             <CriteriaChips criteria={criteria} onChange={onCriteriaChange} />
           </div>
         </div>
 
-        <section>
-          <div className="flex items-center justify-between mb-3">
+        {/* Mobile: tab-switched single column with sticky bottom bar */}
+        <div className="lg:hidden mb-24">
+          {mobileTab === 'chat' && (
+            <ChatPanel messages={messages} loading={loadingChat} onSend={onSend} />
+          )}
+          {mobileTab === 'criteria' && (
+            <CriteriaChips criteria={criteria} onChange={onCriteriaChange} />
+          )}
+          {mobileTab === 'map' && <DistrictMatchMap results={results} />}
+          {mobileTab === 'results' && (
+            <div className="grid grid-cols-1 gap-4">
+              {results.map((r) => (
+                <AssistantResultCard key={r.postcode_district} area={r} />
+              ))}
+              {results.length === 0 && (
+                <p className="text-sm text-gray-500 italic">No matches yet.</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <section className="hidden lg:block">
+          <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
             <h2 className="text-xl font-bold text-gray-900">
               Ranked matches {results.length > 0 && <span className="text-gray-400 font-normal text-base">({results.length})</span>}
             </h2>
-            <button
-              onClick={() => runSearch(criteria)}
-              disabled={loadingSearch}
-              className="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white font-semibold hover:bg-indigo-700 disabled:bg-gray-300"
-            >
-              {loadingSearch ? 'Searching…' : 'Re-run search'}
-            </button>
+            <div className="flex items-center gap-2">
+              <SaveSearchButton
+                criteria={{ type: 'assistant', criteria }}
+                defaultName="AI assistant search"
+              />
+              <button
+                onClick={() => runSearch(criteria)}
+                disabled={loadingSearch}
+                className="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white font-semibold hover:bg-indigo-700 disabled:bg-gray-300"
+              >
+                {loadingSearch ? 'Searching…' : 'Re-run search'}
+              </button>
+            </div>
           </div>
           {results.length === 0 && !loadingSearch && (
             <p className="text-sm text-gray-500 italic">
@@ -124,6 +156,23 @@ export default function AssistantPage() {
             ))}
           </div>
         </section>
+      </div>
+
+      {/* Mobile sticky bottom tab bar */}
+      <div className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-200 z-40">
+        <div className="grid grid-cols-4 text-xs">
+          {(['chat', 'criteria', 'map', 'results'] as MobileTab[]).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setMobileTab(tab)}
+              className={`py-2 font-medium ${
+                mobileTab === tab ? 'text-indigo-600 border-t-2 border-indigo-600' : 'text-gray-500'
+              }`}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   )
