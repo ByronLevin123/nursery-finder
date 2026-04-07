@@ -49,6 +49,18 @@ router.post('/aggregate-areas', async (req, res, next) => {
   }
 })
 
+// POST /api/v1/ingest/property-stats — recompute avg_sale_price_* per district
+router.post('/property-stats', async (req, res, next) => {
+  try {
+    const { data, error } = await db.rpc('compute_area_property_stats')
+    if (error) throw error
+    logger.info({ districts: data }, 'ingest: property-stats refreshed')
+    res.json({ districts_updated: data })
+  } catch (err) {
+    next(err)
+  }
+})
+
 // POST /api/v1/ingest/land-registry
 router.post('/land-registry', async (req, res, next) => {
   try {
