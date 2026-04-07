@@ -35,8 +35,25 @@ export default function AreaSummaryCard({ district, variant = 'compact' }: Props
 
   const hasPrice = area?.avg_sale_price_all != null
   const hasNurseries = (area?.nursery_count_total ?? 0) > 0
+  const hasLiveMarket =
+    area?.asking_price_avg != null ||
+    area?.rent_avg_weekly != null ||
+    area?.gross_yield_pct != null ||
+    area?.demand_rating != null ||
+    area?.days_on_market != null ||
+    area?.price_growth_1yr_pct != null
 
-  if (!hasPrice && !hasNurseries) return null
+  if (!hasPrice && !hasNurseries && !hasLiveMarket) return null
+
+  const growth = area?.price_growth_1yr_pct
+  const growthPositive = typeof growth === 'number' && growth > 0
+  const growthNegative = typeof growth === 'number' && growth < 0
+  const growthColor = growthPositive
+    ? 'text-green-700'
+    : growthNegative
+      ? 'text-red-700'
+      : 'text-purple-900'
+  const growthArrow = growthPositive ? '▲' : growthNegative ? '▼' : ''
 
   return (
     <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
@@ -89,7 +106,55 @@ export default function AreaSummaryCard({ district, variant = 'compact' }: Props
             <p className="font-medium text-purple-900">{area.flood_risk_level}</p>
           </div>
         )}
+
+        {variant === 'compact' && area?.demand_rating && (
+          <div className="col-span-2">
+            <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">
+              Market: {area.demand_rating}
+            </span>
+          </div>
+        )}
       </div>
+
+      {variant === 'full' && hasLiveMarket && (
+        <div className="mt-3 pt-3 border-t border-purple-200">
+          <p className="text-xs text-purple-700 uppercase mb-2 font-semibold">Live market</p>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            {area?.asking_price_avg != null && (
+              <div>
+                <p className="text-xs text-purple-700 uppercase">Current asking</p>
+                <p className="font-medium text-purple-900">{gbp(area.asking_price_avg)}</p>
+              </div>
+            )}
+            {area?.rent_avg_weekly != null && (
+              <div>
+                <p className="text-xs text-purple-700 uppercase">Avg rent</p>
+                <p className="font-medium text-purple-900">
+                  £{area.rent_avg_weekly} pw
+                  {area.gross_yield_pct != null ? ` · ${area.gross_yield_pct}% yield` : ''}
+                </p>
+              </div>
+            )}
+            {area?.demand_rating != null && (
+              <div>
+                <p className="text-xs text-purple-700 uppercase">Demand</p>
+                <p className="font-medium text-purple-900">
+                  {area.demand_rating}
+                  {area.days_on_market != null ? ` · ${area.days_on_market}d on market` : ''}
+                </p>
+              </div>
+            )}
+            {growth != null && (
+              <div>
+                <p className="text-xs text-purple-700 uppercase">1yr growth</p>
+                <p className={`font-medium ${growthColor}`}>
+                  {growthArrow} {growth}%
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <a
         href={`/nurseries-in/${district.toLowerCase()}`}

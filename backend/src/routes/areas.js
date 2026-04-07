@@ -1,6 +1,8 @@
 import express from 'express'
 import db from '../db.js'
 import { geocodePostcode } from '../services/geocoding.js'
+import { refreshDistrictPropertyData } from '../services/propertyData.js'
+import { adminAuth } from '../middleware/auth.js'
 import { logger } from '../logger.js'
 
 const router = express.Router()
@@ -20,6 +22,9 @@ router.get('/:district', async (req, res, next) => {
         avg_sale_price_all, avg_sale_price_flat, avg_sale_price_terraced,
         avg_sale_price_semi, avg_sale_price_detached,
         crime_rate_per_1000, imd_decile, flood_risk_level,
+        asking_price_avg, rent_avg_weekly, gross_yield_pct,
+        demand_rating, days_on_market, price_growth_1yr_pct,
+        propertydata_sample_postcode, propertydata_updated_at,
         family_score, family_score_breakdown, lat, lng, updated_at
       `
       )
@@ -112,6 +117,19 @@ router.get('/family-search', async (req, res, next) => {
 
     res.json({ data: filtered, meta: { total: filtered.length, search_lat: lat, search_lng: lng } })
   } catch (err) {
+    next(err)
+  }
+})
+
+// POST /api/v1/areas/:district/refresh-property-data — admin-only manual refresh
+router.post('/:district/refresh-property-data', adminAuth, async (req, res, next) => {
+  try {
+    const district = req.params.district.toUpperCase()
+    logger.info({ district }, 'areas: manual propertydata refresh')
+    const result = await refreshDistrictPropertyData(district, { force: true })
+    res.json(result)
+  } catch (err) {
+    logger.error({ err: err.message }, 'areas: manual propertydata refresh failed')
     next(err)
   }
 })

@@ -3,6 +3,7 @@ import { ingestOfstedRegister } from '../services/ofstedIngest.js'
 import { geocodeNurseriesBatch } from '../services/geocoding.js'
 import { ingestLandRegistryYear, refreshPropertyStats } from '../services/landRegistry.js'
 import { ingestCrimeDataBatch } from '../services/policeApi.js'
+import { refreshAllDistricts as refreshPropertyDataDistricts } from '../services/propertyData.js'
 import { adminAuth } from '../middleware/auth.js'
 import { logger } from '../logger.js'
 import db from '../db.js'
@@ -119,6 +120,21 @@ router.post('/family-scores', async (req, res, next) => {
 
     res.json({ calculated })
   } catch (err) {
+    next(err)
+  }
+})
+
+// POST /api/v1/ingest/propertydata — refresh live market data from PropertyData.co.uk
+router.post('/propertydata', async (req, res, next) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50
+    const force = req.query.force === '1' || req.query.force === 'true'
+    const staleDays = parseInt(req.query.stale_days) || 30
+    logger.info({ limit, force, staleDays }, 'ingest: starting propertydata refresh')
+    const result = await refreshPropertyDataDistricts({ limit, force, staleDays })
+    res.json(result)
+  } catch (err) {
+    logger.error({ err: err.message }, 'ingest: propertydata refresh failed')
     next(err)
   }
 })

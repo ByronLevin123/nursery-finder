@@ -140,6 +140,14 @@ export interface AreaSummary {
   crime_rate_per_1000: number | null
   imd_decile: number | null
   flood_risk_level: string | null
+  asking_price_avg: number | null
+  rent_avg_weekly: number | null
+  gross_yield_pct: number | null
+  demand_rating: string | null
+  days_on_market: number | null
+  price_growth_1yr_pct: number | null
+  propertydata_sample_postcode?: string | null
+  propertydata_updated_at?: string | null
   family_score: number | null
   family_score_breakdown: any
   lat: number | null
