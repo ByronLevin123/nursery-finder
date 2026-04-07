@@ -61,16 +61,20 @@ export async function ingestLandRegistryYear(year) {
             const currentBatch = [...batch]
             batch = []
             try {
-              await db.from('land_registry_prices').upsert(currentBatch, {
-                onConflict: 'postcode,date_of_transfer,price',
+              const { error } = await db.from('land_registry_prices').upsert(currentBatch, {
+                onConflict: 'postcode,date_of_transfer,price,property_type',
                 ignoreDuplicates: true,
               })
-              imported += currentBatch.length
-              if (imported % 10000 === 0) {
-                logger.info({ imported, skipped }, 'land_registry: progress')
+              if (error) {
+                logger.error({ err: error.message }, 'land_registry: batch insert failed')
+              } else {
+                imported += currentBatch.length
+                if (imported % 50000 === 0) {
+                  logger.info({ imported, skipped, year }, 'land_registry: progress')
+                }
               }
             } catch (err) {
-              logger.error({ err: err.message }, 'land_registry: batch insert failed')
+              logger.error({ err: err.message }, 'land_registry: batch threw')
             }
           }
         })
