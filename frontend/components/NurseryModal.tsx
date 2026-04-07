@@ -14,6 +14,8 @@ import FeeModal from './FeeModal'
 import ShortlistButton from './ShortlistButton'
 import OglAttribution from './OglAttribution'
 import ReviewStars from './ReviewStars'
+import AiNurserySummary from './AiNurserySummary'
+import AiMatchNarrative from './AiMatchNarrative'
 
 const SingleNurseryMap = dynamic(() => import('./SingleNurseryMap'), { ssr: false })
 
@@ -27,11 +29,13 @@ export default function NurseryModal({ urn, onClose }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [match, setMatch] = useState<MatchResult | null>(null)
+  const [areaForAi, setAreaForAi] = useState<AreaSummary | null>(null)
 
   useEffect(() => {
     if (!urn) {
       setNursery(null)
       setMatch(null)
+      setAreaForAi(null)
       return
     }
     setLoading(true)
@@ -46,6 +50,7 @@ export default function NurseryModal({ urn, onClose }: Props) {
         if (d) {
           try { area = await getAreaSummary(d) } catch {}
         }
+        setAreaForAi(area)
         setMatch(scoreNursery(n, area, prefs))
       })
       .catch(e => setError(e.message))
@@ -109,6 +114,8 @@ export default function NurseryModal({ urn, onClose }: Props) {
                   <ShortlistButton urn={nursery.urn} />
                 </div>
               </div>
+
+              <AiNurserySummary urn={nursery.urn} />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                 {nursery.address_line1 && (
@@ -181,6 +188,7 @@ export default function NurseryModal({ urn, onClose }: Props) {
               {match && (
                 <div className="mb-4">
                   <MatchRationale match={match} defaultOpen />
+                  <AiMatchNarrative nursery={nursery} area={areaForAi} match={match} />
                 </div>
               )}
 

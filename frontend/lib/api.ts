@@ -233,6 +233,145 @@ export async function submitReview(
   return res.json()
 }
 
+export interface ProfileChild {
+  name?: string
+  age_months?: number
+}
+
+export interface Profile {
+  id: string
+  display_name: string | null
+  avatar_url: string | null
+  home_postcode: string | null
+  children: ProfileChild[]
+  preferences: any | null
+  email_alerts: boolean
+  created_at?: string
+  updated_at?: string
+}
+
+export async function getAuthToken(): Promise<string | null> {
+  if (typeof window === 'undefined') return null
+  const { supabase } = await import('./supabase')
+  const { data } = await supabase.auth.getSession()
+  return data.session?.access_token ?? null
+}
+
+// AI features (Claude-powered) — all tolerate 503 by returning null
+
+export async function getNurserySummary(urn: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `${API_URL}/api/v1/nurseries/${encodeURIComponent(urn)}/summary`,
+      { next: { revalidate: 86400 } }
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    return data?.summary || null
+  } catch {
+    return null
+  }
+}
+
+export interface ReviewSynthesis {
+  loves: string[]
+  concerns: string[]
+  know: string[]
+}
+
+export async function getReviewSynthesis(urn: string): Promise<ReviewSynthesis | null> {
+  try {
+    const res = await fetch(
+      `${API_URL}/api/v1/nurseries/${encodeURIComponent(urn)}/review-synthesis`,
+      { next: { revalidate: 3600 } }
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    if (!data || data.synthesis === null) return null
+    if (!Array.isArray(data.loves)) return null
+    return data as ReviewSynthesis
+  } catch {
+    return null
+  }
+}
+
+export async function generateMatchNarrative(body: {
+  nursery: any
+  area: any
+  match: any
+}): Promise<string | null> {
+  try {
+    const res = await fetch(`${API_URL}/api/v1/ai/match-narrative`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data?.narrative || null
+  } catch {
+    return null
+  }
+}
+
+export interface ConversationalSearchFilters {
+  postcode: string | null
+  grade: string | null
+  funded_2yr: boolean | null
+  funded_3yr: boolean | null
+  radius_km: number | null
+  maxCrimeRate: number | null
+  minFamilyScore: number | null
+  maxPrice: number | null
+  keywords: string | null
+}
+
+export async function conversationalSearch(
+  query: string
+): Promise<ConversationalSearchFilters | null> {
+  try {
+    const res = await fetch(`${API_URL}/api/v1/ai/conversational-search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+    })
+    if (!res.ok) return null
+    return (await res.json()) as ConversationalSearchFilters
+  } catch {
+    return null
+  }
+}
+
+export async function getProfile(token: string): Promise<Profile | null> {
+  const res = await fetch(`${API_URL}/api/v1/profile`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  })
+  if (res.status === 404) return null
+  if (res.status === 401) return null
+  if (!res.ok) throw new Error(`Failed to load profile: ${res.status}`)
+  return res.json()
+}
+
+export async function updateProfile(
+  token: string,
+  patch: Partial<Omit<Profile, 'id' | 'created_at' | 'updated_at'>>
+): Promise<Profile> {
+  const res = await fetch(`${API_URL}/api/v1/profile`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(patch),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `Failed to update profile: ${res.status}`)
+  }
+  return res.json()
+}
+
 export async function getNurseriesInDistrict(district: string) {
   const res = await fetch(
     `${API_URL}/api/v1/areas/${encodeURIComponent(district)}/nurseries`,

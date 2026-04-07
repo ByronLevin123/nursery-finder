@@ -1,4 +1,5 @@
 import type { Nursery, AreaSummary } from './api'
+import type { Session } from '@supabase/supabase-js'
 
 export interface Preferences {
   // Quality
@@ -91,6 +92,33 @@ export function clearPreferences(): void {
   try {
     window.localStorage.removeItem(STORAGE_KEY)
   } catch {}
+}
+
+// Sync local preferences with the user's profile in the DB.
+// DB wins on conflict for logged-in users; result is written back to localStorage
+// AND to the DB so both sides converge. Idempotent — running twice is a no-op.
+export async function syncPreferencesWithProfile(session: Session | null): Promise<void> {
+  if (!session) return
+  if (typeof window === 'undefined') return
+  try {
+    const { getProfile, updateProfile } = await import('./api')
+    const token = session.access_token
+    if (!token) return
+    const profile = await getProfile(token)
+    const local = loadPreferences()
+    const remote = (profile?.preferences as Preferences | null) || null
+    const merged: Preferences = remote
+      ? { ...DEFAULT_PREFERENCES, ...local, ...remote, weights: { ...DEFAULT_PREFERENCES.weights, ...(local.weights || {}), ...(remote.weights || {}) } }
+      : local
+    savePreferences(merged)
+    const remoteJson = JSON.stringify(remote || {})
+    const mergedJson = JSON.stringify(merged)
+    if (remoteJson !== mergedJson) {
+      await updateProfile(token, { preferences: merged })
+    }
+  } catch {
+    // best-effort, never throw
+  }
 }
 
 export function hasActivePreferences(p: Preferences): boolean {

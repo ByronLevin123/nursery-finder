@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Analytics } from '@vercel/analytics/react'
 import Footer from '@/components/Footer'
 import Nav from '@/components/Nav'
+import { SessionProvider } from '@/components/SessionProvider'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -17,12 +18,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className="font-sans antialiased">
-        <Nav />
-        <main className="min-h-screen">
-          {children}
-        </main>
-        <Footer />
-        <Analytics />
+        <SessionProvider>
+          <Nav />
+          <main className="min-h-screen">
+            {children}
+          </main>
+          <Footer />
+          <Analytics />
+        </SessionProvider>
       </body>
     </html>
   )

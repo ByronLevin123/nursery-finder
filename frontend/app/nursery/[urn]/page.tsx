@@ -8,6 +8,8 @@ import FeeModal from '@/components/FeeModal'
 import ShortlistButton from '@/components/ShortlistButton'
 import OglAttribution from '@/components/OglAttribution'
 import ReviewSection from '@/components/ReviewSection'
+import AiNurserySummary from '@/components/AiNurserySummary'
+import AiReviewSynthesis from '@/components/AiReviewSynthesis'
 import dynamic from 'next/dynamic'
 
 const SingleNurseryMap = dynamic(() => import('@/components/SingleNurseryMap'), { ssr: false })
@@ -55,6 +57,8 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
           <ShortlistButton urn={nursery.urn} />
         </div>
       </div>
+
+      <AiNurserySummary urn={nursery.urn} />
 
       {/* Details grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
@@ -163,6 +167,7 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         }}
       />
 
+      <AiReviewSynthesis urn={nursery.urn} />
       <ReviewSection urn={nursery.urn} />
 
       <OglAttribution />
