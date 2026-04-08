@@ -12,7 +12,8 @@ import {
   mergeCriteria,
   EMPTY_CRITERIA,
 } from '../services/assistantCriteria.js'
-import { scoreDistrict } from '../services/districtScoring.js'
+import { scoreDistrict, scoreCommute } from '../services/districtScoring.js'
+import { getTravelMatrix } from '../services/travelTime.js'
 import { generateMatchNarrative } from '../services/aiMatchNarrative.js'
 import { getCached, setCached } from '../services/aiCache.js'
 import { isClaudeAvailable, ClaudeUnavailableError } from '../services/claudeApi.js'
@@ -119,15 +120,61 @@ router.post('/search', async (req, res, next) => {
       }
     }
 
+    // Commute: batch travel-time from each candidate centroid to the target postcode.
+    let commuteByDistrict = new Map()
+    if (used.commute?.to_postcode && used.commute?.max_minutes) {
+      try {
+        const target = await geocodePostcode(used.commute.to_postcode)
+        const mode = used.commute.mode || 'drive'
+        // Cap candidates for matrix call to keep it fast.
+        const matrixCandidates = candidates.slice(0, 200).filter((a) => a.lat && a.lng)
+        const matrix = await getTravelMatrix({
+          from: { lat: target.lat, lng: target.lng },
+          to: matrixCandidates.map((a) => ({ lat: a.lat, lng: a.lng })),
+          mode,
+        })
+        matrixCandidates.forEach((a, i) => {
+          commuteByDistrict.set(a.postcode_district, matrix[i])
+        })
+      } catch (err) {
+        logger.warn({ err: err.message }, 'assistant commute matrix failed')
+      }
+    }
+
     const scored = candidates
       .map((a) => {
         const result = scoreDistrict(a, used)
+        let commuteMeta = null
+        let excluded = result.excluded
+        let score = result.score
+        if (used.commute?.to_postcode && used.commute?.max_minutes) {
+          const tt = commuteByDistrict.get(a.postcode_district)
+          if (tt) {
+            const c = scoreCommute(tt.duration_s, used.commute.max_minutes)
+            commuteMeta = {
+              duration_s: tt.duration_s,
+              distance_m: tt.distance_m,
+              mode: used.commute.mode || 'drive',
+              score: c.score,
+            }
+            if (c.excluded) {
+              excluded = true
+              result.reasons.push(
+                `Commute ${Math.round(tt.duration_s / 60)}min > max ${used.commute.max_minutes}min`
+              )
+            } else if (c.score != null && !excluded) {
+              // blend commute into score (30% weight)
+              score = Math.round(score * 0.7 + c.score * 0.3)
+            }
+          }
+        }
         return {
           ...a,
-          score: result.score,
+          score,
           breakdown: result.breakdown,
-          excluded: result.excluded,
+          excluded,
           exclude_reasons: result.reasons,
+          commute: commuteMeta,
         }
       })
       .filter((a) => !a.excluded)

@@ -14,6 +14,7 @@ const SYSTEM_PROMPT =
   '"area": {"postcode": string|null, "district": string|null, "region": string|null, "max_distance_km": number|null}, ' +
   '"budget": {"type": "sale"|"rent"|null, "min": number|null, "max": number|null}, ' +
   '"bedrooms": {"min": number|null}, ' +
+  '"commute": {"to_postcode": string|null, "max_minutes": number|null, "mode": "walk"|"cycle"|"drive"|null}, ' +
   '"priorities": {' +
   '"nursery_quality": "required"|"priority"|"nice"|null, ' +
   '"low_crime": "required"|"priority"|"nice"|null, ' +
@@ -22,12 +23,15 @@ const SYSTEM_PROMPT =
   '}, ' +
   '"notes": string[]' +
   '} ' +
-  'Use "notes" for any user wishes you cannot score (e.g. "near a park", "good transport").'
+  'Use "notes" for any user wishes you cannot score (e.g. "near a park"). ' +
+  'For commute: map "train"/"transit"/"tube"/"bus" to "drive" (we only support walk/cycle/drive routing). ' +
+  'Example: "max 30 minutes to EC1A by train" => commute: {to_postcode:"EC1A", max_minutes:30, mode:"drive"}.'
 
 export const EMPTY_CRITERIA = {
   area: { postcode: null, district: null, region: null, max_distance_km: null },
   budget: { type: null, min: null, max: null },
   bedrooms: { min: null },
+  commute: { to_postcode: null, max_minutes: null, mode: null },
   priorities: {
     nursery_quality: null,
     low_crime: null,
@@ -72,6 +76,11 @@ export function mergeCriteria(prior, extracted) {
   const bedrooms = {
     min: pickNonNull(base.bedrooms?.min ?? null, ex.bedrooms?.min),
   }
+  const commute = {
+    to_postcode: pickNonNull(base.commute?.to_postcode ?? null, ex.commute?.to_postcode),
+    max_minutes: pickNonNull(base.commute?.max_minutes ?? null, ex.commute?.max_minutes),
+    mode: pickNonNull(base.commute?.mode ?? null, ex.commute?.mode),
+  }
   const priorities = {
     nursery_quality: pickNonNull(
       base.priorities?.nursery_quality ?? null,
@@ -100,7 +109,7 @@ export function mergeCriteria(prior, extracted) {
     seen.add(key)
     notes.push(t)
   }
-  return { area, budget, bedrooms, priorities, notes }
+  return { area, budget, bedrooms, commute, priorities, notes }
 }
 
 function hashKey(message, prior) {

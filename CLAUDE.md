@@ -137,6 +137,7 @@ nursery-finder/
 | Ofsted register | https://www.gov.uk/government/statistical-data-sets/monthly-management-information-ofsteds-early-years-register | CSV, scrape page for current link |
 | Land Registry price paid | http://prod.publicdata.landregistry.gov.uk/pp-{year}.csv | Free, large files — stream only |
 | Plausible analytics | https://plausible.io | £9/month, add script tag to Next.js |
+| OSRM routing (travel time) | https://router.project-osrm.org | Free public demo, no key, rate-limited 1 req/200ms, override via `OSRM_URL` |
 
 ---
 

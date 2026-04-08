@@ -30,6 +30,7 @@ import savedSearchesRouter from './routes/savedSearches.js'
 import overlaysRouter from './routes/overlays.js'
 import claimsRouter from './routes/claims.js'
 import providerRouter from './routes/provider.js'
+import travelRouter from './routes/travel.js'
 import { optionalAuth } from './middleware/supabaseAuth.js'
 
 // AI feature routes (Claude-powered) — separate block, do not merge with mounts above
@@ -97,6 +98,7 @@ app.use('/api/v1/saved-searches', savedSearchesRouter)
 app.use('/api/v1/overlays', overlaysRouter)
 app.use('/api/v1/claims', claimsRouter)
 app.use('/api/v1/provider', providerRouter)
+app.use('/api/v1/travel', travelRouter)
 app.use('/api/v1/public', publicMarkdownRouter)
 
 // Public OpenAPI spec for LLM agents + ChatGPT Custom GPT

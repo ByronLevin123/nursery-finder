@@ -51,6 +51,10 @@ export default function CriteriaChips({ criteria, onChange }: Props) {
     })
   }
 
+  function removeCommute() {
+    onChange({ ...criteria, commute: { to_postcode: null, max_minutes: null, mode: null } })
+  }
+
   function removeNote(i: number) {
     const notes = criteria.notes.filter((_, idx) => idx !== i)
     onChange({ ...criteria, notes })
@@ -162,6 +166,32 @@ export default function CriteriaChips({ criteria, onChange }: Props) {
             )
           })}
         </div>
+      </section>
+
+      <section className="mb-4">
+        <h3 className="text-xs font-semibold uppercase text-gray-500 mb-2">Commute</h3>
+        <div className="flex flex-wrap gap-1.5">
+          {criteria.commute?.to_postcode ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-xs text-indigo-800">
+              🚗 ≤{criteria.commute.max_minutes ?? '?'}min to {criteria.commute.to_postcode}
+              {criteria.commute.mode ? ` (${criteria.commute.mode})` : ''}
+              <button
+                onClick={removeCommute}
+                className="text-indigo-400 hover:text-red-500 ml-0.5"
+                aria-label="remove commute"
+              >
+                ×
+              </button>
+            </span>
+          ) : (
+            <p className="text-xs text-gray-400 italic">None set</p>
+          )}
+        </div>
+        {criteria.commute?.mode === 'drive' && (
+          <p className="text-[11px] text-gray-400 mt-1">
+            Note: we only support walk/cycle/drive routing — transit is estimated as drive time.
+          </p>
+        )}
       </section>
 
       <section>

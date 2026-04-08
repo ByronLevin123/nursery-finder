@@ -14,12 +14,13 @@ const InnerMap = dynamic(() => import('./InnerMap'), {
 
 interface Props {
   results: AssistantArea[]
+  isochrone?: any
 }
 
-export default function DistrictMatchMap({ results }: Props) {
+export default function DistrictMatchMap({ results, isochrone }: Props) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden h-full min-h-[480px]">
-      <InnerMap results={results} />
+      <InnerMap results={results} isochrone={isochrone} />
     </div>
   )
 }

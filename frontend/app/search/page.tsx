@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { smartSearchNurseries, Nursery, SearchResult, AreaSummary, getAreaSummary, postcodeDistrict } from '@/lib/api'
+import { smartSearchNurseries, Nursery, SearchResult, AreaSummary, getAreaSummary, postcodeDistrict, getTravelTime, TravelMode } from '@/lib/api'
+import PostcodeAutocomplete from '@/components/PostcodeAutocomplete'
 import NurseryCard from '@/components/NurseryCard'
 import NurseryModal from '@/components/NurseryModal'
 import PreferencesPanel from '@/components/PreferencesPanel'
@@ -40,6 +41,11 @@ function SearchContent() {
   const [areas, setAreas] = useState<Map<string, AreaSummary | null>>(new Map())
   const [showExcluded, setShowExcluded] = useState(false)
   const [showMobilePrefs, setShowMobilePrefs] = useState(false)
+  const [travelEnabled, setTravelEnabled] = useState(false)
+  const [travelMaxMin, setTravelMaxMin] = useState(20)
+  const [travelMode, setTravelMode] = useState<TravelMode>('walk')
+  const [travelFrom, setTravelFrom] = useState('')
+  const [travelTimes, setTravelTimes] = useState<Map<string, number>>(new Map())
 
   useEffect(() => {
     setPrefs(loadPreferences())
@@ -106,10 +112,45 @@ function SearchContent() {
     return list
   }, [results, prefs, prefsActive, areas])
 
+  // Refine by travel time — fetches for top 20 results only
+  useEffect(() => {
+    if (!travelEnabled || !travelFrom.trim() || !results?.data) {
+      setTravelTimes(new Map())
+      return
+    }
+    let cancelled = false
+    const top = results.data.slice(0, 20).filter((n) => n.lat && n.lng)
+    Promise.all(
+      top.map(async (n) => {
+        const r = await getTravelTime(
+          { postcode: travelFrom.trim() },
+          { lat: n.lat!, lng: n.lng! },
+          travelMode
+        )
+        return [n.urn, r?.duration_s ?? Infinity] as const
+      })
+    ).then((entries) => {
+      if (cancelled) return
+      const m = new Map<string, number>()
+      for (const [urn, s] of entries) m.set(urn, s)
+      setTravelTimes(m)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [travelEnabled, travelFrom, travelMode, results])
+
   const visibleResults = useMemo(() => {
-    if (!prefsActive || showExcluded) return scoredResults
-    return scoredResults.filter(r => !r.match?.excluded)
-  }, [scoredResults, prefsActive, showExcluded])
+    let list = scoredResults
+    if (prefsActive && !showExcluded) list = list.filter((r) => !r.match?.excluded)
+    if (travelEnabled && travelFrom.trim() && travelTimes.size) {
+      list = list.filter((r) => {
+        const s = travelTimes.get(r.nursery.urn)
+        return s != null && s <= travelMaxMin * 60
+      })
+    }
+    return list
+  }, [scoredResults, prefsActive, showExcluded, travelEnabled, travelFrom, travelMaxMin, travelTimes])
 
   const excludedCount = useMemo(
     () => scoredResults.filter(r => r.match?.excluded).length,
@@ -212,6 +253,49 @@ function SearchContent() {
                 <input type="checkbox" checked={funded3yr} onChange={e => setFunded3yr(e.target.checked)} className="rounded" />
                 3-4yr funded
               </label>
+            </div>
+
+            {/* Travel time filter */}
+            <div className="border-t border-gray-200 pt-3">
+              <label className="flex items-center gap-2 text-sm text-gray-700 font-medium">
+                <input
+                  type="checkbox"
+                  checked={travelEnabled}
+                  onChange={(e) => setTravelEnabled(e.target.checked)}
+                  className="rounded"
+                />
+                Travel time filter
+              </label>
+              {travelEnabled && (
+                <div className="mt-2 space-y-2">
+                  <div className="flex items-center gap-2 text-xs text-gray-600">
+                    Within
+                    <input
+                      type="number"
+                      min={1}
+                      max={120}
+                      value={travelMaxMin}
+                      onChange={(e) => setTravelMaxMin(Number(e.target.value) || 20)}
+                      className="w-14 px-2 py-1 border border-gray-300 rounded text-sm"
+                    />
+                    min by
+                    <select
+                      value={travelMode}
+                      onChange={(e) => setTravelMode(e.target.value as TravelMode)}
+                      className="px-2 py-1 border border-gray-300 rounded text-sm"
+                    >
+                      <option value="walk">Walk</option>
+                      <option value="cycle">Cycle</option>
+                      <option value="drive">Drive</option>
+                    </select>
+                  </div>
+                  <PostcodeAutocomplete
+                    value={travelFrom}
+                    onChange={setTravelFrom}
+                    placeholder="From postcode…"
+                  />
+                </div>
+              )}
             </div>
 
             <button

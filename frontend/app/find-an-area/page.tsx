@@ -1,8 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import AreaCard from '@/components/AreaCard'
 import SaveSearchButton from '@/components/SaveSearchButton'
+import PostcodeAutocomplete from '@/components/PostcodeAutocomplete'
+import { getIsochrone, IsochroneResponse, TravelMode } from '@/lib/api'
+
+const MapLibreMap = dynamic(() => import('@/components/MapLibreMap'), { ssr: false })
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
@@ -28,6 +33,43 @@ export default function FindAnAreaPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [searched, setSearched] = useState(false)
+  const [showCommuteZones, setShowCommuteZones] = useState(false)
+  const [commuteMode, setCommuteMode] = useState<TravelMode>('drive')
+  const [isochrone, setIsochrone] = useState<IsochroneResponse | null>(null)
+  const [isoLoading, setIsoLoading] = useState(false)
+
+  useEffect(() => {
+    if (!showCommuteZones || !postcode.trim()) {
+      setIsochrone(null)
+      return
+    }
+    let cancelled = false
+    setIsoLoading(true)
+    getIsochrone({ postcode: postcode.trim() }, [15, 30, 45, 60], commuteMode).then((r) => {
+      if (cancelled) return
+      setIsochrone(r)
+      setIsoLoading(false)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [showCommuteZones, commuteMode, postcode])
+
+  const BAND_COLORS = ['#1e3a8a', '#2563eb', '#60a5fa', '#bfdbfe']
+  const isoPolygons = isochrone?.features
+    ? [...isochrone.features]
+        .sort((a, b) => b.properties.duration_min - a.properties.duration_min)
+        .map((f, idx) => ({
+          id: `iso-${f.properties.duration_min}`,
+          coordinates: f.geometry.coordinates,
+          fillColor: BAND_COLORS[idx % BAND_COLORS.length],
+          fillOpacity: 0.18,
+          lineColor: BAND_COLORS[idx % BAND_COLORS.length],
+        }))
+    : []
+  const isoCenter: [number, number] = isochrone?.meta
+    ? [isochrone.meta.from.lng, isochrone.meta.from.lat]
+    : [-2.5, 54.0]
 
   async function doSearch() {
     if (!postcode.trim()) return
@@ -67,14 +109,13 @@ export default function FindAnAreaPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="text-sm text-gray-600 font-medium">Starting postcode</label>
-            <input
-              type="text"
-              value={postcode}
-              onChange={e => setPostcode(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && doSearch()}
-              placeholder="e.g. SW11 1AA"
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg"
-            />
+            <div className="mt-1">
+              <PostcodeAutocomplete
+                value={postcode}
+                onChange={setPostcode}
+                placeholder="e.g. SW11 1AA"
+              />
+            </div>
           </div>
           <div>
             <label className="text-sm text-gray-600 font-medium">Search radius</label>
@@ -158,6 +199,53 @@ export default function FindAnAreaPage() {
       {searched && (
         <p className="text-sm text-gray-500 mb-4">{results.length} areas found</p>
       )}
+
+      {/* Commute zones toggle + map */}
+      <div className="mb-6 bg-white border border-gray-200 rounded-xl p-4">
+        <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+          <input
+            type="checkbox"
+            checked={showCommuteZones}
+            onChange={(e) => setShowCommuteZones(e.target.checked)}
+            className="rounded"
+          />
+          Show commute zones from {postcode || 'postcode'}
+          <select
+            value={commuteMode}
+            onChange={(e) => setCommuteMode(e.target.value as TravelMode)}
+            className="ml-2 px-2 py-1 border border-gray-300 rounded text-sm"
+          >
+            <option value="walk">by walk</option>
+            <option value="cycle">by cycle</option>
+            <option value="drive">by drive</option>
+          </select>
+        </label>
+        {showCommuteZones && (
+          <div className="mt-3 h-96 rounded-lg overflow-hidden border border-gray-200">
+            {isoLoading && (
+              <div className="flex items-center justify-center h-full text-sm text-gray-500">
+                Computing commute zones…
+              </div>
+            )}
+            {!isoLoading && (
+              <MapLibreMap center={isoCenter} zoom={10} polygons={isoPolygons} />
+            )}
+          </div>
+        )}
+        {showCommuteZones && isochrone && (
+          <div className="mt-2 flex gap-3 text-xs text-gray-600">
+            {[15, 30, 45, 60].map((m, idx) => (
+              <span key={m} className="flex items-center gap-1">
+                <span
+                  className="inline-block w-3 h-3 rounded"
+                  style={{ background: BAND_COLORS[3 - idx] }}
+                />
+                ≤{m}min
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Results grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

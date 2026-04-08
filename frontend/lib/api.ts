@@ -397,6 +397,11 @@ export interface AssistantCriteria {
   }
   budget: { type: 'sale' | 'rent' | null; min: number | null; max: number | null }
   bedrooms: { min: number | null }
+  commute: {
+    to_postcode: string | null
+    max_minutes: number | null
+    mode: 'walk' | 'cycle' | 'drive' | null
+  }
   priorities: {
     nursery_quality: 'required' | 'priority' | 'nice' | null
     low_crime: 'required' | 'priority' | 'nice' | null
@@ -410,6 +415,7 @@ export const EMPTY_ASSISTANT_CRITERIA: AssistantCriteria = {
   area: { postcode: null, district: null, region: null, max_distance_km: null },
   budget: { type: null, min: null, max: null },
   bedrooms: { min: null },
+  commute: { to_postcode: null, max_minutes: null, mode: null },
   priorities: {
     nursery_quality: null,
     low_crime: null,
@@ -437,6 +443,77 @@ export interface AssistantArea {
   score: number
   breakdown: Record<string, { level: string | null; value: number | null; weight: number }>
   match_rationale?: string | null
+  commute?: {
+    duration_s: number
+    distance_m: number
+    mode: string
+    score: number | null
+  } | null
+}
+
+// Travel time ---------------------------------------------------------------
+
+export type TravelMode = 'walk' | 'cycle' | 'drive'
+
+export interface TravelEndpoint {
+  lat?: number
+  lng?: number
+  postcode?: string
+  urn?: string
+}
+
+export interface TravelTimeResult {
+  duration_s: number
+  distance_m: number
+  mode: TravelMode
+  cached?: boolean
+  fallback?: boolean
+}
+
+export async function getTravelTime(
+  from: TravelEndpoint,
+  to: TravelEndpoint,
+  mode: TravelMode
+): Promise<TravelTimeResult | null> {
+  try {
+    const res = await fetch(`${API_URL}/api/v1/travel/time`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, to, mode }),
+    })
+    if (!res.ok) return null
+    return await res.json()
+  } catch {
+    return null
+  }
+}
+
+export interface IsochroneResponse {
+  type: 'FeatureCollection'
+  features: Array<{
+    type: 'Feature'
+    properties: { duration_min: number; mode: string }
+    geometry: { type: 'Polygon'; coordinates: [number, number][][] }
+  }>
+  meta: { from: { lat: number; lng: number }; mode: string; durations_min: number[] }
+}
+
+export async function getIsochrone(
+  from: TravelEndpoint,
+  durationsMin: number[],
+  mode: TravelMode
+): Promise<IsochroneResponse | null> {
+  try {
+    const res = await fetch(`${API_URL}/api/v1/travel/isochrone`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, durations_min: durationsMin, mode }),
+    })
+    if (!res.ok) return null
+    return await res.json()
+  } catch {
+    return null
+  }
 }
 
 export async function assistantChat(

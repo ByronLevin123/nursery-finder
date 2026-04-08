@@ -1,15 +1,14 @@
 'use client'
 
-import { MapContainer, TileLayer, CircleMarker, Circle, Popup, useMap } from 'react-leaflet'
-import 'leaflet/dist/leaflet.css'
+import { useMemo } from 'react'
+import MapLibreMap, { MarkerDef } from './MapLibreMap'
 import { Nursery } from '@/lib/api'
-import Link from 'next/link'
 
 const GRADE_COLORS: Record<string, string> = {
-  'Outstanding': '#22c55e',
-  'Good': '#3b82f6',
+  Outstanding: '#22c55e',
+  Good: '#3b82f6',
   'Requires Improvement': '#f59e0b',
-  'Inadequate': '#ef4444',
+  Inadequate: '#ef4444',
 }
 
 interface Props {
@@ -19,62 +18,40 @@ interface Props {
   radiusKm: number
 }
 
-function MapUpdater({ lat, lng }: { lat: number; lng: number }) {
-  const map = useMap()
-  useEffect(() => {
-    map.setView([lat, lng], 13)
-  }, [lat, lng, map])
-  return null
-}
-
-import { useEffect } from 'react'
-
 export default function NurseryMap({ nurseries, centerLat, centerLng, radiusKm }: Props) {
+  const markers: MarkerDef[] = useMemo(
+    () =>
+      nurseries
+        .filter((n) => n.lat != null && n.lng != null)
+        .map((n) => {
+          const color = GRADE_COLORS[n.ofsted_overall_grade || ''] || '#9ca3af'
+          const distanceLine =
+            n.distance_km != null
+              ? `<p style="color:#9ca3af;margin:2px 0">${n.distance_km.toFixed(1)}km away</p>`
+              : ''
+          return {
+            id: n.urn,
+            lat: n.lat as number,
+            lng: n.lng as number,
+            color,
+            radius: 8,
+            popupHtml: `
+              <div style="font-size:13px;font-family:system-ui,sans-serif">
+                <a href="/nursery/${n.urn}" style="color:#2563eb;font-weight:600;text-decoration:none">${n.name}</a>
+                <p style="color:#6b7280;margin:2px 0">${n.ofsted_overall_grade || 'Not yet inspected'}</p>
+                ${distanceLine}
+              </div>`,
+          } satisfies MarkerDef
+        }),
+    [nurseries]
+  )
+
   return (
-    <MapContainer
-      center={[centerLat, centerLng]}
+    <MapLibreMap
+      center={[centerLng, centerLat]}
       zoom={13}
-      style={{ height: '100%', width: '100%' }}
-      scrollWheelZoom={true}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-
-      {/* Search radius circle */}
-      <Circle
-        center={[centerLat, centerLng]}
-        radius={radiusKm * 1000}
-        pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.05, weight: 1 }}
-      />
-
-      {/* Nursery markers */}
-      {nurseries.map(nursery => {
-        if (!nursery.lat || !nursery.lng) return null
-        const color = GRADE_COLORS[nursery.ofsted_overall_grade || ''] || '#9ca3af'
-
-        return (
-          <CircleMarker
-            key={nursery.urn}
-            center={[nursery.lat, nursery.lng]}
-            radius={8}
-            pathOptions={{ color, fillColor: color, fillOpacity: 0.8, weight: 2 }}
-          >
-            <Popup>
-              <div className="text-sm">
-                <Link href={`/nursery/${nursery.urn}`} className="font-semibold text-blue-600 hover:underline">
-                  {nursery.name}
-                </Link>
-                <p className="text-gray-500">{nursery.ofsted_overall_grade || 'Not yet inspected'}</p>
-                {nursery.distance_km != null && (
-                  <p className="text-gray-400">{nursery.distance_km.toFixed(1)}km away</p>
-                )}
-              </div>
-            </Popup>
-          </CircleMarker>
-        )
-      })}
-    </MapContainer>
+      markers={markers}
+      radiusKm={radiusKm}
+    />
   )
 }

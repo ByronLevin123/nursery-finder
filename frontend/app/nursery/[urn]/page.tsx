@@ -16,6 +16,7 @@ import AiReviewSynthesis from '@/components/AiReviewSynthesis'
 import dynamic from 'next/dynamic'
 
 const SingleNurseryMap = dynamic(() => import('@/components/SingleNurseryMap'), { ssr: false })
+const TravelTimePanel = dynamic(() => import('@/components/TravelTimePanel'), { ssr: false })
 
 export async function generateMetadata({ params }: { params: { urn: string } }): Promise<Metadata> {
   try {
@@ -226,6 +227,15 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         <div className="mb-6 rounded-lg overflow-hidden border border-gray-200 h-48">
           <SingleNurseryMap lat={nursery.lat} lng={nursery.lng} name={nursery.name} />
         </div>
+      )}
+
+      {/* Travel time */}
+      {nursery.lat && nursery.lng && (
+        <TravelTimePanel
+          nurseryLat={nursery.lat}
+          nurseryLng={nursery.lng}
+          nurseryUrn={nursery.urn}
+        />
       )}
 
       {/* More nurseries in this district — internal linking for SEO */}

@@ -122,3 +122,22 @@ export function scoreDistrict(area, criteria) {
 
   return { score, breakdown, excluded, reasons }
 }
+
+// Commute scoring — given a travel-time result in seconds and max minutes,
+// returns {score, excluded}. Excludes districts exceeding the max.
+// Proportional score: at 0 min => 100, at max_minutes => 40, above => excluded.
+export function scoreCommute(durationSeconds, maxMinutes) {
+  if (durationSeconds == null || !Number.isFinite(durationSeconds)) {
+    return { score: null, excluded: false }
+  }
+  if (!maxMinutes || !Number.isFinite(maxMinutes) || maxMinutes <= 0) {
+    return { score: null, excluded: false }
+  }
+  const mins = durationSeconds / 60
+  if (mins > maxMinutes) {
+    return { score: 0, excluded: true }
+  }
+  const ratio = mins / maxMinutes
+  const score = clamp(100 - ratio * 60)
+  return { score: Math.round(score), excluded: false }
+}

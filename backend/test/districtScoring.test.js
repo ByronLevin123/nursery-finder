@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { scoreDistrict } from '../src/services/districtScoring.js'
+import { scoreDistrict, scoreCommute } from '../src/services/districtScoring.js'
 
 const BASE_AREA = {
   postcode_district: 'SW11',
@@ -53,6 +53,23 @@ describe('scoreDistrict', () => {
     })
     expect(r.excluded).toBe(true)
     expect(r.reasons.join(' ')).toMatch(/budget cap/)
+  })
+
+  it('scoreCommute excludes when duration exceeds max', () => {
+    const r = scoreCommute(60 * 60, 30) // 60 min vs max 30
+    expect(r.excluded).toBe(true)
+    expect(r.score).toBe(0)
+  })
+
+  it('scoreCommute returns high score when well under max', () => {
+    const r = scoreCommute(5 * 60, 30) // 5 min vs max 30
+    expect(r.excluded).toBe(false)
+    expect(r.score).toBeGreaterThan(80)
+  })
+
+  it('scoreCommute returns null when inputs missing', () => {
+    expect(scoreCommute(null, 30).score).toBe(null)
+    expect(scoreCommute(600, null).score).toBe(null)
   })
 
   it('handles missing data gracefully when priority is nice', () => {
