@@ -257,6 +257,7 @@ export interface Profile {
   display_name: string | null
   avatar_url: string | null
   home_postcode: string | null
+  work_postcode?: string | null
   children: ProfileChild[]
   preferences: any | null
   email_alerts: boolean

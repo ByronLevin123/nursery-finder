@@ -6,6 +6,11 @@ import db from '../db.js'
 import { requireAuth } from '../middleware/supabaseAuth.js'
 import { adminAuth } from '../middleware/auth.js'
 import { logger } from '../logger.js'
+import {
+  isEmailAvailable,
+  sendEmail,
+  renderClaimApprovedEmail,
+} from '../services/emailService.js'
 
 const router = express.Router()
 
@@ -151,6 +156,33 @@ router.post('/:id/approve', adminAuth, async (req, res, next) => {
     if (nErr) throw nErr
 
     logger.info({ claimId: id, urn: claim.urn }, 'claim approved')
+
+    // Fire-and-forget approval email — never block the response on mail
+    if (isEmailAvailable() && claim.claimer_email) {
+      try {
+        const { data: nurseryRow } = await db
+          .from('nurseries')
+          .select('name, town')
+          .eq('urn', claim.urn)
+          .maybeSingle()
+        const providerUrl = process.env.FRONTEND_URL
+          ? `${process.env.FRONTEND_URL}/provider`
+          : 'https://nursery-finder.vercel.app/provider'
+        const rendered = renderClaimApprovedEmail(nurseryRow || { name: claim.urn }, providerUrl)
+        await sendEmail({
+          to: claim.claimer_email,
+          subject: rendered.subject,
+          html: rendered.html,
+          text: rendered.text,
+        })
+      } catch (mailErr) {
+        logger.warn(
+          { err: mailErr?.message, claimId: id },
+          'claim approval email failed (non-fatal)'
+        )
+      }
+    }
+
     return res.json(updated)
   } catch (err) {
     next(err)

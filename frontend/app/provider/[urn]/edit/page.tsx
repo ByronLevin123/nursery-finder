@@ -5,11 +5,19 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { API_URL } from '@/lib/api'
 
+interface DayHours {
+  open: string
+  close: string
+  closed: boolean
+}
+
+type HoursMap = Record<string, DayHours>
+
 interface ProviderNursery {
   urn: string
   name: string
   description?: string | null
-  opening_hours?: Record<string, string> | null
+  opening_hours?: Record<string, any> | null
   photos?: string[] | null
   website_url?: string | null
   contact_email?: string | null
@@ -17,7 +25,62 @@ interface ProviderNursery {
   provider_updated_at?: string | null
 }
 
-const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+const DAYS: { key: string; label: string }[] = [
+  { key: 'monday', label: 'Monday' },
+  { key: 'tuesday', label: 'Tuesday' },
+  { key: 'wednesday', label: 'Wednesday' },
+  { key: 'thursday', label: 'Thursday' },
+  { key: 'friday', label: 'Friday' },
+  { key: 'saturday', label: 'Saturday' },
+  { key: 'sunday', label: 'Sunday' },
+]
+
+const MAX_PHOTOS = 6
+
+function defaultHours(): HoursMap {
+  const out: HoursMap = {}
+  for (const d of DAYS) {
+    const weekend = d.key === 'saturday' || d.key === 'sunday'
+    out[d.key] = { open: '07:30', close: '18:00', closed: weekend }
+  }
+  return out
+}
+
+// Accept legacy shapes: { mon: "08:00-18:00" } or { monday: {open, close, closed} }
+function normaliseHours(input: Record<string, any> | null | undefined): HoursMap {
+  const out = defaultHours()
+  if (!input || typeof input !== 'object') return out
+  const aliases: Record<string, string> = {
+    mon: 'monday',
+    tue: 'tuesday',
+    wed: 'wednesday',
+    thu: 'thursday',
+    fri: 'friday',
+    sat: 'saturday',
+    sun: 'sunday',
+  }
+  for (const [rawKey, val] of Object.entries(input)) {
+    const key = aliases[rawKey.toLowerCase()] || rawKey.toLowerCase()
+    if (!out[key]) continue
+    if (val == null) continue
+    if (typeof val === 'string') {
+      const trimmed = val.trim()
+      if (!trimmed || /closed/i.test(trimmed)) {
+        out[key] = { open: '', close: '', closed: true }
+        continue
+      }
+      const m = trimmed.match(/^(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})$/)
+      if (m) out[key] = { open: m[1], close: m[2], closed: false }
+    } else if (typeof val === 'object') {
+      out[key] = {
+        open: typeof val.open === 'string' ? val.open : '',
+        close: typeof val.close === 'string' ? val.close : '',
+        closed: !!val.closed,
+      }
+    }
+  }
+  return out
+}
 
 export default function ProviderEditPage({ params }: { params: { urn: string } }) {
   const router = useRouter()
@@ -28,8 +91,8 @@ export default function ProviderEditPage({ params }: { params: { urn: string } }
   const [toast, setToast] = useState('')
 
   const [description, setDescription] = useState('')
-  const [hours, setHours] = useState<Record<string, string>>({})
-  const [photos, setPhotos] = useState('')
+  const [hours, setHours] = useState<HoursMap>(defaultHours())
+  const [photos, setPhotos] = useState<string[]>([])
   const [websiteUrl, setWebsiteUrl] = useState('')
   const [contactEmail, setContactEmail] = useState('')
   const [contactPhone, setContactPhone] = useState('')
@@ -57,8 +120,8 @@ export default function ProviderEditPage({ params }: { params: { urn: string } }
         }
         setNursery(found)
         setDescription(found.description || '')
-        setHours(found.opening_hours || {})
-        setPhotos((found.photos || []).join('\n'))
+        setHours(normaliseHours(found.opening_hours))
+        setPhotos(Array.isArray(found.photos) ? found.photos.slice(0, MAX_PHOTOS) : [])
         setWebsiteUrl(found.website_url || '')
         setContactEmail(found.contact_email || '')
         setContactPhone(found.contact_phone || '')
@@ -69,6 +132,22 @@ export default function ProviderEditPage({ params }: { params: { urn: string } }
     }
     load()
   }, [params.urn, router])
+
+  function updateDay(key: string, patch: Partial<DayHours>) {
+    setHours((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }))
+  }
+
+  function updatePhoto(idx: number, value: string) {
+    setPhotos((prev) => prev.map((p, i) => (i === idx ? value : p)))
+  }
+
+  function addPhoto() {
+    setPhotos((prev) => (prev.length >= MAX_PHOTOS ? prev : [...prev, '']))
+  }
+
+  function removePhoto(idx: number) {
+    setPhotos((prev) => prev.filter((_, i) => i !== idx))
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -83,10 +162,7 @@ export default function ProviderEditPage({ params }: { params: { urn: string } }
         router.push(`/login?next=/provider/${params.urn}/edit`)
         return
       }
-      const photoArr = photos
-        .split('\n')
-        .map((s) => s.trim())
-        .filter(Boolean)
+      const cleanedPhotos = photos.map((p) => p.trim()).filter(Boolean).slice(0, MAX_PHOTOS)
       const res = await fetch(`${API_URL}/api/v1/provider/nurseries/${params.urn}`, {
         method: 'PATCH',
         headers: {
@@ -96,7 +172,7 @@ export default function ProviderEditPage({ params }: { params: { urn: string } }
         body: JSON.stringify({
           description,
           opening_hours: hours,
-          photos: photoArr,
+          photos: cleanedPhotos,
           website_url: websiteUrl,
           contact_email: contactEmail,
           contact_phone: contactPhone,
@@ -111,6 +187,7 @@ export default function ProviderEditPage({ params }: { params: { urn: string } }
         const j = await res.json()
         setNursery(j)
         setToast('Saved')
+        setTimeout(() => setToast(''), 3500)
       }
     } catch {
       setError('Save failed')
@@ -134,7 +211,7 @@ export default function ProviderEditPage({ params }: { params: { urn: string } }
         </p>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label className="text-sm font-medium text-gray-700">About this nursery</label>
           <textarea
@@ -146,34 +223,95 @@ export default function ProviderEditPage({ params }: { params: { urn: string } }
         </div>
 
         <div>
-          <label className="text-sm font-medium text-gray-700">Opening hours</label>
-          <div className="grid grid-cols-2 gap-2 mt-1">
-            {DAYS.map((d) => (
-              <div key={d} className="flex items-center gap-2">
-                <span className="w-12 text-sm text-gray-500 uppercase">{d}</span>
-                <input
-                  type="text"
-                  placeholder="08:00-18:00"
-                  value={hours[d] || ''}
-                  onChange={(e) => setHours({ ...hours, [d]: e.target.value })}
-                  className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
-                />
-              </div>
-            ))}
+          <label className="text-sm font-medium text-gray-700 block mb-2">Opening hours</label>
+          <div className="space-y-2">
+            {DAYS.map((d) => {
+              const row = hours[d.key]
+              return (
+                <div
+                  key={d.key}
+                  className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 px-3 py-2"
+                >
+                  <span className="w-24 text-sm font-medium text-gray-700">{d.label}</span>
+                  <label className="flex items-center gap-1 text-xs text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={row.closed}
+                      onChange={(e) => updateDay(d.key, { closed: e.target.checked })}
+                    />
+                    Closed
+                  </label>
+                  <input
+                    type="time"
+                    value={row.open}
+                    disabled={row.closed}
+                    onChange={(e) => updateDay(d.key, { open: e.target.value })}
+                    className="px-2 py-1 border border-gray-300 rounded text-sm disabled:bg-gray-100"
+                  />
+                  <span className="text-xs text-gray-400">to</span>
+                  <input
+                    type="time"
+                    value={row.close}
+                    disabled={row.closed}
+                    onChange={(e) => updateDay(d.key, { close: e.target.value })}
+                    className="px-2 py-1 border border-gray-300 rounded text-sm disabled:bg-gray-100"
+                  />
+                </div>
+              )
+            })}
           </div>
         </div>
 
         <div>
-          <label className="text-sm font-medium text-gray-700">Photo URLs (one per line)</label>
-          <textarea
-            value={photos}
-            onChange={(e) => setPhotos(e.target.value)}
-            rows={4}
-            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg font-mono text-xs"
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            Direct image URLs only. File upload coming soon.
-          </p>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-medium text-gray-700">
+              Photos ({photos.length}/{MAX_PHOTOS})
+            </label>
+            <button
+              type="button"
+              onClick={addPhoto}
+              disabled={photos.length >= MAX_PHOTOS}
+              className="text-xs text-blue-600 hover:underline disabled:opacity-40"
+            >
+              + Add photo URL
+            </button>
+          </div>
+          {photos.length === 0 && (
+            <p className="text-xs text-gray-500">No photos yet. Add up to {MAX_PHOTOS} image URLs.</p>
+          )}
+          <div className="space-y-2">
+            {photos.map((url, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                {url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={url}
+                    alt={`Preview ${idx + 1}`}
+                    className="w-16 h-16 object-cover rounded border border-gray-200"
+                    onError={(e) => ((e.target as HTMLImageElement).style.opacity = '0.3')}
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded border border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-xs text-gray-400">
+                    preview
+                  </div>
+                )}
+                <input
+                  type="url"
+                  value={url}
+                  onChange={(e) => updatePhoto(idx, e.target.value)}
+                  placeholder="https://…"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => removePhoto(idx)}
+                  className="text-xs text-red-600 hover:underline"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div>
@@ -206,15 +344,23 @@ export default function ProviderEditPage({ params }: { params: { urn: string } }
           />
         </div>
 
-        {error && <p className="text-red-500 text-sm">{error}</p>}
-        {toast && <p className="text-green-600 text-sm">{toast}</p>}
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            {error}
+          </div>
+        )}
+        {toast && (
+          <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+            {toast}
+          </div>
+        )}
 
         <button
           type="submit"
           disabled={saving}
           className="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50"
         >
-          {saving ? 'Saving...' : 'Save changes'}
+          {saving ? 'Saving…' : 'Save changes'}
         </button>
       </form>
     </div>

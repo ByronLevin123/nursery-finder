@@ -300,12 +300,52 @@ export function renderDigestEmail({ savedSearches = [], newMatches = {}, userNam
   return { subject, html, text: textLines.join('\n') }
 }
 
+export function renderClaimApprovedEmail(nursery = {}, providerUrl = '') {
+  const name = escapeHtml(nursery.name || 'your nursery')
+  const town = escapeHtml(nursery.town || '')
+  const safeUrl = escapeHtml(providerUrl || '/provider')
+  const subject = `Your claim for ${nursery.name || 'your nursery'} has been approved`
+
+  const html = shell({
+    title: subject,
+    bodyHtml: `
+      <p style="margin:0 0 12px 0;">Good news,</p>
+      <p style="margin:0 0 16px 0;">
+        Your claim for <strong>${name}</strong>${town ? ' in ' + town : ''} has been approved.
+        You can now manage the nursery's profile on NurseryFinder — update your description,
+        photos, opening hours and contact details from your provider dashboard.
+      </p>
+      <p style="margin:20px 0;">
+        <a href="${safeUrl}" style="display:inline-block;padding:12px 20px;background:#2563eb;color:#ffffff;border-radius:8px;text-decoration:none;font-weight:600;">
+          Go to provider dashboard
+        </a>
+      </p>
+      <p style="margin:20px 0 0 0;font-size:13px;color:#6b7280;">
+        If you did not submit this claim, please reply to this email so we can investigate.
+      </p>
+    `,
+  })
+
+  const text = [
+    'Good news,',
+    '',
+    `Your claim for ${nursery.name || 'your nursery'}${nursery.town ? ' in ' + nursery.town : ''} has been approved.`,
+    '',
+    `Manage your listing: ${providerUrl || '/provider'}`,
+    '',
+    'Manage preferences: ' + UNSUBSCRIBE_URL,
+  ].join('\n')
+
+  return { subject, html, text }
+}
+
 export default {
   isEmailAvailable,
   sendEmail,
   renderShortlistEmail,
   renderComparisonEmail,
   renderDigestEmail,
+  renderClaimApprovedEmail,
   EmailNotConfiguredError,
   EmailSendError,
 }

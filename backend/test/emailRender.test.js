@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
   renderShortlistEmail,
   renderComparisonEmail,
   renderDigestEmail,
+  renderClaimApprovedEmail,
   escapeHtml,
 } from '../src/services/emailService.js'
 
@@ -87,6 +88,70 @@ describe('renderDigestEmail', () => {
     expect(out.subject).toBe('NurseryFinder digest')
     expect(out.html).toContain('no saved searches')
     expect(out.text).toBeTruthy()
+  })
+})
+
+describe('renderClaimApprovedEmail', () => {
+  it('includes the nursery name, CTA link, and subject line', () => {
+    const out = renderClaimApprovedEmail(
+      { name: 'Sunny Days Nursery', town: 'Battersea' },
+      'https://example.com/provider'
+    )
+    expect(out.subject).toBe('Your claim for Sunny Days Nursery has been approved')
+    expect(out.html).toContain('Sunny Days Nursery')
+    expect(out.html).toContain('Battersea')
+    expect(out.html).toContain('https://example.com/provider')
+    expect(out.text).toContain('Sunny Days Nursery')
+    expect(out.text).toContain('https://example.com/provider')
+  })
+
+  it('escapes HTML in the nursery name', () => {
+    const out = renderClaimApprovedEmail(
+      { name: '<script>bad</script>' },
+      'https://example.com/provider'
+    )
+    expect(out.html).not.toContain('<script>bad</script>')
+    expect(out.html).toContain('&lt;script&gt;')
+  })
+
+  it('renders with a missing nursery gracefully', () => {
+    const out = renderClaimApprovedEmail({}, '/provider')
+    expect(out.subject).toMatch(/your nursery/)
+    expect(out.html).toContain('/provider')
+  })
+})
+
+describe('sendEmail with mocked Resend (claim approved path)', () => {
+  it('calls the Resend SDK when RESEND_API_KEY is configured', async () => {
+    vi.resetModules()
+    const send = vi.fn(async () => ({ data: { id: 'msg-123' }, error: null }))
+    vi.doMock('resend', () => ({
+      Resend: class {
+        constructor() {
+          this.emails = { send }
+        }
+      },
+    }))
+    process.env.RESEND_API_KEY = 'test-key'
+    const mod = await import('../src/services/emailService.js')
+    const rendered = mod.renderClaimApprovedEmail(
+      { name: 'Sunny Days', town: 'London' },
+      'https://example.com/provider'
+    )
+    const result = await mod.sendEmail({
+      to: 'owner@example.com',
+      subject: rendered.subject,
+      html: rendered.html,
+      text: rendered.text,
+    })
+    expect(send).toHaveBeenCalledTimes(1)
+    const payload = send.mock.calls[0][0]
+    expect(payload.to).toEqual(['owner@example.com'])
+    expect(payload.subject).toMatch(/Sunny Days/)
+    expect(payload.html).toContain('Sunny Days')
+    expect(result.messageId).toBe('msg-123')
+    delete process.env.RESEND_API_KEY
+    vi.doUnmock('resend')
   })
 })
 

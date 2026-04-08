@@ -294,6 +294,9 @@ function SearchContent() {
                     onChange={setTravelFrom}
                     placeholder="From postcode…"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Transit routing coming soon — showing drive times instead.
+                  </p>
                 </div>
               )}
             </div>

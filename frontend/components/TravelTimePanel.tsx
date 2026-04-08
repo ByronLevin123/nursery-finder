@@ -139,6 +139,7 @@ export default function TravelTimePanel({
           )}
         </p>
       )}
+      <p className="mt-3 text-xs text-gray-400">Public transit routing not yet supported.</p>
     </section>
   )
 }

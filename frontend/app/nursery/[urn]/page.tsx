@@ -1,7 +1,10 @@
 import { Metadata } from 'next'
+import { cookies } from 'next/headers'
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { getNursery, getNurseriesInDistrict } from '@/lib/api'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import ClaimNurseryButton from '@/components/ClaimNurseryButton'
 import Breadcrumbs from '@/components/Breadcrumbs'
 import { nurserySchema, breadcrumbSchema, jsonLdScript } from '@/lib/schema'
 import GradeBadge from '@/components/GradeBadge'
@@ -61,6 +64,28 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
     nursery = await getNursery(params.urn)
   } catch {
     notFound()
+  }
+
+  // Read the current user's profile (if signed in) so TravelTimePanel can
+  // default the "Home" option to their saved home_postcode.
+  let homePostcode: string | undefined
+  let currentUserId: string | undefined
+  try {
+    const supabase = createServerComponentClient({ cookies })
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+    if (session?.user) {
+      currentUserId = session.user.id
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('home_postcode')
+        .eq('id', session.user.id)
+        .maybeSingle()
+      if (profile?.home_postcode) homePostcode = profile.home_postcode
+    }
+  } catch {
+    // non-fatal — just means no personalised defaults
   }
 
   const district = districtFromPostcode(nursery.postcode)
@@ -212,15 +237,17 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         </div>
       )}
 
-      {/* Claim CTA — only if not currently claimed */}
-      {!nursery.claimed_by_user_id && (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6 text-center">
-          <p className="text-sm text-gray-600 mb-2">Is this your nursery?</p>
-          <a href={`/claim/${nursery.urn}`} className="text-sm text-blue-600 hover:text-blue-800 font-medium">
-            Claim this nursery →
-          </a>
-        </div>
-      )}
+      {/* Claim CTA */}
+      <ClaimNurseryButton
+        urn={nursery.urn}
+        nurseryName={nursery.name}
+        alreadyClaimed={!!nursery.claimed_by_user_id}
+        claimedByCurrentUser={
+          !!nursery.claimed_by_user_id &&
+          !!currentUserId &&
+          nursery.claimed_by_user_id === currentUserId
+        }
+      />
 
       {/* Map */}
       {nursery.lat && nursery.lng && (
@@ -235,6 +262,7 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
           nurseryLat={nursery.lat}
           nurseryLng={nursery.lng}
           nurseryUrn={nursery.urn}
+          homePostcode={homePostcode}
         />
       )}
 

@@ -34,6 +34,7 @@ export default function AccountPage() {
   // Form state mirrors profile
   const [displayName, setDisplayName] = useState('')
   const [homePostcode, setHomePostcode] = useState('')
+  const [workPostcode, setWorkPostcode] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [emailAlerts, setEmailAlerts] = useState(false)
   const [children, setChildren] = useState<ProfileChild[]>([])
@@ -48,6 +49,7 @@ export default function AccountPage() {
         setProfile(p)
         setDisplayName(p.display_name || '')
         setHomePostcode(p.home_postcode || '')
+        setWorkPostcode(p.work_postcode || '')
         setAvatarUrl(p.avatar_url || '')
         setEmailAlerts(!!p.email_alerts)
         setChildren(Array.isArray(p.children) ? p.children : [])
@@ -84,6 +86,7 @@ export default function AccountPage() {
       const updated = await updateProfile(session.access_token, {
         display_name: displayName || null,
         home_postcode: homePostcode || null,
+        work_postcode: workPostcode || null,
         avatar_url: avatarUrl || null,
         email_alerts: emailAlerts,
         children,
@@ -181,16 +184,29 @@ export default function AccountPage() {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Home postcode</label>
-            <input
-              type="text"
-              value={homePostcode}
-              onChange={(e) => setHomePostcode(e.target.value.toUpperCase())}
-              maxLength={16}
-              placeholder="SW11 1AA"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Home postcode</label>
+              <input
+                type="text"
+                value={homePostcode}
+                onChange={(e) => setHomePostcode(e.target.value.toUpperCase())}
+                maxLength={16}
+                placeholder="SW11 1AA"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Work postcode</label>
+              <input
+                type="text"
+                value={workPostcode}
+                onChange={(e) => setWorkPostcode(e.target.value.toUpperCase())}
+                maxLength={16}
+                placeholder="EC2A 1AA"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+              />
+            </div>
           </div>
 
           <div>

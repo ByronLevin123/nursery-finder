@@ -12,6 +12,7 @@ const ALLOWED_FIELDS = [
   'display_name',
   'avatar_url',
   'home_postcode',
+  'work_postcode',
   'children',
   'preferences',
   'email_alerts',
@@ -32,6 +33,11 @@ function validatePatch(patch) {
   if (patch.home_postcode != null) {
     if (typeof patch.home_postcode !== 'string' || patch.home_postcode.length > 16) {
       return 'home_postcode must be a string up to 16 chars'
+    }
+  }
+  if (patch.work_postcode != null) {
+    if (typeof patch.work_postcode !== 'string' || patch.work_postcode.length > 16) {
+      return 'work_postcode must be a string up to 16 chars'
     }
   }
   if (patch.children != null) {
