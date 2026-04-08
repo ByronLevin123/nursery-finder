@@ -69,6 +69,18 @@ cron.schedule('0 8 * * *', async () => {
 // strictly required. The legacy script-based regeneration is kept below for
 // any backend-hosted sitemap.
 
+// Self-ping every 10 minutes to keep Render free-tier warm (avoids 30s cold-start)
+if (process.env.SELF_PING_URL) {
+  cron.schedule('*/10 * * * *', async () => {
+    try {
+      const res = await fetch(process.env.SELF_PING_URL)
+      logger.info({ status: res.status }, 'cron: self-ping')
+    } catch (err) {
+      logger.warn({ err: err.message }, 'cron: self-ping failed')
+    }
+  })
+}
+
 // Weekly: regenerate sitemap (Sundays at 4am)
 cron.schedule('0 4 * * 0', async () => {
   logger.info('cron: regenerating sitemap')
