@@ -53,4 +53,32 @@ export async function requireAuth(req, res, next) {
   }
 }
 
-export default { optionalAuth, requireAuth }
+// requireRole(...roles) — requires authenticated user whose user_profiles.role is in the allowed set.
+// Usage: requireRole('admin') or requireRole('provider','admin').
+import db from '../db.js'
+export function requireRole(...allowed) {
+  return async function (req, res, next) {
+    return requireAuth(req, res, async () => {
+      try {
+        if (!db) return res.status(503).json({ error: 'Database not configured' })
+        const { data, error } = await db
+          .from('user_profiles')
+          .select('role')
+          .eq('id', req.user.id)
+          .maybeSingle()
+        if (error) throw error
+        const role = data?.role || 'customer'
+        req.user.role = role
+        if (!allowed.includes(role)) {
+          return res.status(403).json({ error: 'Forbidden', required_role: allowed })
+        }
+        return next()
+      } catch (err) {
+        logger.warn({ err: err?.message }, 'requireRole failed')
+        return res.status(500).json({ error: 'Role check failed' })
+      }
+    })
+  }
+}
+
+export default { optionalAuth, requireAuth, requireRole }

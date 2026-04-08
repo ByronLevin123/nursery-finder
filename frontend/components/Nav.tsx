@@ -19,7 +19,7 @@ export default function Nav() {
   const [compareCount, setCompareCount] = useState(0)
   const [menuOpen, setMenuOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
-  const { user, signOut } = useSession()
+  const { user, role, signOut } = useSession()
 
   useEffect(() => {
     setShortlistCount(getShortlistCount())
@@ -89,14 +89,19 @@ export default function Nav() {
                   >
                     Account
                   </Link>
-                  <Link
-                    href="/provider"
-                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    onClick={() => setAccountOpen(false)}
-                  >
-                    Provider
-                  </Link>
-                  {typeof window !== 'undefined' && window.location.search.includes('admin=1') && (
+                  <div className="px-3 py-1 text-[10px] uppercase tracking-wide text-gray-400">
+                    Role: {role}
+                  </div>
+                  {(role === 'provider' || role === 'admin') && (
+                    <Link
+                      href="/provider"
+                      className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      onClick={() => setAccountOpen(false)}
+                    >
+                      Provider dashboard
+                    </Link>
+                  )}
+                  {role === 'admin' && (
                     <Link
                       href="/admin/claims"
                       className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
