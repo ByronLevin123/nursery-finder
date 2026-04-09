@@ -22,7 +22,8 @@ CREATE POLICY "Enquiry participants see messages" ON enquiry_messages
     enquiry_id IN (SELECT id FROM enquiries WHERE user_id = auth.uid()) OR
     enquiry_id IN (
       SELECT e.id FROM enquiries e
-      JOIN nursery_claims nc ON nc.nursery_id = e.nursery_id
+      JOIN nurseries n ON n.id = e.nursery_id
+      JOIN nursery_claims nc ON nc.urn = n.urn
       WHERE nc.user_id = auth.uid() AND nc.status = 'approved'
     )
   );
