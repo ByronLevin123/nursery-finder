@@ -55,4 +55,54 @@ router.get('/districts', async (req, res, next) => {
   }
 })
 
+// GET /api/v1/sitemap/towns — top 100 towns by nursery count
+router.get('/towns', async (req, res, next) => {
+  try {
+    const { data, error } = await db
+      .from('nurseries')
+      .select('town')
+      .not('town', 'is', null)
+      .not('location', 'is', null)
+
+    if (error) throw error
+
+    const counts = {}
+    for (const row of data || []) {
+      const t = row.town.trim()
+      if (!t) continue
+      counts[t] = (counts[t] || 0) + 1
+    }
+
+    const towns = Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 100)
+      .map(([name]) => name)
+
+    setCache(res)
+    res.json({ towns, count: towns.length })
+  } catch (err) {
+    logger.error({ err: err.message }, 'sitemap: towns failed')
+    next(err)
+  }
+})
+
+// GET /api/v1/sitemap/blog — blog post slugs
+router.get('/blog', async (req, res, next) => {
+  try {
+    const fs = await import('fs')
+    const path = await import('path')
+    const blogDir = path.default.resolve(process.cwd(), 'content', 'blog')
+    if (!fs.default.existsSync(blogDir)) {
+      return res.json({ slugs: [], count: 0 })
+    }
+    const files = fs.default.readdirSync(blogDir).filter((f) => f.endsWith('.md'))
+    const slugs = files.map((f) => f.replace('.md', ''))
+    setCache(res)
+    res.json({ slugs, count: slugs.length })
+  } catch (err) {
+    logger.error({ err: err.message }, 'sitemap: blog failed')
+    next(err)
+  }
+})
+
 export default router

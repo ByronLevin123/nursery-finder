@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/node'
 import express from 'express'
+import compression from 'compression'
 import cors from 'cors'
 
 if (process.env.SENTRY_DSN) {
@@ -54,6 +55,9 @@ import billingRouter, { billingWebhookHandler } from './routes/billing.js'
 // Admin dashboard
 import adminRouter from './routes/admin.js'
 
+// Blog / guides content
+import blogRouter from './routes/blog.js'
+
 // AI feature routes (Claude-powered) — separate block, do not merge with mounts above
 import aiRouter from './routes/ai.js'
 import assistantRouter from './routes/assistant.js'
@@ -63,6 +67,44 @@ const app = express()
 // Security
 app.use(helmet())
 
+// Response compression
+app.use(compression())
+
+// Additional security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.setHeader('X-Frame-Options', 'DENY')
+  res.setHeader('X-XSS-Protection', '1; mode=block')
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+  next()
+})
+
+// Cache headers
+app.use((req, res, next) => {
+  if (req.method !== 'GET') {
+    res.setHeader('Cache-Control', 'no-store')
+    return next()
+  }
+
+  const path = req.path
+
+  if (path === '/api/v1/health') {
+    res.setHeader('Cache-Control', 'no-cache')
+  } else if (path === '/api/v1/nurseries/search' || path === '/api/v1/nurseries/smart-search') {
+    res.setHeader('Cache-Control', 'public, max-age=300')
+  } else if (/^\/api\/v1\/nurseries\/[^/]+$/.test(path)) {
+    // /api/v1/nurseries/:urn
+    res.setHeader('Cache-Control', 'public, max-age=3600')
+  } else if (/^\/api\/v1\/areas\/[^/]+$/.test(path)) {
+    // /api/v1/areas/:district
+    res.setHeader('Cache-Control', 'public, max-age=3600')
+  } else if (path === '/api/v1/billing/tiers') {
+    res.setHeader('Cache-Control', 'public, max-age=86400')
+  }
+
+  next()
+})
+
 // Open CORS for public read endpoints (LLM agents + Custom GPT actions)
 const publicCorsPaths = [
   '/api/v1/nurseries',
@@ -70,6 +112,7 @@ const publicCorsPaths = [
   '/api/v1/properties/districts',
   '/api/v1/overlays',
   '/api/v1/public',
+  '/api/v1/blog',
   '/api/openapi.json',
 ]
 app.use(publicCorsPaths, cors({ origin: '*', methods: ['GET', 'POST'] }))
@@ -141,6 +184,7 @@ app.use('/api/v1/enquiries', messagesRouter)
 app.use('/api/v1/notifications', notificationsRouter)
 app.use('/api/v1/billing', billingRouter)
 app.use('/api/v1/admin', adminRouter)
+app.use('/api/v1/blog', blogRouter)
 
 // Public OpenAPI spec for LLM agents + ChatGPT Custom GPT
 app.get('/api/openapi.json', (req, res, next) => {

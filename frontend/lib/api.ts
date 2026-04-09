@@ -672,6 +672,63 @@ export async function createPortalSession(
   return data.url
 }
 
+// Town pages -------------------------------------------------------------------
+
+export interface TownListItem {
+  name: string
+  count: number
+}
+
+export async function getTowns(limit = 200): Promise<TownListItem[]> {
+  const res = await fetch(`${API_URL}/api/v1/nurseries/towns?limit=${limit}`, {
+    next: { revalidate: 86400 },
+  })
+  if (!res.ok) return []
+  const data = await res.json()
+  return data.data || []
+}
+
+export async function getNurseriesInTown(town: string): Promise<{
+  data: Nursery[]
+  stats: { total: number; outstanding: number; good: number }
+  town: string
+}> {
+  const res = await fetch(
+    `${API_URL}/api/v1/nurseries/by-town/${encodeURIComponent(town)}`,
+    { next: { revalidate: 3600 } }
+  )
+  if (!res.ok) throw new Error(`Town not found: ${town}`)
+  return res.json()
+}
+
+// Blog / guides ---------------------------------------------------------------
+
+export interface BlogPost {
+  slug: string
+  title: string
+  excerpt: string
+  date: string | null
+  author: string
+  body?: string
+}
+
+export async function getBlogPosts(): Promise<BlogPost[]> {
+  const res = await fetch(`${API_URL}/api/v1/blog`, {
+    next: { revalidate: 3600 },
+  })
+  if (!res.ok) return []
+  const data = await res.json()
+  return data.data || []
+}
+
+export async function getBlogPost(slug: string): Promise<BlogPost | null> {
+  const res = await fetch(`${API_URL}/api/v1/blog/${encodeURIComponent(slug)}`, {
+    next: { revalidate: 3600 },
+  })
+  if (!res.ok) return null
+  return res.json()
+}
+
 // Admin API helpers ------------------------------------------------------------
 
 export async function adminFetch(path: string, token: string, options?: RequestInit) {

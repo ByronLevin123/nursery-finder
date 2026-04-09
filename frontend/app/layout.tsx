@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import Script from 'next/script'
 import { Analytics } from '@vercel/analytics/react'
 import Footer from '@/components/Footer'
@@ -10,6 +10,10 @@ import './globals.css'
 
 const SITE_URL = 'https://comparethenursery.com'
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nursery-finder-6u7r.onrender.com'
+
+export const viewport: Viewport = {
+  themeColor: '#4f46e5',
+}
 
 export const metadata: Metadata = {
   title: {
@@ -67,6 +71,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
+        <link rel="manifest" href="/manifest.json" />
         {apiOrigin && <link rel="preconnect" href={apiOrigin} crossOrigin="" />}
         <link rel="dns-prefetch" href="https://api.postcodes.io" />
         <script

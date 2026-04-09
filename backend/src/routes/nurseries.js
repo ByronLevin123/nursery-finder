@@ -232,6 +232,81 @@ router.get('/autocomplete', async (req, res, next) => {
   }
 })
 
+// GET /api/v1/nurseries/towns — distinct towns with nursery count
+router.get('/towns', async (req, res, next) => {
+  try {
+    const limit = Math.min(500, Math.max(1, Number(req.query.limit) || 200))
+    const { data, error } = await db
+      .from('nurseries')
+      .select('town')
+      .not('town', 'is', null)
+      .not('location', 'is', null)
+
+    if (error) throw error
+
+    // Aggregate counts in JS since Supabase JS client doesn't support GROUP BY easily
+    const counts = {}
+    for (const row of data || []) {
+      const t = row.town.trim()
+      if (!t) continue
+      counts[t] = (counts[t] || 0) + 1
+    }
+
+    const towns = Object.entries(counts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, limit)
+
+    logger.info({ towns: towns.length }, 'towns list returned')
+    res.json({ data: towns })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// GET /api/v1/nurseries/by-town/:town — nurseries in a town, sorted by grade
+router.get('/by-town/:town', async (req, res, next) => {
+  try {
+    const town = decodeURIComponent(req.params.town).trim()
+    if (!town) {
+      return res.status(400).json({ error: 'town parameter is required' })
+    }
+
+    const { data, error } = await db
+      .from('nurseries')
+      .select('*')
+      .ilike('town', town)
+      .not('location', 'is', null)
+      .limit(50)
+
+    if (error) throw error
+    if (!data || data.length === 0) {
+      return res.status(404).json({ error: `No nurseries found in ${town}` })
+    }
+
+    // Sort by grade then name
+    const gradeOrder = { Outstanding: 1, Good: 2, 'Requires Improvement': 3, Inadequate: 4 }
+    const sorted = data.sort((a, b) => {
+      const ga = gradeOrder[a.ofsted_overall_grade] || 5
+      const gb = gradeOrder[b.ofsted_overall_grade] || 5
+      if (ga !== gb) return ga - gb
+      return (a.name || '').localeCompare(b.name || '')
+    })
+
+    // Compute stats
+    const stats = {
+      total: sorted.length,
+      outstanding: sorted.filter((n) => n.ofsted_overall_grade === 'Outstanding').length,
+      good: sorted.filter((n) => n.ofsted_overall_grade === 'Good').length,
+    }
+
+    logger.info({ town, results: sorted.length }, 'by-town lookup')
+    res.json({ data: sorted, stats, town: data[0]?.town || town })
+  } catch (err) {
+    next(err)
+  }
+})
+
 // GET /api/v1/nurseries/:urn/similar
 router.get('/:urn/similar', async (req, res, next) => {
   try {
