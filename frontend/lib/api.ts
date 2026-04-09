@@ -32,6 +32,7 @@ export interface Nursery {
   lat: number | null
   lng: number | null
   distance_km?: number
+  featured?: boolean
   claimed_by_user_id?: string | null
   claimed_at?: string | null
   description?: string | null
@@ -560,4 +561,79 @@ export async function getNurseriesInDistrict(district: string) {
     nurseries: Nursery[]
     stats: { total: number; outstanding: number; good: number }
   }>
+}
+
+// Billing / Subscription -------------------------------------------------------
+
+export interface TierInfo {
+  tier: string
+  monthly_price_gbp: number
+  enquiry_credits: number
+  featured_listing: boolean
+  analytics_advanced: boolean
+  priority_search: boolean
+  custom_branding: boolean
+  description: string
+}
+
+export interface SubscriptionInfo {
+  provider: {
+    tier: string
+    status: string
+    enquiry_credits: number
+    enquiry_credits_used: number
+    current_period_end: string | null
+    cancel_at_period_end: boolean
+  } | null
+  parent: {
+    tier: string
+    status: string
+    current_period_end: string | null
+    cancel_at_period_end: boolean
+  } | null
+}
+
+export async function getTiers(): Promise<TierInfo[]> {
+  const res = await fetch(`${API_URL}/api/v1/billing/tiers`, { cache: 'no-store' })
+  if (!res.ok) return []
+  const data = await res.json()
+  return data.data || []
+}
+
+export async function getSubscription(token: string): Promise<SubscriptionInfo> {
+  const res = await fetch(`${API_URL}/api/v1/billing/subscription`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  })
+  if (!res.ok) return { provider: null, parent: null }
+  return res.json()
+}
+
+export async function createCheckout(
+  token: string,
+  tier: string,
+  type: 'provider' | 'parent'
+): Promise<string | null> {
+  const res = await fetch(`${API_URL}/api/v1/billing/checkout`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ tier, type }),
+  })
+  if (!res.ok) return null
+  const data = await res.json()
+  return data.url
+}
+
+export async function createPortalSession(
+  token: string,
+  type: 'provider' | 'parent'
+): Promise<string | null> {
+  const res = await fetch(`${API_URL}/api/v1/billing/portal`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ type }),
+  })
+  if (!res.ok) return null
+  const data = await res.json()
+  return data.url
 }

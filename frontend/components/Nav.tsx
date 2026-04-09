@@ -50,6 +50,9 @@ export default function Nav() {
           <Link href="/find-an-area" className="text-sm text-gray-600 hover:text-gray-900">
             Find an Area
           </Link>
+          <Link href="/pricing" className="text-sm text-gray-600 hover:text-gray-900">
+            Pricing
+          </Link>
           {user && (
             <Link href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900">
               Dashboard

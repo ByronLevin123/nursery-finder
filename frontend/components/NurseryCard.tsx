@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import GradeBadge from './GradeBadge'
+import FeaturedBadge from './FeaturedBadge'
 import { Nursery } from '@/lib/api'
 import ShortlistButton from './ShortlistButton'
 import CompareButton from './CompareButton'
@@ -41,6 +42,7 @@ export default function NurseryCard({ nursery, showDistance = true, onClick, mat
 
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         <GradeBadge grade={nursery.ofsted_overall_grade} size="sm" />
+        {nursery.featured && <FeaturedBadge />}
         {match && <MatchBadge score={match.excluded ? null : match.score} excluded={match.excluded} />}
         {nursery.inspection_date_warning && (
           <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">

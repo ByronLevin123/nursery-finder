@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useSession } from '@/components/SessionProvider'
-import { getProfile, updateProfile, type Profile, type ProfileChild } from '@/lib/api'
+import { getProfile, updateProfile, getSubscription, createPortalSession, getAuthToken, type Profile, type ProfileChild, type SubscriptionInfo } from '@/lib/api'
 import { loadPreferences, savePreferences, hasActivePreferences, DEFAULT_PREFERENCES, type Preferences } from '@/lib/preferences'
 
 interface SavedSearch {
@@ -30,6 +30,8 @@ export default function AccountPage() {
   const [savedAt, setSavedAt] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFERENCES)
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null)
+  const [portalLoading, setPortalLoading] = useState(false)
 
   // Form state mirrors profile
   const [displayName, setDisplayName] = useState('')
@@ -54,6 +56,8 @@ export default function AccountPage() {
         setEmailAlerts(!!p.email_alerts)
         setChildren(Array.isArray(p.children) ? p.children : [])
       }
+      const subInfo = await getSubscription(token)
+      setSubscription(subInfo)
       const { data } = await supabase
         .from('saved_searches')
         .select('*')
@@ -132,6 +136,18 @@ export default function AccountPage() {
   async function toggleAlert(id: string, current: boolean) {
     await supabase.from('saved_searches').update({ alert_on_new: !current }).eq('id', id)
     setSearches((prev) => prev.map((s) => (s.id === id ? { ...s, alert_on_new: !current } : s)))
+  }
+
+  async function openPortal(type: 'provider' | 'parent') {
+    setPortalLoading(true)
+    try {
+      const token = await getAuthToken()
+      if (!token) return
+      const url = await createPortalSession(token, type)
+      if (url) window.location.href = url
+    } finally {
+      setPortalLoading(false)
+    }
   }
 
   async function handleSignOut() {
@@ -287,6 +303,107 @@ export default function AccountPage() {
           </button>
         </div>
       </form>
+
+      {/* Subscription */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Subscription</h2>
+
+        {/* Parent subscription */}
+        <div className="mb-4">
+          <h3 className="text-sm font-medium text-gray-700 mb-2">Parent plan</h3>
+          {subscription?.parent && subscription.parent.tier !== 'free' ? (
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="inline-block px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full mr-2">
+                  {subscription.parent.tier.charAt(0).toUpperCase() + subscription.parent.tier.slice(1)}
+                </span>
+                <span className="text-sm text-gray-500">
+                  {subscription.parent.cancel_at_period_end
+                    ? 'Cancels'
+                    : 'Renews'}{' '}
+                  {subscription.parent.current_period_end
+                    ? new Date(subscription.parent.current_period_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+                    : ''}
+                </span>
+              </div>
+              <button
+                onClick={() => openPortal('parent')}
+                disabled={portalLoading}
+                className="text-sm text-indigo-600 font-medium hover:underline disabled:opacity-50"
+              >
+                Manage
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">Free plan</span>
+              <Link href="/pricing" className="text-sm text-indigo-600 font-medium hover:underline">
+                Upgrade
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* Provider subscription */}
+        <div>
+          <h3 className="text-sm font-medium text-gray-700 mb-2">Provider plan</h3>
+          {subscription?.provider && subscription.provider.tier !== 'free' ? (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <span className="inline-block px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full mr-2">
+                    {subscription.provider.tier.charAt(0).toUpperCase() + subscription.provider.tier.slice(1)}
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    {subscription.provider.cancel_at_period_end
+                      ? 'Cancels'
+                      : 'Renews'}{' '}
+                    {subscription.provider.current_period_end
+                      ? new Date(subscription.provider.current_period_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+                      : ''}
+                  </span>
+                </div>
+                <button
+                  onClick={() => openPortal('provider')}
+                  disabled={portalLoading}
+                  className="text-sm text-indigo-600 font-medium hover:underline disabled:opacity-50"
+                >
+                  Manage
+                </button>
+              </div>
+              {/* Enquiry credits */}
+              <div className="bg-gray-50 rounded-lg p-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Enquiry credits used</span>
+                  <span className="font-medium text-gray-900">
+                    {subscription.provider.enquiry_credits_used} / {subscription.provider.enquiry_credits}
+                  </span>
+                </div>
+                <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-indigo-500 rounded-full transition-all"
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        subscription.provider.enquiry_credits > 0
+                          ? (subscription.provider.enquiry_credits_used / subscription.provider.enquiry_credits) * 100
+                          : 0
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">Free plan</span>
+              <Link href="/pricing" className="text-sm text-indigo-600 font-medium hover:underline">
+                Upgrade
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Preferences sync */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">

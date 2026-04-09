@@ -43,10 +43,23 @@ export async function smartSearch({
       funded_3yr: Boolean(funded_3yr),
     })
     if (error) throw error
+
+    // Boost featured nurseries to top within same distance band (1km bands)
+    const boosted = (data || []).sort((a, b) => {
+      const bandA = Math.floor((a.distance_km || 0))
+      const bandB = Math.floor((b.distance_km || 0))
+      if (bandA !== bandB) return bandA - bandB
+      // Within same 1km band, featured first
+      const fa = a.featured ? 0 : 1
+      const fb = b.featured ? 0 : 1
+      if (fa !== fb) return fa - fb
+      return (a.distance_km || 0) - (b.distance_km || 0)
+    })
+
     return {
-      data: data || [],
+      data: boosted,
       meta: {
-        total: data?.length || 0,
+        total: boosted.length,
         search_lat: lat,
         search_lng: lng,
         mode: 'postcode',
@@ -74,8 +87,12 @@ export async function smartSearch({
   const { data, error } = await q
   if (error) throw error
 
-  // Sort: Outstanding first, then by name
+  // Sort: featured first, then Outstanding first, then by name
   const sorted = (data || []).sort((a, b) => {
+    // Featured nurseries (paid providers) float to top
+    const fa = a.featured ? 0 : 1
+    const fb = b.featured ? 0 : 1
+    if (fa !== fb) return fa - fb
     const ga = GRADE_ORDER[a.ofsted_overall_grade] || 99
     const gb = GRADE_ORDER[b.ofsted_overall_grade] || 99
     if (ga !== gb) return ga - gb
