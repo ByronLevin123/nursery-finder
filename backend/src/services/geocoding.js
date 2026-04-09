@@ -68,45 +68,50 @@ export async function geocodeNurseriesBatch(limit = 500) {
   for (const chunk of chunks) {
     const postcodes = chunk.map((n) => n.postcode)
 
-    // Build a lookup map normalising whitespace for matching
+    // Build a lookup map normalising whitespace — multiple nurseries can share a postcode
     const normalize = (pc) => (pc || '').trim().toUpperCase().replace(/\s+/g, '')
     const pcMap = new Map()
     for (const n of chunk) {
-      pcMap.set(normalize(n.postcode), n.id)
+      const key = normalize(n.postcode)
+      if (!pcMap.has(key)) pcMap.set(key, [])
+      pcMap.get(key).push(n.id)
     }
 
     try {
       const response = await axios.post(POSTCODES_IO_BULK, { postcodes })
       const results = response.data.result
 
-      const updates = []
+      if (!results) {
+        logger.error({ status: response.status, body: JSON.stringify(response.data).slice(0, 500) }, 'geocoding: unexpected API response')
+        totalFailed += chunk.length
+        continue
+      }
+
       for (const result of results) {
         if (result.result) {
-          const matchId = pcMap.get(normalize(result.query))
-          updates.push({
-            id: matchId,
-            lat: result.result.latitude,
-            lng: result.result.longitude,
-          })
+          const ids = pcMap.get(normalize(result.query)) || []
+          for (const id of ids) {
+            const { error: updateErr } = await db
+              .from('nurseries')
+              .update({ lat: result.result.latitude, lng: result.result.longitude })
+              .eq('id', id)
+            if (updateErr) {
+              logger.error({ id, err: updateErr.message }, 'geocoding: update failed')
+              totalFailed++
+            } else {
+              totalGeocoded++
+            }
+          }
         } else {
-          totalFailed++
+          const ids = pcMap.get(normalize(result.query)) || []
+          totalFailed += Math.max(ids.length, 1)
           logger.warn({ postcode: result.query }, 'geocoding: postcode not found')
         }
       }
 
-      for (const update of updates) {
-        if (update.id) {
-          await db
-            .from('nurseries')
-            .update({ lat: update.lat, lng: update.lng })
-            .eq('id', update.id)
-          totalGeocoded++
-        }
-      }
-
-      logger.info({ geocoded: totalGeocoded }, 'geocoding: chunk complete')
+      logger.info({ geocoded: totalGeocoded, failed: totalFailed }, 'geocoding: chunk complete')
     } catch (err) {
-      logger.error({ err: err.message }, 'geocoding: chunk failed')
+      logger.error({ err: err.message, stack: err.stack?.slice(0, 300) }, 'geocoding: chunk failed')
       totalFailed += chunk.length
     }
 
