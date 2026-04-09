@@ -4,6 +4,8 @@ import Breadcrumbs from '@/components/Breadcrumbs'
 import Link from 'next/link'
 import { breadcrumbSchema, jsonLdScript } from '@/lib/schema'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Nursery Guides & Advice | CompareTheNursery',
   description:

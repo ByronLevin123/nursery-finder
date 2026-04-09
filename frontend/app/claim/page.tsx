@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { API_URL, Nursery } from '@/lib/api'
 import OglAttribution from '@/components/OglAttribution'
 
-export default function ClaimPage() {
+function ClaimContent() {
   const searchParams = useSearchParams()
   const prefilledUrn = searchParams.get('urn') || ''
 
@@ -181,5 +181,13 @@ export default function ClaimPage() {
         </div>
       </div>
     </main>
+  )
+}
+
+export default function ClaimPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center text-gray-400">Loading...</div>}>
+      <ClaimContent />
+    </Suspense>
   )
 }
