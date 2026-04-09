@@ -5,5 +5,5 @@ export const adminAuth = basicAuth({
     [process.env.ADMIN_USER || 'admin']: process.env.ADMIN_PASS || 'changeme',
   },
   challenge: true,
-  realm: 'NurseryFinder Admin',
+  realm: 'CompareTheNursery Admin',
 })

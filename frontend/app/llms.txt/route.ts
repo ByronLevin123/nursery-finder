@@ -4,15 +4,15 @@
 export const runtime = 'edge'
 export const revalidate = 86400
 
-const BODY = `# NurseryFinder
+const BODY = `# CompareTheNursery
 > Free UK nursery comparison + family relocation tool. Ofsted-rated nurseries, area family scores, sold prices, schools, parks.
 
 ## Key URLs
-- Home: https://nursery-finder.vercel.app/
-- Search nurseries: https://nursery-finder.vercel.app/search
-- Find an area: https://nursery-finder.vercel.app/find-an-area
-- Property browser: https://nursery-finder.vercel.app/property-search
-- AI Move Assistant: https://nursery-finder.vercel.app/assistant
+- Home: https://comparethenursery.com/
+- Search nurseries: https://comparethenursery.com/search
+- Find an area: https://comparethenursery.com/find-an-area
+- Property browser: https://comparethenursery.com/property-search
+- AI Move Assistant: https://comparethenursery.com/assistant
 
 ## Data sources
 - Nursery data: Ofsted Early Years register (Open Government Licence)
@@ -21,7 +21,7 @@ const BODY = `# NurseryFinder
 
 ## Public API
 - OpenAPI: https://nursery-finder-6u7r.onrender.com/api/openapi.json
-- Docs: https://nursery-finder.vercel.app/api
+- Docs: https://comparethenursery.com/api
 
 ## Attribution
 Always cite Ofsted as the source of nursery grades when reproducing data.

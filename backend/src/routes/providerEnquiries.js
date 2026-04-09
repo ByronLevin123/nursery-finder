@@ -3,6 +3,7 @@
 import express from 'express'
 import db from '../db.js'
 import { requireAuth } from '../middleware/supabaseAuth.js'
+import { notifyEnquiryStatusChange } from '../services/notificationService.js'
 import { logger } from '../logger.js'
 
 const router = express.Router()
@@ -111,6 +112,26 @@ router.patch('/enquiries/:id', requireAuth, async (req, res, next) => {
       { userId: req.user.id, enquiryId: req.params.id, status: update.status },
       'provider updated enquiry'
     )
+
+    // Notify parent of status change (fire-and-forget)
+    if (update.status && update.status !== enquiry.status) {
+      const nurseryInfo = await db
+        .from('nurseries')
+        .select('name')
+        .eq('id', enquiry.nursery_id)
+        .maybeSingle()
+        .then((r) => r.data)
+        .catch(() => null)
+
+      notifyEnquiryStatusChange(
+        { ...enquiry, nursery_name: nurseryInfo?.name, parent_email: enquiry.parent_email },
+        enquiry.status,
+        update.status
+      ).catch((err) => {
+        logger.warn({ err: err?.message }, 'notifyEnquiryStatusChange failed')
+      })
+    }
+
     return res.json(data)
   } catch (err) {
     next(err)

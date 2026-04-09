@@ -6,11 +6,11 @@ export const metadata: Metadata = {
     'Free read-only API for UK nursery, area and property data. OpenAPI 3.1 spec, JSON + markdown endpoints, designed for LLM agents and Custom GPTs.',
   alternates: { canonical: '/api' },
   openGraph: {
-    title: 'NurseryFinder Public API',
+    title: 'CompareTheNursery Public API',
     description:
       'Free read-only API for UK nursery, area and property data. OpenAPI 3.1 spec, JSON + markdown endpoints.',
     url: '/api',
-    siteName: 'NurseryFinder',
+    siteName: 'CompareTheNursery',
     type: 'website',
     locale: 'en_GB',
   },

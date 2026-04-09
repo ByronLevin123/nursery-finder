@@ -53,7 +53,7 @@ function LoginInner() {
 
   return (
     <div className="max-w-md mx-auto px-4 py-16">
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">Sign in to NurseryFinder</h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">Sign in to CompareTheNursery</h1>
       <p className="text-gray-600 mb-8">
         Save your shortlist, sync preferences across devices, and get alerts on new matches.
       </p>

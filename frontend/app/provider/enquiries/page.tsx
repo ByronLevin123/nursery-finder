@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from '@/components/SessionProvider'
+import MessageThread from '@/components/MessageThread'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
@@ -48,6 +49,7 @@ export default function ProviderEnquiriesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [expandedMessages, setExpandedMessages] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     if (sessionLoading) return
@@ -189,6 +191,29 @@ export default function ProviderEnquiriesPage() {
                   >
                     Decline
                   </button>
+                )}
+              </div>
+
+              {/* Messages section */}
+              <div className="mt-3">
+                <button
+                  onClick={() =>
+                    setExpandedMessages((prev) => ({
+                      ...prev,
+                      [enq.id]: !prev[enq.id],
+                    }))
+                  }
+                  className="text-xs px-3 py-1.5 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-100 flex items-center gap-1"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  {expandedMessages[enq.id] ? 'Hide messages' : 'Messages'}
+                </button>
+                {expandedMessages[enq.id] && (
+                  <div className="mt-2">
+                    <MessageThread enquiryId={enq.id} currentUserRole="provider" />
+                  </div>
                 )}
               </div>
             </div>

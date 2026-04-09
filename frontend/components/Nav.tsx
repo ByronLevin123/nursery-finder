@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { getShortlistCount } from '@/lib/shortlist'
 import { getCompareCount, getCompareList } from '@/lib/compare'
 import { useSession } from '@/components/SessionProvider'
+import NotificationBell from '@/components/NotificationBell'
 
 function initialsOf(email: string | null | undefined): string {
   if (!email) return '?'
@@ -38,7 +39,7 @@ export default function Nav() {
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
         <Link href="/" className="text-xl font-bold text-blue-600">
-          NurseryFinder
+          CompareTheNursery
         </Link>
 
         {/* Desktop nav */}
@@ -79,7 +80,9 @@ export default function Nav() {
             )}
           </Link>
           {user ? (
-            <div className="relative">
+            <div className="flex items-center gap-3">
+              <NotificationBell />
+              <div className="relative">
               <button
                 onClick={() => setAccountOpen(v => !v)}
                 className="w-8 h-8 rounded-full bg-blue-600 text-white text-xs font-semibold flex items-center justify-center hover:bg-blue-700"
@@ -154,6 +157,7 @@ export default function Nav() {
                   </button>
                 </div>
               )}
+              </div>
             </div>
           ) : (
             <Link href="/login" className="text-sm text-blue-600 hover:text-blue-800 font-medium">

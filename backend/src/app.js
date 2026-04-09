@@ -44,6 +44,10 @@ import providerEnquiriesRouter from './routes/providerEnquiries.js'
 import providerSlotsRouter from './routes/providerSlots.js'
 import providerAnalyticsRouter from './routes/providerAnalytics.js'
 
+// Notifications + messaging
+import messagesRouter from './routes/messages.js'
+import notificationsRouter from './routes/notifications.js'
+
 // AI feature routes (Claude-powered) — separate block, do not merge with mounts above
 import aiRouter from './routes/ai.js'
 import assistantRouter from './routes/assistant.js'
@@ -120,6 +124,8 @@ app.use('/api/v1/provider', providerSlotsRouter)
 app.use('/api/v1/provider', providerAnalyticsRouter)
 app.use('/api/v1', providerAnalyticsRouter) // for POST /api/v1/nurseries/:urn/view
 app.use('/api/v1/public', publicMarkdownRouter)
+app.use('/api/v1/enquiries', messagesRouter)
+app.use('/api/v1/notifications', notificationsRouter)
 
 // Public OpenAPI spec for LLM agents + ChatGPT Custom GPT
 app.get('/api/openapi.json', (req, res, next) => {

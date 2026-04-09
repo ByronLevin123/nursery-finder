@@ -1,6 +1,6 @@
 import { MetadataRoute } from 'next'
 
-const SITE_URL = 'https://nursery-finder.vercel.app'
+const SITE_URL = 'https://comparethenursery.com'
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nursery-finder-6u7r.onrender.com'
 
 export const revalidate = 86400 // regenerate at most once per day

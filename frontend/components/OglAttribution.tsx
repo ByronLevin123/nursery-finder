@@ -19,7 +19,7 @@ export default function OglAttribution() {
       >
         Open Government Licence v3.0
       </a>
-      . NurseryFinder is independent of Ofsted and the UK Government.
+      . Compare the Nursery is independent of Ofsted and the UK Government.
     </p>
   )
 }

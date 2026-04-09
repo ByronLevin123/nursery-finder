@@ -5,11 +5,11 @@
 
 import { logger } from '../logger.js'
 
-const FROM = process.env.EMAIL_FROM || 'NurseryFinder <noreply@nursery-finder.vercel.app>'
+const FROM = process.env.EMAIL_FROM || 'CompareTheNursery <noreply@comparethenursery.com>'
 const SEND_TIMEOUT_MS = 15_000
 const UNSUBSCRIBE_URL = process.env.FRONTEND_URL
   ? `${process.env.FRONTEND_URL}/account`
-  : 'https://nursery-finder.vercel.app/account'
+  : 'https://comparethenursery.com/account'
 
 let _client = null
 let _clientInitTried = false
@@ -122,7 +122,7 @@ function shell({ title, bodyHtml }) {
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;">
           <tr>
             <td style="padding:20px 24px;background:#2563eb;color:#ffffff;font-size:18px;font-weight:700;">
-              NurseryFinder
+              CompareTheNursery
             </td>
           </tr>
           <tr>
@@ -132,7 +132,7 @@ function shell({ title, bodyHtml }) {
           </tr>
           <tr>
             <td style="padding:16px 24px;border-top:1px solid #e5e7eb;font-size:12px;color:#6b7280;">
-              You are receiving this because you used NurseryFinder.
+              You are receiving this because you used CompareTheNursery.
               <a href="${UNSUBSCRIBE_URL}" style="color:#2563eb;">Manage email preferences</a>.
             </td>
           </tr>
@@ -171,8 +171,8 @@ export function renderShortlistEmail({ nurseries = [], userName } = {}) {
   const count = nurseries.length
   const subject =
     count === 0
-      ? 'Your NurseryFinder shortlist'
-      : `Your NurseryFinder shortlist (${count} ${count === 1 ? 'nursery' : 'nurseries'})`
+      ? 'Your CompareTheNursery shortlist'
+      : `Your CompareTheNursery shortlist (${count} ${count === 1 ? 'nursery' : 'nurseries'})`
 
   const rows = nurseries.length
     ? nurseries.map(nurseryLineHtml).join('')
@@ -182,7 +182,7 @@ export function renderShortlistEmail({ nurseries = [], userName } = {}) {
     title: subject,
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
-      <p style="margin:0 0 16px 0;">Here is the nursery shortlist you saved on NurseryFinder.</p>
+      <p style="margin:0 0 16px 0;">Here is the nursery shortlist you saved on CompareTheNursery.</p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
         ${rows}
       </table>
@@ -193,7 +193,7 @@ export function renderShortlistEmail({ nurseries = [], userName } = {}) {
   const textLines = [
     greeting,
     '',
-    'Here is the nursery shortlist you saved on NurseryFinder:',
+    'Here is the nursery shortlist you saved on CompareTheNursery:',
     '',
     ...(nurseries.length ? nurseries.map(nurseryLineText) : ['(empty shortlist)']),
     '',
@@ -208,8 +208,8 @@ export function renderComparisonEmail({ nurseries = [], userName } = {}) {
   const count = nurseries.length
   const subject =
     count === 0
-      ? 'Your NurseryFinder comparison'
-      : `NurseryFinder comparison: ${count} ${count === 1 ? 'nursery' : 'nurseries'}`
+      ? 'Your CompareTheNursery comparison'
+      : `CompareTheNursery comparison: ${count} ${count === 1 ? 'nursery' : 'nurseries'}`
 
   const rows = nurseries.length
     ? nurseries.map(nurseryLineHtml).join('')
@@ -219,7 +219,7 @@ export function renderComparisonEmail({ nurseries = [], userName } = {}) {
     title: subject,
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
-      <p style="margin:0 0 16px 0;">Here is the side-by-side nursery comparison you put together on NurseryFinder.</p>
+      <p style="margin:0 0 16px 0;">Here is the side-by-side nursery comparison you put together on CompareTheNursery.</p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
         ${rows}
       </table>
@@ -230,7 +230,7 @@ export function renderComparisonEmail({ nurseries = [], userName } = {}) {
   const textLines = [
     greeting,
     '',
-    'Your NurseryFinder comparison:',
+    'Your CompareTheNursery comparison:',
     '',
     ...(nurseries.length ? nurseries.map(nurseryLineText) : ['(no nurseries)']),
     '',
@@ -248,8 +248,8 @@ export function renderDigestEmail({ savedSearches = [], newMatches = {}, userNam
   )
   const subject =
     totalMatches > 0
-      ? `NurseryFinder digest: ${totalMatches} new ${totalMatches === 1 ? 'match' : 'matches'}`
-      : 'NurseryFinder digest'
+      ? `CompareTheNursery digest: ${totalMatches} new ${totalMatches === 1 ? 'match' : 'matches'}`
+      : 'CompareTheNursery digest'
 
   const sections = savedSearches
     .map((s) => {
@@ -277,12 +277,12 @@ export function renderDigestEmail({ savedSearches = [], newMatches = {}, userNam
     title: subject,
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
-      <p style="margin:0 0 16px 0;">Here is your saved-search digest from NurseryFinder.</p>
+      <p style="margin:0 0 16px 0;">Here is your saved-search digest from CompareTheNursery.</p>
       ${sections || '<p style="color:#6b7280;">You have no saved searches yet.</p>'}
     `,
   })
 
-  const textLines = [greeting, '', 'Your NurseryFinder digest:', '']
+  const textLines = [greeting, '', 'Your CompareTheNursery digest:', '']
   for (const s of savedSearches) {
     textLines.push(`# ${s.name || 'Saved search'}`)
     const matches = newMatches[s.id] || []
@@ -366,7 +366,7 @@ export function renderClaimApprovedEmail(nursery = {}, providerUrl = '') {
       <p style="margin:0 0 12px 0;">Good news,</p>
       <p style="margin:0 0 16px 0;">
         Your claim for <strong>${name}</strong>${town ? ' in ' + town : ''} has been approved.
-        You can now manage the nursery's profile on NurseryFinder — update your description,
+        You can now manage the nursery's profile on CompareTheNursery — update your description,
         photos, opening hours and contact details from your provider dashboard.
       </p>
       <p style="margin:20px 0;">

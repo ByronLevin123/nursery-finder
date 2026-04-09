@@ -6,9 +6,11 @@ import { geocodeNurseriesBatch } from './services/geocoding.js'
 import { ingestLandRegistryYear, refreshPropertyStats } from './services/landRegistry.js'
 import { runDailyDigest } from './services/digestJob.js'
 import { recomputeAllDimensionScores } from './services/scoringEngine.js'
+import { notifyVisitReminder } from './services/notificationService.js'
+import db from './db.js'
 import { logger } from './logger.js'
 
-logger.info('NurseryFinder worker started')
+logger.info('CompareTheNursery worker started')
 
 // Geocode 500 nurseries every night at 3am
 cron.schedule('0 3 * * *', async () => {
@@ -73,6 +75,54 @@ cron.schedule('0 8 * * *', async () => {
     logger.info(result, 'cron: daily digest complete')
   } catch (err) {
     logger.error({ err: err.message }, 'cron: daily digest failed')
+  }
+})
+
+// Daily: visit reminders at 8am — notify parents about visits tomorrow
+cron.schedule('0 8 * * *', async () => {
+  logger.info('cron: starting visit reminders')
+  try {
+    if (!db) {
+      logger.warn('cron: visit reminders skipped — db not configured')
+      return
+    }
+
+    // Find confirmed bookings where slot_date = tomorrow
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const tomorrowStr = tomorrow.toISOString().split('T')[0]
+
+    const { data: bookings, error } = await db
+      .from('visit_bookings')
+      .select('id, user_id, nursery_id, visit_slots(slot_date, slot_time), nurseries(name)')
+      .eq('status', 'confirmed')
+      .eq('visit_slots.slot_date', tomorrowStr)
+
+    if (error) throw error
+
+    const valid = (bookings || []).filter((b) => b.visit_slots?.slot_date === tomorrowStr)
+    let sent = 0
+
+    for (const booking of valid) {
+      try {
+        // Look up user email for the reminder
+        const { data: authUser } = await db.auth.admin.getUserById(booking.user_id).catch(() => ({ data: null }))
+        await notifyVisitReminder({
+          user_id: booking.user_id,
+          user_email: authUser?.user?.email || null,
+          nursery_name: booking.nurseries?.name || 'your nursery',
+          slot_date: booking.visit_slots?.slot_date,
+          slot_time: booking.visit_slots?.slot_time,
+        })
+        sent++
+      } catch (err) {
+        logger.warn({ err: err?.message, bookingId: booking.id }, 'visit reminder failed for booking')
+      }
+    }
+
+    logger.info({ total: valid.length, sent }, 'cron: visit reminders complete')
+  } catch (err) {
+    logger.error({ err: err.message }, 'cron: visit reminders failed')
   }
 })
 

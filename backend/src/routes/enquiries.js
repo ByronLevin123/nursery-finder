@@ -86,7 +86,7 @@ router.post('/', requireAuth, enquiryLimiter, async (req, res, next) => {
             if (childAgeMonths < 0) childAgeMonths = null
           }
 
-          const frontendUrl = process.env.FRONTEND_URL || 'https://nursery-finder.vercel.app'
+          const frontendUrl = process.env.FRONTEND_URL || 'https://comparethenursery.com'
           const rendered = renderEnquiryNotificationEmail({
             nurseryName: nursery.name,
             parentName: req.user.email,

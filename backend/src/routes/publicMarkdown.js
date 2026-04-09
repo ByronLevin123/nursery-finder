@@ -4,7 +4,7 @@ import { logger } from '../logger.js'
 
 const router = express.Router()
 
-const SITE = 'https://nursery-finder.vercel.app'
+const SITE = 'https://comparethenursery.com'
 
 function md(res, text) {
   res.set('Content-Type', 'text/markdown; charset=utf-8')

@@ -4,7 +4,7 @@
 
 API_URL=${API_URL:-http://localhost:3001}
 
-echo "🔍 Checking NurseryFinder deployment..."
+echo "🔍 Checking CompareTheNursery deployment..."
 echo ""
 
 # Health check

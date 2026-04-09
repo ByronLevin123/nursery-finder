@@ -7,7 +7,7 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row justify-between items-start gap-6">
           <div>
-            <p className="font-semibold text-gray-800">NurseryFinder</p>
+            <p className="font-semibold text-gray-800">CompareTheNursery</p>
             <p className="text-sm text-gray-500 mt-1">
               Find and compare Ofsted-rated nurseries across the UK
             </p>
@@ -17,7 +17,7 @@ export default function Footer() {
               Privacy Policy
             </Link>
             <a
-              href="mailto:hello@nurseryfinder.co.uk"
+              href="mailto:hello@comparethenursery.com"
               className="text-gray-500 hover:text-gray-700"
             >
               Contact

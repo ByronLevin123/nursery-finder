@@ -5,4 +5,4 @@ Disallow: /account
 Disallow: /login
 Disallow: /shortlist
 
-Sitemap: https://nursery-finder.vercel.app/sitemap.xml
+Sitemap: https://comparethenursery.com/sitemap.xml

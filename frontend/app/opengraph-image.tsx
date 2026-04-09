@@ -5,7 +5,7 @@ import { ImageResponse } from 'next/og'
 // /public/og-default.png and delete this route.
 
 export const runtime = 'edge'
-export const alt = 'NurseryFinder — Compare UK Nurseries by Ofsted Grade'
+export const alt = 'CompareTheNursery — Compare UK Nurseries by Ofsted Grade'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -27,7 +27,7 @@ export default async function Image() {
         }}
       >
         <div style={{ fontSize: 84, fontWeight: 800, letterSpacing: -2, marginBottom: 24 }}>
-          NurseryFinder
+          CompareTheNursery
         </div>
         <div
           style={{
@@ -43,7 +43,7 @@ export default async function Image() {
           family score and live property data
         </div>
         <div style={{ marginTop: 48, fontSize: 24, opacity: 0.85 }}>
-          nursery-finder.vercel.app
+          comparethenursery.com
         </div>
       </div>
     ),

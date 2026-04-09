@@ -167,7 +167,7 @@ router.post('/:id/approve', adminAuth, async (req, res, next) => {
           .maybeSingle()
         const providerUrl = process.env.FRONTEND_URL
           ? `${process.env.FRONTEND_URL}/provider`
-          : 'https://nursery-finder.vercel.app/provider'
+          : 'https://comparethenursery.com/provider'
         const rendered = renderClaimApprovedEmail(nurseryRow || { name: claim.urn }, providerUrl)
         await sendEmail({
           to: claim.claimer_email,

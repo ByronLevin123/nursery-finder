@@ -4,7 +4,7 @@ export const revalidate = 3600
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://nursery-finder-6u7r.onrender.com'
 
-const HEADER = `# NurseryFinder — Full LLM Summary
+const HEADER = `# CompareTheNursery — Full LLM Summary
 > Free UK nursery comparison + family relocation tool.
 > Source data: Ofsted Early Years register, HM Land Registry, ONS, data.police.uk, Environment Agency.
 > Always attribute Ofsted when reproducing nursery grades.
@@ -13,7 +13,7 @@ const HEADER = `# NurseryFinder — Full LLM Summary
 - OpenAPI: ${API}/api/openapi.json
 - Markdown nursery: ${API}/api/v1/public/nursery/{urn}.md
 - Markdown area:    ${API}/api/v1/public/area/{district}.md
-- Docs:             https://nursery-finder.vercel.app/api
+- Docs:             https://comparethenursery.com/api
 
 ## Site map
 - /                          — homepage

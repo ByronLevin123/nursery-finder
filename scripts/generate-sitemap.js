@@ -7,7 +7,7 @@ import { createClient } from '@supabase/supabase-js'
 import { writeFileSync } from 'fs'
 
 const db = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
-const BASE_URL = process.env.FRONTEND_URL || 'https://nurseryfinder.co.uk'
+const BASE_URL = process.env.FRONTEND_URL || 'https://comparethenursery.com'
 
 async function generateSitemap() {
   console.log('Generating sitemap...')

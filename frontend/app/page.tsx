@@ -5,19 +5,19 @@ import OglAttribution from '@/components/OglAttribution'
 import PriorityWizardButton from '@/components/PriorityWizardButton'
 
 export const metadata: Metadata = {
-  title: 'NurseryFinder — Compare UK Nurseries by Ofsted Grade',
+  title: 'CompareTheNursery — Compare UK Nurseries by Ofsted Grade',
   description:
     'Compare 27,000+ UK nurseries with real Ofsted ratings, family scores by area, live property data, and anonymous parent reviews.',
   alternates: { canonical: '/' },
   openGraph: {
-    title: 'NurseryFinder — Compare UK Nurseries by Ofsted Grade',
+    title: 'CompareTheNursery — Compare UK Nurseries by Ofsted Grade',
     description:
       'Compare 27,000+ UK nurseries with real Ofsted ratings, family scores by area, live property data, and anonymous parent reviews.',
     url: '/',
-    siteName: 'NurseryFinder',
+    siteName: 'CompareTheNursery',
     type: 'website',
     locale: 'en_GB',
-    images: [{ url: '/og-default.png', width: 1200, height: 630, alt: 'NurseryFinder' }],
+    images: [{ url: '/og-default.png', width: 1200, height: 630, alt: 'CompareTheNursery' }],
   },
 }
 

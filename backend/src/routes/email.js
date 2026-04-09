@@ -122,9 +122,9 @@ router.post('/test', adminAuth, async (req, res, next) => {
     if (!to) return res.status(400).json({ error: 'no recipient configured' })
     const result = await sendEmail({
       to,
-      subject: 'NurseryFinder email test',
-      html: '<p>This is a test email from NurseryFinder.</p>',
-      text: 'This is a test email from NurseryFinder.',
+      subject: 'CompareTheNursery email test',
+      html: '<p>This is a test email from CompareTheNursery.</p>',
+      text: 'This is a test email from CompareTheNursery.',
     })
     return res.json({ ok: true, messageId: result.messageId })
   } catch (err) {

@@ -1,7 +1,7 @@
 {
-  "name": "nursery-finder-api",
+  "name": "comparethenursery-api",
   "version": "1.0.0",
-  "description": "NurseryFinder backend API",
+  "description": "CompareTheNursery backend API",
   "type": "module",
   "scripts": {
     "start": "node src/index.js",

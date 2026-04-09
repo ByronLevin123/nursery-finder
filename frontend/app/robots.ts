@@ -27,7 +27,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/admin', '/provider/*/edit', '/account'],
       })),
     ],
-    sitemap: 'https://nursery-finder.vercel.app/sitemap.xml',
-    host: 'https://nursery-finder.vercel.app',
+    sitemap: 'https://comparethenursery.com/sitemap.xml',
+    host: 'https://comparethenursery.com',
   }
 }

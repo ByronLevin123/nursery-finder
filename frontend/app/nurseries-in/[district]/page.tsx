@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         title,
         description,
         url,
-        siteName: 'NurseryFinder',
+        siteName: 'CompareTheNursery',
         type: 'website',
         locale: 'en_GB',
         images: [{ url: '/og-default.png', width: 1200, height: 630, alt: `Nurseries in ${district}` }],
@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       },
     }
   } catch {
-    return { title: `Nurseries in ${district} | NurseryFinder` }
+    return { title: `Nurseries in ${district} | CompareTheNursery` }
   }
 }
 
