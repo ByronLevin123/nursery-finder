@@ -671,3 +671,19 @@ export async function createPortalSession(
   const data = await res.json()
   return data.url
 }
+
+// Admin API helpers ------------------------------------------------------------
+
+export async function adminFetch(path: string, token: string, options?: RequestInit) {
+  const res = await fetch(`${API_URL}/api/v1/admin${path}`, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      ...options?.headers,
+    },
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(`Admin API error: ${res.status}`)
+  return res.json()
+}

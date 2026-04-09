@@ -1,17 +1,18 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
 import { useSession } from '@/components/SessionProvider'
 import { getAuthToken, adminFetch } from '@/lib/api'
 
-interface AdminClaim {
+interface AdminReview {
   id: string
   urn: string
   nursery_name: string | null
-  claimer_name: string
-  claimer_email: string
-  claimer_role: string | null
-  evidence_notes: string | null
+  author_display_name: string | null
+  rating: number
+  title: string
+  body: string
   status: string
   created_at: string
 }
@@ -23,18 +24,26 @@ interface Meta {
   pages: number
 }
 
-const STATUS_TABS = ['pending', 'approved', 'rejected'] as const
+const STATUS_TABS = ['pending', 'approved', 'flagged', 'rejected'] as const
 
-export default function AdminClaimsPage() {
+function Stars({ rating }: { rating: number }) {
+  return (
+    <span className="text-amber-500 text-sm" aria-label={`${rating} out of 5 stars`}>
+      {'★'.repeat(rating)}
+      {'☆'.repeat(5 - rating)}
+    </span>
+  )
+}
+
+export default function AdminReviewsPage() {
   const { role } = useSession()
-  const [claims, setClaims] = useState<AdminClaim[]>([])
+  const [reviews, setReviews] = useState<AdminReview[]>([])
   const [meta, setMeta] = useState<Meta>({ total: 0, page: 1, limit: 25, pages: 1 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [status, setStatus] = useState<string>('pending')
   const [page, setPage] = useState(1)
   const [pendingCount, setPendingCount] = useState(0)
-  const [actionNotes, setActionNotes] = useState<Record<string, string>>({})
 
   const load = useCallback(async (s: string, p: number) => {
     setLoading(true)
@@ -43,25 +52,24 @@ export default function AdminClaimsPage() {
       const token = await getAuthToken()
       if (!token) throw new Error('No auth token')
       const params = new URLSearchParams({ status: s, page: String(p), limit: '25' })
-      const data = await adminFetch(`/claims?${params}`, token)
-      setClaims(data.data || [])
+      const data = await adminFetch(`/reviews?${params}`, token)
+      setReviews(data.data || [])
       setMeta(data.meta || { total: 0, page: p, limit: 25, pages: 1 })
       if (s === 'pending') setPendingCount(data.meta?.total || 0)
     } catch (e: any) {
-      setError(e.message || 'Failed to load claims')
+      setError(e.message || 'Failed to load reviews')
     } finally {
       setLoading(false)
     }
   }, [])
 
-  // Load pending count on mount
   useEffect(() => {
     if (role !== 'admin') return
     ;(async () => {
       try {
         const token = await getAuthToken()
         if (!token) return
-        const data = await adminFetch('/claims?status=pending&limit=1', token)
+        const data = await adminFetch('/reviews?status=pending&limit=1', token)
         setPendingCount(data.meta?.total || 0)
       } catch {}
     })()
@@ -72,20 +80,18 @@ export default function AdminClaimsPage() {
     load(status, page)
   }, [role, status, page, load])
 
-  async function handleAction(claimId: string, action: 'approved' | 'rejected') {
-    const notes = actionNotes[claimId] || ''
+  async function handleAction(reviewId: string, newStatus: 'approved' | 'flagged' | 'rejected') {
     try {
       const token = await getAuthToken()
       if (!token) throw new Error('No auth token')
-      await adminFetch(`/claims/${claimId}`, token, {
+      await adminFetch(`/reviews/${reviewId}`, token, {
         method: 'PATCH',
-        body: JSON.stringify({ status: action, admin_notes: notes }),
+        body: JSON.stringify({ status: newStatus }),
       })
-      setActionNotes((prev) => { const next = { ...prev }; delete next[claimId]; return next })
       load(status, page)
       if (status === 'pending') setPendingCount((c) => Math.max(0, c - 1))
     } catch (e: any) {
-      setError(e.message || `Failed to ${action} claim`)
+      setError(e.message || `Failed to ${newStatus} review`)
     }
   }
 
@@ -93,7 +99,7 @@ export default function AdminClaimsPage() {
 
   return (
     <div>
-      <h2 className="text-lg font-bold text-gray-900 mb-4">Claims</h2>
+      <h2 className="text-lg font-bold text-gray-900 mb-4">Reviews</h2>
 
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
@@ -129,70 +135,68 @@ export default function AdminClaimsPage() {
             <div key={i} className="bg-white border border-gray-200 rounded-lg p-4 animate-pulse">
               <div className="h-4 w-48 bg-gray-200 rounded mb-2" />
               <div className="h-3 w-64 bg-gray-100 rounded mb-2" />
-              <div className="h-3 w-32 bg-gray-100 rounded" />
+              <div className="h-3 w-full bg-gray-100 rounded" />
             </div>
           ))}
         </div>
-      ) : claims.length === 0 ? (
+      ) : reviews.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
-          <p className="text-lg font-medium">No {status} claims</p>
+          <p className="text-lg font-medium">No {status} reviews</p>
           <p className="text-sm">
-            {status === 'pending' ? 'All caught up!' : `No claims with status "${status}".`}
+            {status === 'pending' ? 'All reviews are moderated!' : `No reviews with status "${status}".`}
           </p>
         </div>
       ) : (
         <>
           <div className="space-y-3">
-            {claims.map((c) => (
-              <div key={c.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+            {reviews.map((r) => (
+              <div key={r.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
                   <div>
-                    <p className="font-semibold text-gray-900">
-                      {c.nursery_name || c.urn}
-                    </p>
+                    <Link
+                      href={`/nursery/${r.urn}`}
+                      className="font-semibold text-indigo-600 hover:underline"
+                    >
+                      {r.nursery_name || r.urn}
+                    </Link>
                     <p className="text-sm text-gray-600">
-                      {c.claimer_name} &middot; {c.claimer_email}
+                      by {r.author_display_name || 'Anonymous'}
                     </p>
-                    {c.claimer_role && (
-                      <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600 rounded">
-                        {c.claimer_role}
-                      </span>
-                    )}
                   </div>
                   <span className="text-xs text-gray-400 whitespace-nowrap">
-                    {new Date(c.created_at).toLocaleDateString('en-GB')}
+                    {new Date(r.created_at).toLocaleDateString('en-GB')}
                   </span>
                 </div>
 
-                {c.evidence_notes && (
-                  <div className="mb-3 p-3 bg-gray-50 rounded text-sm text-gray-700 whitespace-pre-wrap">
-                    {c.evidence_notes}
-                  </div>
-                )}
+                <div className="mb-2">
+                  <Stars rating={r.rating} />
+                  <span className="ml-2 text-sm font-medium text-gray-900">{r.title}</span>
+                </div>
 
-                {status === 'pending' && (
-                  <div className="space-y-2">
-                    <textarea
-                      placeholder="Admin notes (optional)"
-                      value={actionNotes[c.id] || ''}
-                      onChange={(e) => setActionNotes((prev) => ({ ...prev, [c.id]: e.target.value }))}
-                      rows={2}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
-                    />
-                    <div className="flex gap-2">
+                <p className="text-sm text-gray-700 mb-3 line-clamp-3">{r.body}</p>
+
+                {(status === 'pending' || status === 'flagged') && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleAction(r.id, 'approved')}
+                      className="px-3 py-1.5 bg-green-600 text-white text-xs font-semibold rounded-lg hover:bg-green-700 transition"
+                    >
+                      Approve
+                    </button>
+                    {status !== 'flagged' && (
                       <button
-                        onClick={() => handleAction(c.id, 'approved')}
-                        className="px-4 py-1.5 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition"
+                        onClick={() => handleAction(r.id, 'flagged')}
+                        className="px-3 py-1.5 bg-amber-500 text-white text-xs font-semibold rounded-lg hover:bg-amber-600 transition"
                       >
-                        Approve
+                        Flag
                       </button>
-                      <button
-                        onClick={() => handleAction(c.id, 'rejected')}
-                        className="px-4 py-1.5 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition"
-                      >
-                        Reject
-                      </button>
-                    </div>
+                    )}
+                    <button
+                      onClick={() => handleAction(r.id, 'rejected')}
+                      className="px-3 py-1.5 bg-red-600 text-white text-xs font-semibold rounded-lg hover:bg-red-700 transition"
+                    >
+                      Reject
+                    </button>
                   </div>
                 )}
               </div>
@@ -211,7 +215,7 @@ function Pagination({
   page,
   setPage,
 }: {
-  meta: { total: number; page: number; limit: number; pages: number }
+  meta: Meta
   page: number
   setPage: (p: number) => void
 }) {
