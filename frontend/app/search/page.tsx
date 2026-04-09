@@ -20,6 +20,7 @@ import {
 import dynamic from 'next/dynamic'
 
 import SaveSearchButton from '@/components/SaveSearchButton'
+import RecentlyViewed from '@/components/RecentlyViewed'
 
 const NurseryMap = dynamic(() => import('@/components/NurseryMap'), { ssr: false })
 
@@ -344,6 +345,8 @@ function SearchContent() {
         {/* Results */}
         <div className="p-4">
           {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+
+          {!results && !loading && <RecentlyViewed />}
 
           {results && (
             <div className="mb-3 flex items-center justify-between">

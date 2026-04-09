@@ -563,6 +563,40 @@ export async function getNurseriesInDistrict(district: string) {
   }>
 }
 
+// Similar nurseries + autocomplete ---------------------------------------------
+
+export async function getSimilarNurseries(urn: string): Promise<Nursery[]> {
+  try {
+    const res = await fetch(`${API_URL}/api/v1/nurseries/${encodeURIComponent(urn)}/similar`, {
+      next: { revalidate: 3600 },
+    })
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.data || []
+  } catch {
+    return []
+  }
+}
+
+export interface SearchSuggestion {
+  type: 'nursery' | 'area'
+  label: string
+  urn?: string
+  postcode?: string
+}
+
+export async function getSearchSuggestions(query: string): Promise<SearchSuggestion[]> {
+  if (!query || query.length < 2) return []
+  try {
+    const res = await fetch(`${API_URL}/api/v1/nurseries/autocomplete?q=${encodeURIComponent(query)}`)
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.suggestions || []
+  } catch {
+    return []
+  }
+}
+
 // Billing / Subscription -------------------------------------------------------
 
 export interface TierInfo {

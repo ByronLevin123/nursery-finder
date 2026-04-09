@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Script from 'next/script'
 import { Analytics } from '@vercel/analytics/react'
 import Footer from '@/components/Footer'
+import MobileNav from '@/components/MobileNav'
 import Nav from '@/components/Nav'
 import { SessionProvider } from '@/components/SessionProvider'
 import { organizationSchema, websiteSchema, jsonLdScript } from '@/lib/schema'
@@ -88,8 +89,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-sans antialiased">
         <SessionProvider>
           <Nav />
-          <main className="min-h-screen">{children}</main>
+          <main className="min-h-screen pb-16 md:pb-0">{children}</main>
           <Footer />
+          <MobileNav />
           <Analytics />
         </SessionProvider>
       </body>

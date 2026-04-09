@@ -175,6 +175,124 @@ router.post('/fees', async (req, res, next) => {
   }
 })
 
+// GET /api/v1/nurseries/autocomplete?q=... — must be before /:urn routes
+router.get('/autocomplete', async (req, res, next) => {
+  try {
+    const q = (req.query.q || '').toString().trim()
+    if (q.length < 2) return res.json({ suggestions: [] })
+
+    const suggestions = []
+
+    // Search nurseries by name
+    const { data: nurseries } = await db
+      .from('nurseries')
+      .select('urn, name, postcode, town')
+      .ilike('name', `%${q}%`)
+      .not('location', 'is', null)
+      .limit(6)
+
+    if (nurseries) {
+      for (const n of nurseries) {
+        suggestions.push({
+          type: 'nursery',
+          label: `${n.name}${n.town ? `, ${n.town}` : ''}`,
+          urn: n.urn,
+        })
+      }
+    }
+
+    // Search by postcode prefix
+    if (suggestions.length < 8) {
+      const { data: areas } = await db
+        .from('nurseries')
+        .select('postcode, town')
+        .ilike('postcode', `${q}%`)
+        .not('location', 'is', null)
+        .limit(8 - suggestions.length)
+
+      if (areas) {
+        const seen = new Set()
+        for (const a of areas) {
+          const district = a.postcode?.split(' ')[0]
+          if (district && !seen.has(district)) {
+            seen.add(district)
+            suggestions.push({
+              type: 'area',
+              label: `${district}${a.town ? ` — ${a.town}` : ''}`,
+              postcode: district,
+            })
+          }
+        }
+      }
+    }
+
+    res.json({ suggestions: suggestions.slice(0, 8) })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// GET /api/v1/nurseries/:urn/similar
+router.get('/:urn/similar', async (req, res, next) => {
+  try {
+    // First fetch the target nursery to get its location and grade
+    const { data: nursery, error: nurseryErr } = await db
+      .from('nurseries')
+      .select('urn, lat, lng, ofsted_overall_grade, location')
+      .eq('urn', req.params.urn)
+      .single()
+
+    if (nurseryErr || !nursery) {
+      return res.status(404).json({ error: 'Nursery not found' })
+    }
+
+    if (!nursery.lat || !nursery.lng) {
+      return res.json({ data: [] })
+    }
+
+    // Build adjacent grade list
+    const gradeAdjacency = {
+      Outstanding: ['Outstanding', 'Good'],
+      Good: ['Outstanding', 'Good', 'Requires Improvement'],
+      'Requires Improvement': ['Good', 'Requires Improvement', 'Inadequate'],
+      Inadequate: ['Requires Improvement', 'Inadequate'],
+    }
+    const allowedGrades = nursery.ofsted_overall_grade
+      ? gradeAdjacency[nursery.ofsted_overall_grade] || null
+      : null
+
+    // Use RPC to run a raw PostGIS query for nearby nurseries
+    const radiusKm = 5
+    const { data, error } = await db.rpc('search_nurseries_near', {
+      search_lat: nursery.lat,
+      search_lng: nursery.lng,
+      radius_km: radiusKm,
+      grade_filter: null,
+      funded_2yr: false,
+      funded_3yr: false,
+    })
+
+    if (error) throw error
+
+    // Filter: exclude self, match grade adjacency, limit to 6
+    const similar = (data || [])
+      .filter((n) => n.urn !== nursery.urn)
+      .filter((n) => {
+        if (!allowedGrades) return true
+        return allowedGrades.includes(n.ofsted_overall_grade)
+      })
+      .slice(0, 6)
+
+    logger.info(
+      { urn: req.params.urn, results: similar.length },
+      'similar nurseries lookup'
+    )
+    res.json({ data: similar })
+  } catch (err) {
+    next(err)
+  }
+})
+
 // GET /api/v1/nurseries/:urn
 router.get('/:urn', async (req, res, next) => {
   try {

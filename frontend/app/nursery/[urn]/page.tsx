@@ -24,6 +24,9 @@ const NurseryPricingTab = dynamic(() => import('@/components/NurseryPricingTab')
 const NurseryAvailabilityTab = dynamic(() => import('@/components/NurseryAvailabilityTab'), { ssr: false })
 const BookVisitButton = dynamic(() => import('@/components/BookVisitButton'), { ssr: false })
 const ViewTracker = dynamic(() => import('@/components/ViewTracker'), { ssr: false })
+const SimilarNurseries = dynamic(() => import('@/components/SimilarNurseries'), { ssr: false })
+const NurseryPlaceholder = dynamic(() => import('@/components/NurseryPlaceholder'), { ssr: false })
+const RecentlyViewedTracker = dynamic(() => import('@/components/RecentlyViewedTracker'), { ssr: false })
 
 export async function generateMetadata({ params }: { params: { urn: string } }): Promise<Metadata> {
   try {
@@ -346,7 +349,18 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
       <AiReviewSynthesis urn={nursery.urn} />
       <ReviewSection urn={nursery.urn} />
 
+      {/* Photo placeholder when no provider photos */}
+      {(!nursery.photos || nursery.photos.length === 0) && (
+        <div className="mb-6">
+          <NurseryPlaceholder name={nursery.name} />
+        </div>
+      )}
+
+      {/* Similar nurseries */}
+      <SimilarNurseries urn={nursery.urn} />
+
       <ViewTracker urn={nursery.urn} />
+      <RecentlyViewedTracker urn={nursery.urn} name={nursery.name} grade={nursery.ofsted_overall_grade} town={nursery.town} />
       <OglAttribution />
     </div>
   )
