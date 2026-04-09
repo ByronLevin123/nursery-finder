@@ -27,7 +27,7 @@ const SessionContext = createContext<SessionContextValue>({
 
 async function fetchRole(token: string): Promise<UserRole> {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nursery-finder-6u7r.onrender.com'
     const r = await fetch(`${apiUrl}/api/v1/profile`, {
       headers: { Authorization: `Bearer ${token}` },
     })
