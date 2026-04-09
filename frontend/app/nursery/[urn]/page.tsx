@@ -20,6 +20,8 @@ import dynamic from 'next/dynamic'
 
 const SingleNurseryMap = dynamic(() => import('@/components/SingleNurseryMap'), { ssr: false })
 const TravelTimePanel = dynamic(() => import('@/components/TravelTimePanel'), { ssr: false })
+const NurseryPricingTab = dynamic(() => import('@/components/NurseryPricingTab'), { ssr: false })
+const NurseryAvailabilityTab = dynamic(() => import('@/components/NurseryAvailabilityTab'), { ssr: false })
 
 export async function generateMetadata({ params }: { params: { urn: string } }): Promise<Metadata> {
   try {
@@ -204,6 +206,10 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         )}
         <FeeModal nurseryId={nursery.id} />
       </div>
+
+      {/* Pricing + Availability */}
+      <NurseryPricingTab urn={nursery.urn} nurseryId={nursery.id} />
+      <NurseryAvailabilityTab urn={nursery.urn} />
 
       {/* Provider-supplied content */}
       {nursery.description && (

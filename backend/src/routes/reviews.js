@@ -1,6 +1,7 @@
 import express from 'express'
 import crypto from 'crypto'
 import db from '../db.js'
+import { extractCategoryScores } from '../services/reviewNlp.js'
 import { logger } from '../logger.js'
 
 const router = express.Router()
@@ -137,6 +138,21 @@ router.post('/:urn/reviews', async (req, res, next) => {
     if (insertErr) throw insertErr
 
     logger.info({ urn, status }, 'review submitted')
+
+    // NLP category extraction — non-blocking, failure must not block review
+    try {
+      const categoryScores = await extractCategoryScores(body)
+      if (categoryScores && inserted.id) {
+        await db
+          .from('nursery_reviews')
+          .update({ category_scores: categoryScores })
+          .eq('id', inserted.id)
+        inserted.category_scores = categoryScores
+      }
+    } catch (nlpErr) {
+      logger.warn({ err: nlpErr.message, reviewId: inserted.id }, 'review NLP failed')
+    }
+
     res.status(201).json(stripIpHash(inserted))
   } catch (err) {
     next(err)

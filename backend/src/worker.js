@@ -5,6 +5,7 @@ import { ingestOfstedRegister } from './services/ofstedIngest.js'
 import { geocodeNurseriesBatch } from './services/geocoding.js'
 import { ingestLandRegistryYear, refreshPropertyStats } from './services/landRegistry.js'
 import { runDailyDigest } from './services/digestJob.js'
+import { recomputeAllDimensionScores } from './services/scoringEngine.js'
 import { logger } from './logger.js'
 
 logger.info('NurseryFinder worker started')
@@ -46,6 +47,17 @@ cron.schedule('0 1 1 * *', async () => {
 // Nightly: crime data batch (takes ~1 hour for 100 districts)
 cron.schedule('0 1 * * *', async () => {
   logger.info('cron: refreshing crime data batch')
+})
+
+// Nightly: recompute nursery dimension scores (4:30am)
+cron.schedule('30 4 * * *', async () => {
+  logger.info('cron: recomputing dimension scores')
+  try {
+    const result = await recomputeAllDimensionScores()
+    logger.info(result, 'cron: dimension scores complete')
+  } catch (err) {
+    logger.error({ err: err.message }, 'cron: dimension scores failed')
+  }
 })
 
 // Nightly: recalculate family scores

@@ -49,6 +49,16 @@ export default function Nav() {
           <Link href="/find-an-area" className="text-sm text-gray-600 hover:text-gray-900">
             Find an Area
           </Link>
+          {user && (
+            <Link href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900">
+              Dashboard
+            </Link>
+          )}
+          {user && (
+            <Link href="/applications" className="text-sm text-gray-600 hover:text-gray-900">
+              Applications
+            </Link>
+          )}
           <Link href="/shortlist" className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1">
             Shortlist
             {shortlistCount > 0 && (
@@ -149,6 +159,12 @@ export default function Nav() {
         <div className="md:hidden border-t border-gray-200 bg-white px-4 py-3 space-y-3">
           <Link href="/search" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Search</Link>
           <Link href="/find-an-area" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Find an Area</Link>
+          {user && (
+            <Link href="/dashboard" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Dashboard</Link>
+          )}
+          {user && (
+            <Link href="/applications" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Applications</Link>
+          )}
           <Link href="/shortlist" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>
             Shortlist {shortlistCount > 0 && `(${shortlistCount})`}
           </Link>

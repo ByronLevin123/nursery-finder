@@ -64,10 +64,10 @@ export default function HomePage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
             <a
-              href="#nursery-search"
+              href="/quiz"
               className="inline-flex items-center justify-center gap-2 px-6 py-4 bg-indigo-600 text-white rounded-xl font-semibold text-lg shadow-md hover:bg-indigo-700 transition"
             >
-              <span className="text-2xl">🏫</span> Find a nursery
+              Take the 2-min quiz &rarr;
             </a>
             <a
               href="/property-search"
@@ -85,14 +85,19 @@ export default function HomePage() {
           <div id="nursery-search">
             <HomeSearch />
           </div>
+          <p className="text-xs text-gray-400 mt-2">Or search by postcode above</p>
           <PriorityWizardButton />
-          <p className="text-xs text-gray-500 mt-6">
-            <span className="font-semibold text-gray-700">27,808</span> nurseries
-            <span className="mx-2">·</span>
-            <span className="font-semibold text-gray-700">2,020</span> districts
-            <span className="mx-2">·</span>
-            Updated daily
-          </p>
+          <div className="flex flex-wrap justify-center gap-3 mt-6">
+            <span className="px-3 py-1 bg-white/80 rounded-full text-xs font-medium text-gray-700 border border-gray-200 shadow-sm">
+              27,808 nurseries compared
+            </span>
+            <span className="px-3 py-1 bg-white/80 rounded-full text-xs font-medium text-gray-700 border border-gray-200 shadow-sm">
+              2,020 districts
+            </span>
+            <span className="px-3 py-1 bg-white/80 rounded-full text-xs font-medium text-gray-700 border border-gray-200 shadow-sm">
+              Updated daily
+            </span>
+          </div>
         </div>
       </section>
 
@@ -181,12 +186,20 @@ export default function HomePage() {
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">
             Ready to find your next nursery?
           </h2>
-          <a
-            href="/search"
-            className="inline-block px-8 py-3 bg-white text-indigo-700 text-lg font-semibold rounded-xl hover:bg-indigo-50 transition shadow-lg"
-          >
-            Start searching
-          </a>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <a
+              href="/quiz"
+              className="inline-block px-8 py-3 bg-white text-indigo-700 text-lg font-semibold rounded-xl hover:bg-indigo-50 transition shadow-lg"
+            >
+              Take the quiz
+            </a>
+            <a
+              href="/search"
+              className="inline-block px-8 py-3 bg-white/20 text-white text-lg font-semibold rounded-xl hover:bg-white/30 transition border border-white/40"
+            >
+              Search by postcode
+            </a>
+          </div>
         </div>
       </section>
 

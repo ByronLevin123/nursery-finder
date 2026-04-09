@@ -5,6 +5,8 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { compareNurseries, Nursery } from '@/lib/api'
 import { getCompareList, removeFromCompare, clearCompare } from '@/lib/compare'
 import ComparisonTable from '@/components/ComparisonTable'
+import RadarChart from '@/components/RadarChart'
+import EnquiryModal from '@/components/EnquiryModal'
 import Link from 'next/link'
 import { useSession } from '@/components/SessionProvider'
 
@@ -19,6 +21,8 @@ function CompareContent() {
   const [copied, setCopied] = useState(false)
   const [emailing, setEmailing] = useState(false)
   const [emailToast, setEmailToast] = useState<string | null>(null)
+  const [tradeoff, setTradeoff] = useState<string | null>(null)
+  const [showEnquiry, setShowEnquiry] = useState(false)
   const { session, user } = useSession()
 
   useEffect(() => {
@@ -35,6 +39,22 @@ function CompareContent() {
       try {
         const data = await compareNurseries(urns)
         setNurseries(data)
+
+        // Fetch AI tradeoff for top 2 if signed in
+        if (data.length >= 2 && session?.access_token) {
+          try {
+            const trRes = await fetch(
+              `${API_URL}/api/v1/recommendations/tradeoffs?urns=${data[0].urn},${data[1].urn}`,
+              { headers: { Authorization: `Bearer ${session.access_token}` } }
+            )
+            if (trRes.ok) {
+              const trData = await trRes.json()
+              setTradeoff(trData.explanation || null)
+            }
+          } catch {
+            // non-fatal
+          }
+        }
       } catch (err: any) {
         setError(err.message || 'Failed to load nurseries')
       }
@@ -207,6 +227,80 @@ function CompareContent() {
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
         <ComparisonTable nurseries={nurseries} onRemove={handleRemove} />
       </div>
+
+      {/* Radar Chart */}
+      {nurseries.length >= 2 && (
+        <div className="mt-6 bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 text-center">Dimension Comparison</h2>
+          <RadarChart
+            axes={[
+              { label: 'Quality', values: nurseries.map((n: any) => n.quality_score ?? 50) },
+              { label: 'Cost', values: nurseries.map((n: any) => n.cost_score ?? 50) },
+              { label: 'Availability', values: nurseries.map((n: any) => n.availability_score ?? 50) },
+              { label: 'Staff', values: nurseries.map((n: any) => n.staff_score ?? 50) },
+              { label: 'Sentiment', values: nurseries.map((n: any) => n.sentiment_score ?? 50) },
+              { label: 'Location', values: nurseries.map((_, i: number) => i === 0 ? 80 : 60) },
+            ]}
+            nurseryNames={nurseries.map((n) => n.name)}
+          />
+        </div>
+      )}
+
+      {/* Winner Badges */}
+      {nurseries.length >= 2 && (
+        <div className="mt-4 bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+          <h2 className="text-sm font-semibold text-gray-900 mb-3">Winners by category</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {(['quality_score', 'cost_score', 'availability_score', 'staff_score', 'sentiment_score'] as const).map((dim) => {
+              const label = dim.replace('_score', '').charAt(0).toUpperCase() + dim.replace('_score', '').slice(1)
+              let best: Nursery | null = null
+              let bestVal = -1
+              for (const n of nurseries) {
+                const val = (n as any)[dim]
+                if (val != null && val > bestVal) {
+                  bestVal = val
+                  best = n
+                }
+              }
+              if (!best) return null
+              return (
+                <div key={dim} className="text-xs p-2 bg-amber-50 border border-amber-200 rounded-lg">
+                  <span className="mr-1">&#127942;</span>
+                  <span className="font-medium">Best {label.toLowerCase()}:</span>{' '}
+                  <span className="text-gray-700">{best.name}</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* AI Insight */}
+      {tradeoff && (
+        <div className="mt-4 bg-indigo-50 border border-indigo-200 rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-indigo-900 mb-2">AI Insight</h2>
+          <p className="text-sm text-indigo-800">{tradeoff}</p>
+        </div>
+      )}
+
+      {/* Enquire at all */}
+      {nurseries.length >= 2 && (
+        <div className="mt-4 text-center">
+          <button
+            onClick={() => setShowEnquiry(true)}
+            className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition"
+          >
+            Enquire at all {nurseries.length} nurseries
+          </button>
+        </div>
+      )}
+
+      {showEnquiry && (
+        <EnquiryModal
+          nurseries={nurseries.map((n) => ({ id: n.id, urn: n.urn, name: n.name, town: n.town }))}
+          onClose={() => setShowEnquiry(false)}
+        />
+      )}
 
       {/* Legend */}
       <div className="mt-4 flex gap-4 text-xs text-gray-500">

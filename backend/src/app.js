@@ -33,6 +33,11 @@ import providerRouter from './routes/provider.js'
 import travelRouter from './routes/travel.js'
 import { optionalAuth } from './middleware/supabaseAuth.js'
 
+// Decision engine routes
+import quizRouter from './routes/quiz.js'
+import enquiriesRouter from './routes/enquiries.js'
+import providerDataRouter from './routes/providerData.js'
+
 // AI feature routes (Claude-powered) — separate block, do not merge with mounts above
 import aiRouter from './routes/ai.js'
 import assistantRouter from './routes/assistant.js'
@@ -98,6 +103,10 @@ app.use('/api/v1/saved-searches', savedSearchesRouter)
 app.use('/api/v1/overlays', overlaysRouter)
 app.use('/api/v1/claims', claimsRouter)
 app.use('/api/v1/provider', providerRouter)
+app.use('/api/v1/provider', providerDataRouter)
+app.use('/api/v1/quiz', quizRouter)
+app.use('/api/v1', quizRouter)
+app.use('/api/v1/enquiries', enquiriesRouter)
 app.use('/api/v1/travel', travelRouter)
 app.use('/api/v1/public', publicMarkdownRouter)
 
