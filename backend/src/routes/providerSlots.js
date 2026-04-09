@@ -67,10 +67,7 @@ router.post('/nurseries/:urn/slots', requireAuth, async (req, res, next) => {
       booked: 0,
     }))
 
-    const { data, error } = await db
-      .from('visit_slots')
-      .insert(rows)
-      .select()
+    const { data, error } = await db.from('visit_slots').insert(rows).select()
 
     if (error) throw error
     logger.info({ urn: req.params.urn, count: rows.length }, 'provider created visit slots')
@@ -95,10 +92,7 @@ router.delete('/nurseries/:urn/slots/:id', requireAuth, async (req, res, next) =
     if (sErr) throw sErr
     if (!slot) return res.status(404).json({ error: 'Slot not found' })
 
-    const { error } = await db
-      .from('visit_slots')
-      .delete()
-      .eq('id', req.params.id)
+    const { error } = await db.from('visit_slots').delete().eq('id', req.params.id)
     if (error) throw error
 
     logger.info({ urn: req.params.urn, slotId: req.params.id }, 'provider deleted visit slot')

@@ -320,8 +320,10 @@ export function renderEnquiryNotificationEmail({
     if (childAgeMonths != null) childInfo += `, ${escapeHtml(String(childAgeMonths))} months old`
     detailRows.push(`<strong>Child:</strong> ${childInfo}`)
   }
-  if (preferredStart) detailRows.push(`<strong>Preferred start:</strong> ${escapeHtml(preferredStart)}`)
-  if (sessionPreference) detailRows.push(`<strong>Session:</strong> ${escapeHtml(sessionPreference)}`)
+  if (preferredStart)
+    detailRows.push(`<strong>Preferred start:</strong> ${escapeHtml(preferredStart)}`)
+  if (sessionPreference)
+    detailRows.push(`<strong>Session:</strong> ${escapeHtml(sessionPreference)}`)
   if (message) detailRows.push(`<strong>Message:</strong> ${escapeHtml(message)}`)
 
   const safeUrl = escapeHtml(providerUrl)
@@ -343,7 +345,9 @@ export function renderEnquiryNotificationEmail({
     `New enquiry for ${nurseryName}`,
     '',
     ...(parentName ? [`Parent: ${parentName}`] : []),
-    ...(childName ? [`Child: ${childName}${childAgeMonths != null ? `, ${childAgeMonths} months old` : ''}`] : []),
+    ...(childName
+      ? [`Child: ${childName}${childAgeMonths != null ? `, ${childAgeMonths} months old` : ''}`]
+      : []),
     ...(preferredStart ? [`Preferred start: ${preferredStart}`] : []),
     ...(sessionPreference ? [`Session: ${sessionPreference}`] : []),
     ...(message ? [`Message: ${message}`] : []),

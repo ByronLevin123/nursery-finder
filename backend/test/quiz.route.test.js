@@ -11,32 +11,69 @@ function makeQueryBuilder(table) {
   const state = { table, op: 'select', filters: [], insertRow: null, updateRow: null }
   function applyFilters(rows) {
     return rows.filter((r) =>
-      state.filters.every(([c, op, v]) => (op === 'eq' ? r[c] === v : op === 'in' ? v.includes(r[c]) : true))
+      state.filters.every(([c, op, v]) =>
+        op === 'eq' ? r[c] === v : op === 'in' ? v.includes(r[c]) : true
+      )
     )
   }
   const builder = {
-    select() { return builder },
-    insert(row) { state.op = 'insert'; state.insertRow = row; return builder },
-    update(row) { state.op = 'update'; state.updateRow = row; return builder },
-    delete() { state.op = 'delete'; return builder },
-    eq(c, v) { state.filters.push([c, 'eq', v]); return builder },
-    in(c, v) { state.filters.push([c, 'in', v]); return builder },
-    order() { return builder },
-    range() { return builder },
-    limit() { return builder },
-    single() { return builder._resolve(true, false) },
-    maybeSingle() { return builder._resolve(true, true) },
-    then(onF, onR) { return builder._resolve(false, false).then(onF, onR) },
+    select() {
+      return builder
+    },
+    insert(row) {
+      state.op = 'insert'
+      state.insertRow = row
+      return builder
+    },
+    update(row) {
+      state.op = 'update'
+      state.updateRow = row
+      return builder
+    },
+    delete() {
+      state.op = 'delete'
+      return builder
+    },
+    eq(c, v) {
+      state.filters.push([c, 'eq', v])
+      return builder
+    },
+    in(c, v) {
+      state.filters.push([c, 'in', v])
+      return builder
+    },
+    order() {
+      return builder
+    },
+    range() {
+      return builder
+    },
+    limit() {
+      return builder
+    },
+    single() {
+      return builder._resolve(true, false)
+    },
+    maybeSingle() {
+      return builder._resolve(true, true)
+    },
+    then(onF, onR) {
+      return builder._resolve(false, false).then(onF, onR)
+    },
     async _resolve(single, maybe) {
       if (table === 'user_quiz_responses') {
         if (state.op === 'insert') {
-          const row = { id: `q-${store.quizResponses.size + 1}`, created_at: new Date().toISOString(), ...state.insertRow }
+          const row = {
+            id: `q-${store.quizResponses.size + 1}`,
+            created_at: new Date().toISOString(),
+            ...state.insertRow,
+          }
           store.quizResponses.set(row.user_id, row)
           return single ? { data: row, error: null } : { data: [row], error: null }
         }
         if (state.op === 'update') {
           const rows = applyFilters([...store.quizResponses.values()])
-          const updated = rows.map(r => {
+          const updated = rows.map((r) => {
             const merged = { ...r, ...state.updateRow }
             store.quizResponses.set(merged.user_id, merged)
             return merged
@@ -48,12 +85,29 @@ function makeQueryBuilder(table) {
         return { data: rows, error: null }
       }
       if (table === 'user_profiles') {
-        return { data: { home_postcode: 'SW1A 1AA', work_postcode: 'EC2M 1QS', role: 'customer' }, error: null }
+        return {
+          data: { home_postcode: 'SW1A 1AA', work_postcode: 'EC2M 1QS', role: 'customer' },
+          error: null,
+        }
       }
       if (table === 'nurseries') {
         const mockNurseries = [
-          { urn: 'EY100', name: 'Sunny', town: 'London', quality_score: 80, cost_score: 60, ofsted_overall_grade: 'Good' },
-          { urn: 'EY101', name: 'Bright', town: 'London', quality_score: 95, cost_score: 40, ofsted_overall_grade: 'Outstanding' },
+          {
+            urn: 'EY100',
+            name: 'Sunny',
+            town: 'London',
+            quality_score: 80,
+            cost_score: 60,
+            ofsted_overall_grade: 'Good',
+          },
+          {
+            urn: 'EY101',
+            name: 'Bright',
+            town: 'London',
+            quality_score: 95,
+            cost_score: 40,
+            ofsted_overall_grade: 'Outstanding',
+          },
         ]
         const filtered = applyFilters(mockNurseries)
         if (single || maybe) return { data: filtered[0] ?? null, error: null }
@@ -85,7 +139,11 @@ vi.mock('@supabase/supabase-js', async () => ({
 
 vi.mock('../src/services/geocoding.js', () => ({
   geocodePostcode: vi.fn(async () => ({ lat: 51.5, lng: -0.1 })),
-  chunkPostcodes: (arr, n) => { const out = []; for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n)); return out },
+  chunkPostcodes: (arr, n) => {
+    const out = []
+    for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n))
+    return out
+  },
 }))
 
 vi.mock('../src/services/reviewNlp.js', () => ({

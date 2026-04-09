@@ -22,15 +22,39 @@ function makeQueryBuilder(table) {
     )
   }
   const builder = {
-    select() { return builder },
-    insert(row) { state.op = 'insert'; state.insertRow = row; return builder },
-    update(row) { state.op = 'update'; state.updateRow = row; return builder },
-    eq(c, v) { state.filters.push([c, 'eq', v]); return builder },
-    in(c, v) { state.filters.push([c, 'in', v]); return builder },
-    order() { return builder },
-    single() { return builder._resolve(true) },
-    maybeSingle() { return builder._resolve(true) },
-    then(onF, onR) { return builder._resolve(false).then(onF, onR) },
+    select() {
+      return builder
+    },
+    insert(row) {
+      state.op = 'insert'
+      state.insertRow = row
+      return builder
+    },
+    update(row) {
+      state.op = 'update'
+      state.updateRow = row
+      return builder
+    },
+    eq(c, v) {
+      state.filters.push([c, 'eq', v])
+      return builder
+    },
+    in(c, v) {
+      state.filters.push([c, 'in', v])
+      return builder
+    },
+    order() {
+      return builder
+    },
+    single() {
+      return builder._resolve(true)
+    },
+    maybeSingle() {
+      return builder._resolve(true)
+    },
+    then(onF, onR) {
+      return builder._resolve(false).then(onF, onR)
+    },
     async _resolve(single) {
       const m = table === 'nurseries' ? store.nurseries : store.enquiries
       if (state.op === 'update') {
@@ -71,14 +95,22 @@ vi.mock('@supabase/supabase-js', async () => ({
 
 vi.mock('../src/services/geocoding.js', () => ({
   geocodePostcode: vi.fn(async () => ({ lat: 51.5, lng: -0.1 })),
-  chunkPostcodes: (arr, n) => { const out = []; for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n)); return out },
+  chunkPostcodes: (arr, n) => {
+    const out = []
+    for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n))
+    return out
+  },
 }))
 
 vi.mock('../src/services/emailService.js', () => ({
   sendEmail: vi.fn(async () => ({ messageId: 'test-123' })),
   isEmailAvailable: () => false,
   escapeHtml: (s) => String(s || ''),
-  renderEnquiryNotificationEmail: vi.fn(() => ({ subject: 'test', html: '<p>test</p>', text: 'test' })),
+  renderEnquiryNotificationEmail: vi.fn(() => ({
+    subject: 'test',
+    html: '<p>test</p>',
+    text: 'test',
+  })),
   EmailNotConfiguredError: class extends Error {},
   EmailSendError: class extends Error {},
 }))
@@ -99,13 +131,21 @@ beforeEach(() => {
   store.nurseries.clear()
   store.enquiries.clear()
   store.nurseries.set('n-1', {
-    id: 'n-1', urn: 'EY100', name: 'Sunny', town: 'London',
-    contact_email: null, email: null,
+    id: 'n-1',
+    urn: 'EY100',
+    name: 'Sunny',
+    town: 'London',
+    contact_email: null,
+    email: null,
     claimed_by_user_id: OWNER.id,
   })
   store.enquiries.set('e-1', {
-    id: 'e-1', nursery_id: 'n-1', user_id: 'parent-1',
-    child_name: 'Alice', status: 'sent', sent_at: new Date().toISOString(),
+    id: 'e-1',
+    nursery_id: 'n-1',
+    user_id: 'parent-1',
+    child_name: 'Alice',
+    status: 'sent',
+    sent_at: new Date().toISOString(),
     message: 'Interested',
   })
 })
@@ -136,7 +176,9 @@ describe('GET /api/v1/provider/enquiries', () => {
 
 describe('PATCH /api/v1/provider/enquiries/:id', () => {
   it('requires auth', async () => {
-    const res = await request(app).patch('/api/v1/provider/enquiries/e-1').send({ status: 'responded' })
+    const res = await request(app)
+      .patch('/api/v1/provider/enquiries/e-1')
+      .send({ status: 'responded' })
     expect(res.status).toBe(401)
   })
 

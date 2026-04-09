@@ -34,7 +34,8 @@ Review: "${reviewText}"`
   try {
     const text = await callClaude({
       prompt,
-      system: 'You are a review analysis tool. Return only valid JSON with keys: staff, food, communication, facilities, learning, safety. Each value is an integer 1-5.',
+      system:
+        'You are a review analysis tool. Return only valid JSON with keys: staff, food, communication, facilities, learning, safety. Each value is an integer 1-5.',
       maxTokens: 100,
     })
 

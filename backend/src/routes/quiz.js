@@ -3,7 +3,11 @@
 import express from 'express'
 import db from '../db.js'
 import { requireAuth } from '../middleware/supabaseAuth.js'
-import { mapQuizToWeights, getPersonalisedRankings, generateTradeoffExplanation } from '../services/quizEngine.js'
+import {
+  mapQuizToWeights,
+  getPersonalisedRankings,
+  generateTradeoffExplanation,
+} from '../services/quizEngine.js'
 import { logger } from '../logger.js'
 
 const router = express.Router()
@@ -32,10 +36,14 @@ router.post('/submit', requireAuth, async (req, res, next) => {
 
     // Validation
     if (urgency && !VALID_URGENCIES.includes(urgency)) {
-      return res.status(400).json({ error: `urgency must be one of: ${VALID_URGENCIES.join(', ')}` })
+      return res
+        .status(400)
+        .json({ error: `urgency must be one of: ${VALID_URGENCIES.join(', ')}` })
     }
     if (commute_from && !VALID_COMMUTE_FROM.includes(commute_from)) {
-      return res.status(400).json({ error: `commute_from must be one of: ${VALID_COMMUTE_FROM.join(', ')}` })
+      return res
+        .status(400)
+        .json({ error: `commute_from must be one of: ${VALID_COMMUTE_FROM.join(', ')}` })
     }
     if (priority_order && !Array.isArray(priority_order)) {
       return res.status(400).json({ error: 'priority_order must be an array' })
@@ -88,11 +96,7 @@ router.post('/submit', requireAuth, async (req, res, next) => {
         .select()
         .single())
     } else {
-      ;({ data, error } = await db
-        .from('user_quiz_responses')
-        .insert(row)
-        .select()
-        .single())
+      ;({ data, error } = await db.from('user_quiz_responses').insert(row).select().single())
     }
 
     if (error) throw error
@@ -181,10 +185,7 @@ router.get('/recommendations/tradeoffs', requireAuth, async (req, res, next) => 
     }
 
     // Fetch both nurseries
-    const { data: nurseries, error } = await db
-      .from('nurseries')
-      .select('*')
-      .in('urn', urns)
+    const { data: nurseries, error } = await db.from('nurseries').select('*').in('urn', urns)
     if (error) throw error
     if (!nurseries || nurseries.length !== 2) {
       return res.status(404).json({ error: 'One or both nurseries not found' })

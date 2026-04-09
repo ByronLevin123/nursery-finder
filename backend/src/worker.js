@@ -106,7 +106,9 @@ cron.schedule('0 8 * * *', async () => {
     for (const booking of valid) {
       try {
         // Look up user email for the reminder
-        const { data: authUser } = await db.auth.admin.getUserById(booking.user_id).catch(() => ({ data: null }))
+        const { data: authUser } = await db.auth.admin
+          .getUserById(booking.user_id)
+          .catch(() => ({ data: null }))
         await notifyVisitReminder({
           user_id: booking.user_id,
           user_email: authUser?.user?.email || null,
@@ -116,7 +118,10 @@ cron.schedule('0 8 * * *', async () => {
         })
         sent++
       } catch (err) {
-        logger.warn({ err: err?.message, bookingId: booking.id }, 'visit reminder failed for booking')
+        logger.warn(
+          { err: err?.message, bookingId: booking.id },
+          'visit reminder failed for booking'
+        )
       }
     }
 

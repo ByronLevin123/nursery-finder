@@ -55,9 +55,7 @@ function haversineKm(lat1, lng1, lat2, lng2) {
   const dLng = ((lng2 - lng1) * Math.PI) / 180
   const a =
     Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) ** 2
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
@@ -135,8 +133,7 @@ export async function getTravelTime({ fromLat, fromLng, toLat, toLng, mode = 'wa
   try {
     await rateLimit()
     const url =
-      `${OSRM_URL}/route/v1/${profile}/` +
-      `${fromLng},${fromLat};${toLng},${toLat}?overview=false`
+      `${OSRM_URL}/route/v1/${profile}/` + `${fromLng},${fromLat};${toLng},${toLat}?overview=false`
     const resp = await axios.get(url, { timeout: 8000 })
     const route = resp.data?.routes?.[0]
     if (!route) throw new Error('no route')
@@ -149,7 +146,13 @@ export async function getTravelTime({ fromLat, fromLng, toLat, toLng, mode = 'wa
   } catch (err) {
     logger.warn({ err: err.message, mode }, 'OSRM route failed — using fallback')
     const fb = haversineFallback({ fromLat, fromLng, toLat, toLng, mode })
-    return { duration_s: fb.duration_s, distance_m: fb.distance_m, mode, cached: false, fallback: true }
+    return {
+      duration_s: fb.duration_s,
+      distance_m: fb.distance_m,
+      mode,
+      cached: false,
+      fallback: true,
+    }
   }
 }
 
@@ -170,9 +173,7 @@ export async function getTravelMatrix({ from, to, mode = 'walk' }) {
   const out = []
   for (let i = 0; i < to.length; i += CHUNK) {
     const chunk = to.slice(i, i + CHUNK)
-    const coords = [from, ...chunk]
-      .map((p) => `${p.lng},${p.lat}`)
-      .join(';')
+    const coords = [from, ...chunk].map((p) => `${p.lng},${p.lat}`).join(';')
     const sources = '0'
     const destinations = chunk.map((_, j) => j + 1).join(';')
     const url =

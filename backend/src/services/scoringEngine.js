@@ -44,7 +44,7 @@ export function computeCostScore(nursery, localAvgPrice) {
 
   // Ratio: lower fee vs area avg is better
   const ratio = nursery.fee_avg_monthly / localAvgPrice
-  if (ratio <= 0.75) return 100  // cheapest quartile
+  if (ratio <= 0.75) return 100 // cheapest quartile
   if (ratio <= 0.9) return 80
   if (ratio <= 1.1) return 60
   if (ratio <= 1.25) return 40
@@ -65,7 +65,8 @@ export function computeAvailabilityScore(availabilityRows) {
     if (vacancies > 0) {
       bestScore = Math.max(bestScore, 100) // immediate vacancy
     } else if (row.next_available) {
-      const daysUntil = (new Date(row.next_available).getTime() - Date.now()) / (24 * 60 * 60 * 1000)
+      const daysUntil =
+        (new Date(row.next_available).getTime() - Date.now()) / (24 * 60 * 60 * 1000)
       if (daysUntil <= 90) bestScore = Math.max(bestScore, 50)
       else if (daysUntil <= 180) bestScore = Math.max(bestScore, 25)
       // else 0
@@ -86,7 +87,8 @@ export function computeStaffScore(staffRow) {
 
   // Qualification bonus
   if (staffRow.total_staff && staffRow.total_staff > 0) {
-    const qualPct = ((staffRow.qualified_teachers || 0) + (staffRow.level_3_plus || 0)) / staffRow.total_staff
+    const qualPct =
+      ((staffRow.qualified_teachers || 0) + (staffRow.level_3_plus || 0)) / staffRow.total_staff
     score += Math.round(qualPct * 30) // up to +30
   }
 
@@ -96,12 +98,15 @@ export function computeStaffScore(staffRow) {
   }
 
   // Ratio quality: parse ratios like "1:3" — lower ratio is better
-  const ratios = [staffRow.ratio_under_2, staffRow.ratio_2_to_3, staffRow.ratio_3_plus].filter(Boolean)
+  const ratios = [staffRow.ratio_under_2, staffRow.ratio_2_to_3, staffRow.ratio_3_plus].filter(
+    Boolean
+  )
   if (ratios.length > 0) {
-    const avgRatio = ratios.reduce((sum, r) => {
-      const parts = r.split(':')
-      return sum + (parts.length === 2 ? parseInt(parts[1]) / parseInt(parts[0]) : 4)
-    }, 0) / ratios.length
+    const avgRatio =
+      ratios.reduce((sum, r) => {
+        const parts = r.split(':')
+        return sum + (parts.length === 2 ? parseInt(parts[1]) / parseInt(parts[0]) : 4)
+      }, 0) / ratios.length
     if (avgRatio <= 3) score += 10
     else if (avgRatio <= 4) score += 5
   }
@@ -146,7 +151,9 @@ export async function recomputeAllDimensionScores() {
   while (true) {
     const { data: nurseries, error } = await db
       .from('nurseries')
-      .select('id, urn, ofsted_overall_grade, last_inspection_date, enforcement_notice, fee_avg_monthly, review_avg_rating, review_count, review_recommend_pct, postcode')
+      .select(
+        'id, urn, ofsted_overall_grade, last_inspection_date, enforcement_notice, fee_avg_monthly, review_avg_rating, review_count, review_recommend_pct, postcode'
+      )
       .range(offset, offset + BATCH_SIZE - 1)
       .order('id', { ascending: true })
 

@@ -35,7 +35,8 @@ router.post('/nurseries/:urn/pricing', requireAuth, async (req, res, next) => {
 
     const rows = Array.isArray(req.body) ? req.body : [req.body]
     if (rows.length === 0) return res.status(400).json({ error: 'No pricing data provided' })
-    if (rows.length > 20) return res.status(400).json({ error: 'Maximum 20 pricing rows per request' })
+    if (rows.length > 20)
+      return res.status(400).json({ error: 'Maximum 20 pricing rows per request' })
 
     for (const row of rows) {
       if (!VALID_AGE_GROUPS.includes(row.age_group)) {
@@ -65,10 +66,7 @@ router.post('/nurseries/:urn/pricing', requireAuth, async (req, res, next) => {
       .eq('nursery_id', check.nursery.id)
       .eq('source', 'provider')
 
-    const { data, error } = await db
-      .from('nursery_pricing')
-      .insert(inserts)
-      .select()
+    const { data, error } = await db.from('nursery_pricing').insert(inserts).select()
 
     if (error) throw error
     logger.info({ urn: req.params.urn, rows: inserts.length }, 'provider pricing updated')
@@ -131,15 +129,9 @@ router.post('/nurseries/:urn/availability', requireAuth, async (req, res, next) 
     }))
 
     // Delete existing and re-insert
-    await db
-      .from('nursery_availability')
-      .delete()
-      .eq('nursery_id', check.nursery.id)
+    await db.from('nursery_availability').delete().eq('nursery_id', check.nursery.id)
 
-    const { data, error } = await db
-      .from('nursery_availability')
-      .insert(inserts)
-      .select()
+    const { data, error } = await db.from('nursery_availability').insert(inserts).select()
 
     if (error) throw error
     logger.info({ urn: req.params.urn, rows: inserts.length }, 'provider availability updated')
@@ -180,7 +172,15 @@ router.post('/nurseries/:urn/staff', requireAuth, async (req, res, next) => {
     const check = await verifyOwnership(req.params.urn, req.user.id)
     if (check.error) return res.status(check.status).json({ error: check.error })
 
-    const { total_staff, qualified_teachers, level_3_plus, avg_tenure_months, ratio_under_2, ratio_2_to_3, ratio_3_plus } = req.body
+    const {
+      total_staff,
+      qualified_teachers,
+      level_3_plus,
+      avg_tenure_months,
+      ratio_under_2,
+      ratio_2_to_3,
+      ratio_3_plus,
+    } = req.body
 
     const row = {
       nursery_id: check.nursery.id,
@@ -210,11 +210,7 @@ router.post('/nurseries/:urn/staff', requireAuth, async (req, res, next) => {
         .select()
         .single())
     } else {
-      ;({ data, error } = await db
-        .from('nursery_staff')
-        .insert(row)
-        .select()
-        .single())
+      ;({ data, error } = await db.from('nursery_staff').insert(row).select().single())
     }
 
     if (error) throw error

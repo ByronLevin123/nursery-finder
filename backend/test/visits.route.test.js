@@ -13,10 +13,19 @@ const store = {
 }
 
 let idCounter = 0
-function nextId() { return `id-${++idCounter}` }
+function nextId() {
+  return `id-${++idCounter}`
+}
 
 function makeQueryBuilder(table) {
-  const state = { table, op: 'select', filters: [], insertRow: null, updateRow: null, deleteOp: false }
+  const state = {
+    table,
+    op: 'select',
+    filters: [],
+    insertRow: null,
+    updateRow: null,
+    deleteOp: false,
+  }
   function applyFilters(rows) {
     return rows.filter((r) =>
       state.filters.every(([c, op, v]) => {
@@ -35,17 +44,48 @@ function makeQueryBuilder(table) {
     return new Map()
   }
   const builder = {
-    select() { return builder },
-    insert(row) { state.op = 'insert'; state.insertRow = Array.isArray(row) ? row : [row]; return builder },
-    update(row) { state.op = 'update'; state.updateRow = row; return builder },
-    delete() { state.op = 'delete'; state.deleteOp = true; return builder },
-    eq(c, v) { state.filters.push([c, 'eq', v]); return builder },
-    gte(c, v) { state.filters.push([c, 'gte', v]); return builder },
-    in(c, v) { state.filters.push([c, 'in', v]); return builder },
-    order() { return builder },
-    single() { return builder._resolve(true, false) },
-    maybeSingle() { return builder._resolve(true, true) },
-    then(onF, onR) { return builder._resolve(false, false).then(onF, onR) },
+    select() {
+      return builder
+    },
+    insert(row) {
+      state.op = 'insert'
+      state.insertRow = Array.isArray(row) ? row : [row]
+      return builder
+    },
+    update(row) {
+      state.op = 'update'
+      state.updateRow = row
+      return builder
+    },
+    delete() {
+      state.op = 'delete'
+      state.deleteOp = true
+      return builder
+    },
+    eq(c, v) {
+      state.filters.push([c, 'eq', v])
+      return builder
+    },
+    gte(c, v) {
+      state.filters.push([c, 'gte', v])
+      return builder
+    },
+    in(c, v) {
+      state.filters.push([c, 'in', v])
+      return builder
+    },
+    order() {
+      return builder
+    },
+    single() {
+      return builder._resolve(true, false)
+    },
+    maybeSingle() {
+      return builder._resolve(true, true)
+    },
+    then(onF, onR) {
+      return builder._resolve(false, false).then(onF, onR)
+    },
     async _resolve(single, maybe) {
       const m = getMap()
       if (state.op === 'insert') {
@@ -101,14 +141,22 @@ vi.mock('@supabase/supabase-js', async () => ({
 
 vi.mock('../src/services/geocoding.js', () => ({
   geocodePostcode: vi.fn(async () => ({ lat: 51.5, lng: -0.1 })),
-  chunkPostcodes: (arr, n) => { const out = []; for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n)); return out },
+  chunkPostcodes: (arr, n) => {
+    const out = []
+    for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n))
+    return out
+  },
 }))
 
 vi.mock('../src/services/emailService.js', () => ({
   sendEmail: vi.fn(async () => ({ messageId: 'test-123' })),
   isEmailAvailable: () => false,
   escapeHtml: (s) => String(s || ''),
-  renderEnquiryNotificationEmail: vi.fn(() => ({ subject: 'test', html: '<p>test</p>', text: 'test' })),
+  renderEnquiryNotificationEmail: vi.fn(() => ({
+    subject: 'test',
+    html: '<p>test</p>',
+    text: 'test',
+  })),
   EmailNotConfiguredError: class extends Error {},
   EmailSendError: class extends Error {},
 }))
@@ -132,10 +180,15 @@ beforeEach(() => {
   store.visit_bookings.clear()
   store.visit_surveys.clear()
   store.nurseries.set('n-1', {
-    id: 'n-1', urn: 'EY100', name: 'Sunny', town: 'London',
-    contact_email: null, email: null,
+    id: 'n-1',
+    urn: 'EY100',
+    name: 'Sunny',
+    town: 'London',
+    contact_email: null,
+    email: null,
     claimed_by_user_id: OWNER.id,
-    view_count: 0, compare_count: 0,
+    view_count: 0,
+    compare_count: 0,
   })
 })
 

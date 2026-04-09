@@ -4,7 +4,12 @@ import express from 'express'
 import rateLimit from 'express-rate-limit'
 import db from '../db.js'
 import { requireAuth } from '../middleware/supabaseAuth.js'
-import { sendEmail, isEmailAvailable, escapeHtml, renderEnquiryNotificationEmail } from '../services/emailService.js'
+import {
+  sendEmail,
+  isEmailAvailable,
+  escapeHtml,
+  renderEnquiryNotificationEmail,
+} from '../services/emailService.js'
 import { logger } from '../logger.js'
 
 const router = express.Router()
@@ -23,7 +28,8 @@ router.post('/', requireAuth, enquiryLimiter, async (req, res, next) => {
   try {
     if (!db) return res.status(503).json({ error: 'Database not configured' })
 
-    const { nursery_ids, child_name, child_dob, preferred_start, session_preference, message } = req.body
+    const { nursery_ids, child_name, child_dob, preferred_start, session_preference, message } =
+      req.body
 
     if (!Array.isArray(nursery_ids) || nursery_ids.length === 0) {
       return res.status(400).json({ error: 'nursery_ids must be a non-empty array' })
@@ -35,7 +41,9 @@ router.post('/', requireAuth, enquiryLimiter, async (req, res, next) => {
     // Fetch nurseries to verify they exist and get contact details
     const { data: nurseries, error: nErr } = await db
       .from('nurseries')
-      .select('id, urn, name, contact_email, email, claimed_by_user_id, nursery_claims(claimer_email)')
+      .select(
+        'id, urn, name, contact_email, email, claimed_by_user_id, nursery_claims(claimer_email)'
+      )
       .in('id', nursery_ids)
     if (nErr) throw nErr
 
@@ -82,7 +90,8 @@ router.post('/', requireAuth, enquiryLimiter, async (req, res, next) => {
           if (child_dob) {
             const dob = new Date(child_dob)
             const now = new Date()
-            childAgeMonths = (now.getFullYear() - dob.getFullYear()) * 12 + (now.getMonth() - dob.getMonth())
+            childAgeMonths =
+              (now.getFullYear() - dob.getFullYear()) * 12 + (now.getMonth() - dob.getMonth())
             if (childAgeMonths < 0) childAgeMonths = null
           }
 

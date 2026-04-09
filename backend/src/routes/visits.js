@@ -240,10 +240,7 @@ router.post('/:id/survey', requireAuth, async (req, res, next) => {
 
     // Mark booking as completed if not already
     if (booking.status !== 'completed') {
-      await db
-        .from('visit_bookings')
-        .update({ status: 'completed' })
-        .eq('id', booking.id)
+      await db.from('visit_bookings').update({ status: 'completed' }).eq('id', booking.id)
     }
 
     logger.info({ userId: req.user.id, bookingId: booking.id }, 'visit survey submitted')

@@ -108,9 +108,7 @@ router.post('/:enquiryId/messages', requireAuth, async (req, res, next) => {
     )
 
     // Notify the other party
-    const recipientId = role === 'parent'
-      ? enquiry.nurseries?.claimed_by_user_id
-      : enquiry.user_id
+    const recipientId = role === 'parent' ? enquiry.nurseries?.claimed_by_user_id : enquiry.user_id
 
     if (recipientId) {
       // Fire-and-forget — don't block the response
@@ -145,10 +143,7 @@ router.patch('/:enquiryId/messages/read', requireAuth, async (req, res, next) =>
 
     if (error) throw error
 
-    logger.info(
-      { userId: req.user.id, enquiryId: req.params.enquiryId },
-      'messages marked as read'
-    )
+    logger.info({ userId: req.user.id, enquiryId: req.params.enquiryId }, 'messages marked as read')
     return res.json({ ok: true })
   } catch (err) {
     next(err)

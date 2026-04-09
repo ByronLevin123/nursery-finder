@@ -283,10 +283,7 @@ router.get('/:urn/similar', async (req, res, next) => {
       })
       .slice(0, 6)
 
-    logger.info(
-      { urn: req.params.urn, results: similar.length },
-      'similar nurseries lookup'
-    )
+    logger.info({ urn: req.params.urn, results: similar.length }, 'similar nurseries lookup')
     res.json({ data: similar })
   } catch (err) {
     next(err)

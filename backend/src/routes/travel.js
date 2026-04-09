@@ -81,9 +81,10 @@ router.post('/isochrone', async (req, res, next) => {
     if (!VALID_MODES.has(mode)) {
       return res.status(400).json({ error: 'mode must be walk|cycle|drive' })
     }
-    const durations = Array.isArray(durations_min) && durations_min.length
-      ? durations_min.map(Number).filter((n) => Number.isFinite(n) && n > 0)
-      : [15, 30, 45, 60]
+    const durations =
+      Array.isArray(durations_min) && durations_min.length
+        ? durations_min.map(Number).filter((n) => Number.isFinite(n) && n > 0)
+        : [15, 30, 45, 60]
     if (!durations.length) {
       return res.status(400).json({ error: 'durations_min required' })
     }

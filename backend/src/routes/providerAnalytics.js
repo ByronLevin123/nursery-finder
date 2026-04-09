@@ -104,7 +104,9 @@ router.get('/analytics', requireAuth, async (req, res, next) => {
       const nSurveys = (surveys || []).filter((s) => s.nursery_id === n.id)
 
       const enquiryTotal = nEnq.length
-      const enquiryThisMonth = nEnq.filter((e) => e.sent_at && e.sent_at.startsWith(thisMonth)).length
+      const enquiryThisMonth = nEnq.filter(
+        (e) => e.sent_at && e.sent_at.startsWith(thisMonth)
+      ).length
       const responded = nEnq.filter((e) => e.status !== 'sent' && e.status !== 'opened').length
 
       const bookingTotal = nBookings.length

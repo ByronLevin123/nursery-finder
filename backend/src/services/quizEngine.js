@@ -39,7 +39,7 @@ export function mapQuizToWeights(quiz) {
       const mapped = DIMENSION_MAP[dim]
       // mapped could be a nursery column name or 'commute'
       const key = mapped === 'commute' ? 'commute' : mapped?.replace('_score', '')
-      if (key && weights.hasOwnProperty(key)) {
+      if (key && Object.prototype.hasOwnProperty.call(weights, key)) {
         weights[key] = Math.max(1, 5 - idx)
       }
     })
@@ -131,9 +131,8 @@ export async function getPersonalisedRankings(quiz, options = {}) {
 
       for (const n of data || []) {
         // Compute commute_score based on distance (closer = higher score)
-        const commute_score = n.distance_km != null
-          ? Math.max(0, Math.round(100 - n.distance_km * 10))
-          : null
+        const commute_score =
+          n.distance_km != null ? Math.max(0, Math.round(100 - n.distance_km * 10)) : null
 
         const enriched = { ...n, commute_score }
 

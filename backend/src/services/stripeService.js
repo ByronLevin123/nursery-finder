@@ -42,7 +42,10 @@ export async function createCheckoutSession({ userId, email, tier, type, success
     // Upsert subscription row
     await db
       .from(table)
-      .upsert({ user_id: userId, stripe_customer_id: customerId, tier: 'free' }, { onConflict: 'user_id' })
+      .upsert(
+        { user_id: userId, stripe_customer_id: customerId, tier: 'free' },
+        { onConflict: 'user_id' }
+      )
   }
 
   const session = await s.checkout.sessions.create({

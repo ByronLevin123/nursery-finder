@@ -96,7 +96,8 @@ router.post('/portal', requireAuth, stripeGuard, async (req, res, next) => {
         .select('role')
         .eq('id', req.user.id)
         .maybeSingle()
-      resolvedType = profile?.role === 'provider' || profile?.role === 'admin' ? 'provider' : 'parent'
+      resolvedType =
+        profile?.role === 'provider' || profile?.role === 'admin' ? 'provider' : 'parent'
     }
 
     const result = await createPortalSession({ userId: req.user.id, type: resolvedType })

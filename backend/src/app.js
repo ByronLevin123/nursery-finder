@@ -51,6 +51,9 @@ import notificationsRouter from './routes/notifications.js'
 // Billing + Stripe
 import billingRouter, { billingWebhookHandler } from './routes/billing.js'
 
+// Admin dashboard
+import adminRouter from './routes/admin.js'
+
 // AI feature routes (Claude-powered) — separate block, do not merge with mounts above
 import aiRouter from './routes/ai.js'
 import assistantRouter from './routes/assistant.js'
@@ -97,7 +100,11 @@ app.use('/api/v1/overlays', publicLimiter)
 app.use('/api/v1/public', publicLimiter)
 
 // Stripe webhook — MUST be before json body parser (needs raw body)
-app.post('/api/v1/billing/webhook', express.raw({ type: 'application/json' }), billingWebhookHandler)
+app.post(
+  '/api/v1/billing/webhook',
+  express.raw({ type: 'application/json' }),
+  billingWebhookHandler
+)
 
 // Body parsing
 app.use(express.json({ limit: '1mb' }))
@@ -133,6 +140,7 @@ app.use('/api/v1/public', publicMarkdownRouter)
 app.use('/api/v1/enquiries', messagesRouter)
 app.use('/api/v1/notifications', notificationsRouter)
 app.use('/api/v1/billing', billingRouter)
+app.use('/api/v1/admin', adminRouter)
 
 // Public OpenAPI spec for LLM agents + ChatGPT Custom GPT
 app.get('/api/openapi.json', (req, res, next) => {

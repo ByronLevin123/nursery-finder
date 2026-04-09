@@ -6,11 +6,7 @@ import db from '../db.js'
 import { requireAuth } from '../middleware/supabaseAuth.js'
 import { adminAuth } from '../middleware/auth.js'
 import { logger } from '../logger.js'
-import {
-  isEmailAvailable,
-  sendEmail,
-  renderClaimApprovedEmail,
-} from '../services/emailService.js'
+import { isEmailAvailable, sendEmail, renderClaimApprovedEmail } from '../services/emailService.js'
 
 const router = express.Router()
 

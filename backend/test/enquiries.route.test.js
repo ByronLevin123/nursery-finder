@@ -12,19 +12,44 @@ function makeQueryBuilder(table) {
   const state = { table, op: 'select', filters: [], insertRow: null, selectCols: '' }
   function applyFilters(rows) {
     return rows.filter((r) =>
-      state.filters.every(([c, op, v]) => (op === 'eq' ? r[c] === v : op === 'in' ? v.includes(r[c]) : true))
+      state.filters.every(([c, op, v]) =>
+        op === 'eq' ? r[c] === v : op === 'in' ? v.includes(r[c]) : true
+      )
     )
   }
   const builder = {
-    select(cols) { state.selectCols = cols || ''; return builder },
-    insert(row) { state.op = 'insert'; state.insertRow = row; return builder },
-    eq(c, v) { state.filters.push([c, 'eq', v]); return builder },
-    in(c, v) { state.filters.push([c, 'in', v]); return builder },
-    order() { return builder },
-    limit() { return builder },
-    single() { return builder._resolve(true, false) },
-    maybeSingle() { return builder._resolve(true, true) },
-    then(onF, onR) { return builder._resolve(false, false).then(onF, onR) },
+    select(cols) {
+      state.selectCols = cols || ''
+      return builder
+    },
+    insert(row) {
+      state.op = 'insert'
+      state.insertRow = row
+      return builder
+    },
+    eq(c, v) {
+      state.filters.push([c, 'eq', v])
+      return builder
+    },
+    in(c, v) {
+      state.filters.push([c, 'in', v])
+      return builder
+    },
+    order() {
+      return builder
+    },
+    limit() {
+      return builder
+    },
+    single() {
+      return builder._resolve(true, false)
+    },
+    maybeSingle() {
+      return builder._resolve(true, true)
+    },
+    then(onF, onR) {
+      return builder._resolve(false, false).then(onF, onR)
+    },
     async _resolve(single, maybe) {
       if (table === 'enquiries') {
         if (state.op === 'insert') {
@@ -36,8 +61,8 @@ function makeQueryBuilder(table) {
           store.enquiries.push(row)
           return single ? { data: row, error: null } : { data: [row], error: null }
         }
-        const rows = applyFilters(store.enquiries).map(e => {
-          const n = [...store.nurseries.values()].find(n => n.id === e.nursery_id)
+        const rows = applyFilters(store.enquiries).map((e) => {
+          const n = [...store.nurseries.values()].find((n) => n.id === e.nursery_id)
           return { ...e, nurseries: n ? { name: n.name, urn: n.urn, town: n.town } : null }
         })
         if (single || maybe) return { data: rows[0] ?? null, error: null }
@@ -75,7 +100,11 @@ vi.mock('@supabase/supabase-js', async () => ({
 
 vi.mock('../src/services/geocoding.js', () => ({
   geocodePostcode: vi.fn(async () => ({ lat: 51.5, lng: -0.1 })),
-  chunkPostcodes: (arr, n) => { const out = []; for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n)); return out },
+  chunkPostcodes: (arr, n) => {
+    const out = []
+    for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n))
+    return out
+  },
 }))
 
 vi.mock('../src/services/emailService.js', () => ({
@@ -102,8 +131,24 @@ beforeAll(async () => {
 beforeEach(() => {
   store.enquiries = []
   store.nurseries.clear()
-  store.nurseries.set('n-1', { id: 'n-1', urn: 'EY100', name: 'Sunny', town: 'London', contact_email: null, email: null, claimed_by_user_id: null })
-  store.nurseries.set('n-2', { id: 'n-2', urn: 'EY101', name: 'Bright', town: 'Leeds', contact_email: null, email: null, claimed_by_user_id: null })
+  store.nurseries.set('n-1', {
+    id: 'n-1',
+    urn: 'EY100',
+    name: 'Sunny',
+    town: 'London',
+    contact_email: null,
+    email: null,
+    claimed_by_user_id: null,
+  })
+  store.nurseries.set('n-2', {
+    id: 'n-2',
+    urn: 'EY101',
+    name: 'Bright',
+    town: 'Leeds',
+    contact_email: null,
+    email: null,
+    claimed_by_user_id: null,
+  })
 })
 
 describe('POST /api/v1/enquiries', () => {

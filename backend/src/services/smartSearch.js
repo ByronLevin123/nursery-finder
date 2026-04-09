@@ -46,8 +46,8 @@ export async function smartSearch({
 
     // Boost featured nurseries to top within same distance band (1km bands)
     const boosted = (data || []).sort((a, b) => {
-      const bandA = Math.floor((a.distance_km || 0))
-      const bandB = Math.floor((b.distance_km || 0))
+      const bandA = Math.floor(a.distance_km || 0)
+      const bandB = Math.floor(b.distance_km || 0)
       if (bandA !== bandB) return bandA - bandB
       // Within same 1km band, featured first
       const fa = a.featured ? 0 : 1
