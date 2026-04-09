@@ -141,4 +141,18 @@ router.post('/propertydata', async (req, res, next) => {
   }
 })
 
+// POST /api/v1/ingest/dimension-scores
+router.post('/dimension-scores', async (req, res, next) => {
+  try {
+    const { recomputeAllDimensionScores } = await import('../services/scoringEngine.js')
+    logger.info('ingest: starting dimension score recompute')
+    const result = await recomputeAllDimensionScores()
+    logger.info(result, 'ingest: dimension scores complete')
+    res.json(result)
+  } catch (err) {
+    logger.error({ err: err.message }, 'ingest: dimension scores failed')
+    next(err)
+  }
+})
+
 export default router
