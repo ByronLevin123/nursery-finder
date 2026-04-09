@@ -68,6 +68,13 @@ export async function geocodeNurseriesBatch(limit = 500) {
   for (const chunk of chunks) {
     const postcodes = chunk.map((n) => n.postcode)
 
+    // Build a lookup map normalising whitespace for matching
+    const normalize = (pc) => (pc || '').trim().toUpperCase().replace(/\s+/g, '')
+    const pcMap = new Map()
+    for (const n of chunk) {
+      pcMap.set(normalize(n.postcode), n.id)
+    }
+
     try {
       const response = await axios.post(POSTCODES_IO_BULK, { postcodes })
       const results = response.data.result
@@ -75,8 +82,9 @@ export async function geocodeNurseriesBatch(limit = 500) {
       const updates = []
       for (const result of results) {
         if (result.result) {
+          const matchId = pcMap.get(normalize(result.query))
           updates.push({
-            id: chunk.find((n) => n.postcode === result.query)?.id,
+            id: matchId,
             lat: result.result.latitude,
             lng: result.result.longitude,
           })
