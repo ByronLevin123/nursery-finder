@@ -4,7 +4,7 @@ import express from 'express'
 import rateLimit from 'express-rate-limit'
 import db from '../db.js'
 import { requireAuth } from '../middleware/supabaseAuth.js'
-import { sendEmail, isEmailAvailable, escapeHtml } from '../services/emailService.js'
+import { sendEmail, isEmailAvailable, escapeHtml, renderEnquiryNotificationEmail } from '../services/emailService.js'
 import { logger } from '../logger.js'
 
 const router = express.Router()
@@ -35,7 +35,7 @@ router.post('/', requireAuth, enquiryLimiter, async (req, res, next) => {
     // Fetch nurseries to verify they exist and get contact details
     const { data: nurseries, error: nErr } = await db
       .from('nurseries')
-      .select('id, urn, name, contact_email, email, claimed_by_user_id')
+      .select('id, urn, name, contact_email, email, claimed_by_user_id, nursery_claims(claimer_email)')
       .in('id', nursery_ids)
     if (nErr) throw nErr
 
@@ -69,22 +69,43 @@ router.post('/', requireAuth, enquiryLimiter, async (req, res, next) => {
 
       created.push({ ...enquiry, nursery_name: nursery.name, nursery_urn: nursery.urn })
 
-      // Try to email the nursery contact
-      const contactEmail = nursery.contact_email || nursery.email
+      // Try to email the nursery contact (branded template)
+      const claimerEmail =
+        Array.isArray(nursery.nursery_claims) && nursery.nursery_claims.length > 0
+          ? nursery.nursery_claims[0].claimer_email
+          : null
+      const contactEmail = claimerEmail || nursery.contact_email || nursery.email
       if (contactEmail && isEmailAvailable()) {
         try {
+          // Compute child age in months from DOB
+          let childAgeMonths = null
+          if (child_dob) {
+            const dob = new Date(child_dob)
+            const now = new Date()
+            childAgeMonths = (now.getFullYear() - dob.getFullYear()) * 12 + (now.getMonth() - dob.getMonth())
+            if (childAgeMonths < 0) childAgeMonths = null
+          }
+
+          const frontendUrl = process.env.FRONTEND_URL || 'https://nursery-finder.vercel.app'
+          const rendered = renderEnquiryNotificationEmail({
+            nurseryName: nursery.name,
+            parentName: req.user.email,
+            childName: child_name,
+            childAgeMonths,
+            preferredStart: preferred_start,
+            sessionPreference: session_preference,
+            message,
+            providerUrl: `${frontendUrl}/provider`,
+          })
+
           await sendEmail({
             to: contactEmail,
-            subject: `New enquiry via NurseryFinder for ${nursery.name}`,
-            html: `<p>A parent has enquired about a place at <strong>${escapeHtml(nursery.name)}</strong>.</p>
-<p><strong>Child:</strong> ${escapeHtml(child_name || 'Not specified')}</p>
-${child_dob ? `<p><strong>DOB:</strong> ${escapeHtml(child_dob)}</p>` : ''}
-${preferred_start ? `<p><strong>Preferred start:</strong> ${escapeHtml(preferred_start)}</p>` : ''}
-${message ? `<p><strong>Message:</strong> ${escapeHtml(message)}</p>` : ''}
-<p>Log in to NurseryFinder to respond.</p>`,
-            text: `New enquiry for ${nursery.name}\n\nChild: ${child_name || 'Not specified'}\n${message || ''}`,
+            subject: rendered.subject,
+            html: rendered.html,
+            text: rendered.text,
             replyTo: req.user.email,
           })
+          logger.info({ nurseryId: nursery.id }, 'enquiry notification email sent')
         } catch (emailErr) {
           logger.warn({ err: emailErr.message, nurseryId: nursery.id }, 'enquiry email failed')
           // Non-fatal — enquiry is still created

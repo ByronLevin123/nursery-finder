@@ -38,6 +38,12 @@ import quizRouter from './routes/quiz.js'
 import enquiriesRouter from './routes/enquiries.js'
 import providerDataRouter from './routes/providerData.js'
 
+// Visit booking + provider enquiries + provider analytics
+import visitsRouter from './routes/visits.js'
+import providerEnquiriesRouter from './routes/providerEnquiries.js'
+import providerSlotsRouter from './routes/providerSlots.js'
+import providerAnalyticsRouter from './routes/providerAnalytics.js'
+
 // AI feature routes (Claude-powered) — separate block, do not merge with mounts above
 import aiRouter from './routes/ai.js'
 import assistantRouter from './routes/assistant.js'
@@ -62,7 +68,7 @@ app.use(publicCorsPaths, cors({ origin: '*', methods: ['GET', 'POST'] }))
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || '*',
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
   })
 )
 
@@ -108,6 +114,11 @@ app.use('/api/v1/quiz', quizRouter)
 app.use('/api/v1', quizRouter)
 app.use('/api/v1/enquiries', enquiriesRouter)
 app.use('/api/v1/travel', travelRouter)
+app.use('/api/v1/visits', visitsRouter)
+app.use('/api/v1/provider', providerEnquiriesRouter)
+app.use('/api/v1/provider', providerSlotsRouter)
+app.use('/api/v1/provider', providerAnalyticsRouter)
+app.use('/api/v1', providerAnalyticsRouter) // for POST /api/v1/nurseries/:urn/view
 app.use('/api/v1/public', publicMarkdownRouter)
 
 // Public OpenAPI spec for LLM agents + ChatGPT Custom GPT

@@ -45,6 +45,19 @@ export default function ProviderDashboard() {
       <h1 className="text-2xl font-bold mb-6">Provider dashboard</h1>
       {error && <p className="text-red-500 mb-4">{error}</p>}
 
+      {/* Quick links */}
+      <div className="flex flex-wrap gap-3 mb-6">
+        <Link href="/provider/onboarding" className="text-sm px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100">
+          Onboarding wizard
+        </Link>
+        <Link href="/provider/enquiries" className="text-sm px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100">
+          Enquiry inbox
+        </Link>
+        <Link href="/provider/analytics" className="text-sm px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100">
+          Analytics
+        </Link>
+      </div>
+
       {nurseries.length === 0 ? (
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center text-gray-600">
           No claimed nurseries yet — visit a nursery page and click &quot;Claim this nursery&quot;.
@@ -60,12 +73,20 @@ export default function ProviderDashboard() {
                 <p className="font-semibold">{n.name}</p>
                 <p className="text-sm text-gray-500">{n.town}</p>
               </div>
-              <Link
-                href={`/provider/${n.urn}/edit`}
-                className="text-sm text-blue-600 font-medium hover:underline"
-              >
-                Edit listing
-              </Link>
+              <div className="flex gap-3">
+                <Link
+                  href={`/provider/${n.urn}/edit`}
+                  className="text-sm text-blue-600 font-medium hover:underline"
+                >
+                  Edit listing
+                </Link>
+                <Link
+                  href={`/provider/${n.urn}/slots`}
+                  className="text-sm text-purple-600 font-medium hover:underline"
+                >
+                  Visit slots
+                </Link>
+              </div>
             </li>
           ))}
         </ul>

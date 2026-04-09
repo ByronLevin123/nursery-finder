@@ -22,6 +22,8 @@ const SingleNurseryMap = dynamic(() => import('@/components/SingleNurseryMap'), 
 const TravelTimePanel = dynamic(() => import('@/components/TravelTimePanel'), { ssr: false })
 const NurseryPricingTab = dynamic(() => import('@/components/NurseryPricingTab'), { ssr: false })
 const NurseryAvailabilityTab = dynamic(() => import('@/components/NurseryAvailabilityTab'), { ssr: false })
+const BookVisitButton = dynamic(() => import('@/components/BookVisitButton'), { ssr: false })
+const ViewTracker = dynamic(() => import('@/components/ViewTracker'), { ssr: false })
 
 export async function generateMetadata({ params }: { params: { urn: string } }): Promise<Metadata> {
   try {
@@ -243,7 +245,10 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         </div>
       )}
 
-      {/* Claim CTA */}
+      {/* Book a visit + Claim CTA */}
+      <div className="flex items-center gap-3 mb-4">
+        <BookVisitButton urn={nursery.urn} nurseryId={nursery.id} />
+      </div>
       <ClaimNurseryButton
         urn={nursery.urn}
         nurseryName={nursery.name}
@@ -341,6 +346,7 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
       <AiReviewSynthesis urn={nursery.urn} />
       <ReviewSection urn={nursery.urn} />
 
+      <ViewTracker urn={nursery.urn} />
       <OglAttribution />
     </div>
   )

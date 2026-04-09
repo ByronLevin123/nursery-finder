@@ -300,6 +300,60 @@ export function renderDigestEmail({ savedSearches = [], newMatches = {}, userNam
   return { subject, html, text: textLines.join('\n') }
 }
 
+export function renderEnquiryNotificationEmail({
+  nurseryName = 'your nursery',
+  parentName,
+  childName,
+  childAgeMonths,
+  preferredStart,
+  sessionPreference,
+  message,
+  providerUrl = '/provider',
+} = {}) {
+  const safeName = escapeHtml(nurseryName)
+  const subject = `New enquiry for ${nurseryName} via CompareTheNursery`
+
+  const detailRows = []
+  if (parentName) detailRows.push(`<strong>Parent:</strong> ${escapeHtml(parentName)}`)
+  if (childName) {
+    let childInfo = escapeHtml(childName)
+    if (childAgeMonths != null) childInfo += `, ${escapeHtml(String(childAgeMonths))} months old`
+    detailRows.push(`<strong>Child:</strong> ${childInfo}`)
+  }
+  if (preferredStart) detailRows.push(`<strong>Preferred start:</strong> ${escapeHtml(preferredStart)}`)
+  if (sessionPreference) detailRows.push(`<strong>Session:</strong> ${escapeHtml(sessionPreference)}`)
+  if (message) detailRows.push(`<strong>Message:</strong> ${escapeHtml(message)}`)
+
+  const safeUrl = escapeHtml(providerUrl)
+
+  const html = shell({
+    title: subject,
+    bodyHtml: `
+      <p style="margin:0 0 12px 0;">You have a new enquiry for <strong>${safeName}</strong>.</p>
+      ${detailRows.map((r) => `<p style="margin:0 0 8px 0;">${r}</p>`).join('')}
+      <p style="margin:20px 0;">
+        <a href="${safeUrl}" style="display:inline-block;padding:12px 20px;background:#2563eb;color:#ffffff;border-radius:8px;text-decoration:none;font-weight:600;">
+          View &amp; respond
+        </a>
+      </p>
+    `,
+  })
+
+  const textLines = [
+    `New enquiry for ${nurseryName}`,
+    '',
+    ...(parentName ? [`Parent: ${parentName}`] : []),
+    ...(childName ? [`Child: ${childName}${childAgeMonths != null ? `, ${childAgeMonths} months old` : ''}`] : []),
+    ...(preferredStart ? [`Preferred start: ${preferredStart}`] : []),
+    ...(sessionPreference ? [`Session: ${sessionPreference}`] : []),
+    ...(message ? [`Message: ${message}`] : []),
+    '',
+    `View & respond: ${providerUrl}`,
+  ]
+
+  return { subject, html, text: textLines.join('\n') }
+}
+
 export function renderClaimApprovedEmail(nursery = {}, providerUrl = '') {
   const name = escapeHtml(nursery.name || 'your nursery')
   const town = escapeHtml(nursery.town || '')
@@ -345,6 +399,7 @@ export default {
   renderShortlistEmail,
   renderComparisonEmail,
   renderDigestEmail,
+  renderEnquiryNotificationEmail,
   renderClaimApprovedEmail,
   EmailNotConfiguredError,
   EmailSendError,

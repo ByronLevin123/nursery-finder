@@ -103,13 +103,36 @@ export default function Nav() {
                     Role: {role}
                   </div>
                   {(role === 'provider' || role === 'admin') && (
-                    <Link
-                      href="/provider"
-                      className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      onClick={() => setAccountOpen(false)}
-                    >
-                      Provider dashboard
-                    </Link>
+                    <>
+                      <Link
+                        href="/provider"
+                        className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => setAccountOpen(false)}
+                      >
+                        Provider dashboard
+                      </Link>
+                      <Link
+                        href="/provider/onboarding"
+                        className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => setAccountOpen(false)}
+                      >
+                        Onboarding
+                      </Link>
+                      <Link
+                        href="/provider/enquiries"
+                        className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => setAccountOpen(false)}
+                      >
+                        Enquiry inbox
+                      </Link>
+                      <Link
+                        href="/provider/analytics"
+                        className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => setAccountOpen(false)}
+                      >
+                        Analytics
+                      </Link>
+                    </>
                   )}
                   {role === 'admin' && (
                     <Link
