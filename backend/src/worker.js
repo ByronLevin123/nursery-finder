@@ -7,6 +7,9 @@ import { ingestLandRegistryYear, refreshPropertyStats } from './services/landReg
 import { runDailyDigest } from './services/digestJob.js'
 import { recomputeAllDimensionScores } from './services/scoringEngine.js'
 import { notifyVisitReminder } from './services/notificationService.js'
+import { processDripQueue } from './services/dripEngine.js'
+import { sendWeeklyDigests } from './services/weeklyDigest.js'
+import { sendReengagementEmails } from './services/reengagement.js'
 import db from './db.js'
 import { logger } from './logger.js'
 
@@ -128,6 +131,39 @@ cron.schedule('0 8 * * *', async () => {
     logger.info({ total: valid.length, sent }, 'cron: visit reminders complete')
   } catch (err) {
     logger.error({ err: err.message }, 'cron: visit reminders failed')
+  }
+})
+
+// Hourly: process drip email queue
+cron.schedule('0 * * * *', async () => {
+  logger.info('cron: processing drip queue')
+  try {
+    const result = await processDripQueue()
+    logger.info(result, 'cron: drip queue complete')
+  } catch (err) {
+    logger.error({ err: err.message }, 'cron: drip queue failed')
+  }
+})
+
+// Monday 9am: weekly digest
+cron.schedule('0 9 * * 1', async () => {
+  logger.info('cron: starting weekly digest')
+  try {
+    const result = await sendWeeklyDigests()
+    logger.info(result, 'cron: weekly digest complete')
+  } catch (err) {
+    logger.error({ err: err.message }, 'cron: weekly digest failed')
+  }
+})
+
+// Wednesday 10am: re-engagement emails
+cron.schedule('0 10 * * 3', async () => {
+  logger.info('cron: starting re-engagement emails')
+  try {
+    const result = await sendReengagementEmails()
+    logger.info(result, 'cron: re-engagement complete')
+  } catch (err) {
+    logger.error({ err: err.message }, 'cron: re-engagement failed')
   }
 })
 

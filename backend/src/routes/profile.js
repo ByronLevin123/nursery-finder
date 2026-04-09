@@ -5,6 +5,7 @@ import express from 'express'
 import db from '../db.js'
 import { requireAuth } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
+import { startSequence } from '../services/dripEngine.js'
 
 const router = express.Router()
 
@@ -16,6 +17,9 @@ const ALLOWED_FIELDS = [
   'children',
   'preferences',
   'email_alerts',
+  'email_weekly_digest',
+  'email_new_nurseries',
+  'email_marketing',
 ]
 
 function validatePatch(patch) {
@@ -51,6 +55,15 @@ function validatePatch(patch) {
   if (patch.email_alerts != null && typeof patch.email_alerts !== 'boolean') {
     return 'email_alerts must be a boolean'
   }
+  if (patch.email_weekly_digest != null && typeof patch.email_weekly_digest !== 'boolean') {
+    return 'email_weekly_digest must be a boolean'
+  }
+  if (patch.email_new_nurseries != null && typeof patch.email_new_nurseries !== 'boolean') {
+    return 'email_new_nurseries must be a boolean'
+  }
+  if (patch.email_marketing != null && typeof patch.email_marketing !== 'boolean') {
+    return 'email_marketing must be a boolean'
+  }
   return null
 }
 
@@ -73,6 +86,12 @@ router.get('/', requireAuth, async (req, res, next) => {
         .single()
       if (insErr) {
         return res.status(404).json({ error: 'Profile not found' })
+      }
+      // New profile — start welcome drip sequence
+      try {
+        await startSequence(req.user.id, 'welcome')
+      } catch (seqErr) {
+        logger.warn({ err: seqErr?.message }, 'welcome drip start failed')
       }
       return res.json(created)
     }

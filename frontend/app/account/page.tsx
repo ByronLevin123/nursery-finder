@@ -40,6 +40,9 @@ export default function AccountPage() {
   const [avatarUrl, setAvatarUrl] = useState('')
   const [emailAlerts, setEmailAlerts] = useState(false)
   const [children, setChildren] = useState<ProfileChild[]>([])
+  const [emailWeeklyDigest, setEmailWeeklyDigest] = useState(true)
+  const [emailNewNurseries, setEmailNewNurseries] = useState(true)
+  const [emailMarketing, setEmailMarketing] = useState(true)
 
   const load = useCallback(async () => {
     if (!session) return
@@ -55,6 +58,9 @@ export default function AccountPage() {
         setAvatarUrl(p.avatar_url || '')
         setEmailAlerts(!!p.email_alerts)
         setChildren(Array.isArray(p.children) ? p.children : [])
+        setEmailWeeklyDigest(p.email_weekly_digest !== false)
+        setEmailNewNurseries(p.email_new_nurseries !== false)
+        setEmailMarketing(p.email_marketing !== false)
       }
       const subInfo = await getSubscription(token)
       setSubscription(subInfo)
@@ -94,6 +100,9 @@ export default function AccountPage() {
         avatar_url: avatarUrl || null,
         email_alerts: emailAlerts,
         children,
+        email_weekly_digest: emailWeeklyDigest,
+        email_new_nurseries: emailNewNurseries,
+        email_marketing: emailMarketing,
       })
       setProfile(updated)
       setSavedAt(Date.now())
@@ -303,6 +312,53 @@ export default function AccountPage() {
           </button>
         </div>
       </form>
+
+      {/* Email Preferences */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Email Preferences</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Choose which emails you would like to receive from CompareTheNursery.
+        </p>
+        <div className="space-y-3">
+          <label className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={emailWeeklyDigest}
+              onChange={(e) => setEmailWeeklyDigest(e.target.checked)}
+              className="w-4 h-4"
+            />
+            <div>
+              <span className="text-sm font-medium text-gray-900">Weekly digest</span>
+              <p className="text-xs text-gray-500">New and updated nurseries near your home postcode, sent every Monday.</p>
+            </div>
+          </label>
+          <label className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={emailNewNurseries}
+              onChange={(e) => setEmailNewNurseries(e.target.checked)}
+              className="w-4 h-4"
+            />
+            <div>
+              <span className="text-sm font-medium text-gray-900">New nurseries near me</span>
+              <p className="text-xs text-gray-500">Get notified when a new nursery is added in your area.</p>
+            </div>
+          </label>
+          <label className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={emailMarketing}
+              onChange={(e) => setEmailMarketing(e.target.checked)}
+              className="w-4 h-4"
+            />
+            <div>
+              <span className="text-sm font-medium text-gray-900">Tips and updates</span>
+              <p className="text-xs text-gray-500">Occasional emails with nursery-finding tips, new features and helpful guides.</p>
+            </div>
+          </label>
+        </div>
+        <p className="mt-4 text-xs text-gray-400">Changes are saved when you click &quot;Save profile&quot; above.</p>
+      </div>
 
       {/* Subscription */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">

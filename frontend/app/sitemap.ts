@@ -16,11 +16,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   let nurseryEntries: MetadataRoute.Sitemap = []
   let districtEntries: MetadataRoute.Sitemap = []
+  let townEntries: MetadataRoute.Sitemap = []
+  let blogEntries: MetadataRoute.Sitemap = []
 
   try {
-    const [nurseriesRes, districtsRes] = await Promise.all([
+    const [nurseriesRes, districtsRes, townsRes, blogRes] = await Promise.all([
       fetch(`${API_URL}/api/v1/sitemap/nurseries`, { next: { revalidate: 86400 } }),
       fetch(`${API_URL}/api/v1/sitemap/districts`, { next: { revalidate: 86400 } }),
+      fetch(`${API_URL}/api/v1/sitemap/towns`, { next: { revalidate: 86400 } }),
+      fetch(`${API_URL}/api/v1/sitemap/blog`, { next: { revalidate: 86400 } }),
     ])
 
     if (nurseriesRes.ok) {
@@ -40,9 +44,35 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.8,
       }))
     }
+
+    if (townsRes.ok) {
+      const { towns } = await townsRes.json()
+      townEntries = (towns || []).map((t: string) => ({
+        url: `${SITE_URL}/nurseries-in-town/${encodeURIComponent(t.toLowerCase())}`,
+        changeFrequency: 'weekly' as const,
+        priority: 0.7,
+      }))
+    }
+
+    if (blogRes.ok) {
+      const { slugs } = await blogRes.json()
+      blogEntries = (slugs || []).map((slug: string) => ({
+        url: `${SITE_URL}/guides/${slug}`,
+        changeFrequency: 'monthly' as const,
+        priority: 0.6,
+      }))
+    }
   } catch {
     // fall back to static-only sitemap if backend is down
   }
 
-  return [...staticEntries, ...districtEntries, ...nurseryEntries]
+  return [
+    ...staticEntries,
+    { url: `${SITE_URL}/nurseries-in-town`, changeFrequency: 'weekly' as const, priority: 0.8 },
+    { url: `${SITE_URL}/guides`, changeFrequency: 'weekly' as const, priority: 0.7 },
+    ...districtEntries,
+    ...townEntries,
+    ...blogEntries,
+    ...nurseryEntries,
+  ]
 }

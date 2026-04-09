@@ -12,16 +12,46 @@ export default function Footer() {
               Find and compare Ofsted-rated nurseries across the UK
             </p>
           </div>
-          <div className="flex gap-6 text-sm">
-            <Link href="/privacy" className="text-gray-500 hover:text-gray-700">
-              Privacy Policy
-            </Link>
-            <a
-              href="mailto:hello@comparethenursery.com"
-              className="text-gray-500 hover:text-gray-700"
-            >
-              Contact
-            </a>
+          <div className="flex flex-col sm:flex-row gap-6">
+            <div>
+              <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Resources</p>
+              <div className="flex flex-col gap-1 text-sm">
+                <Link href="/guides" className="text-gray-500 hover:text-gray-700">
+                  Guides & Advice
+                </Link>
+                <Link href="/nurseries-in-town" className="text-gray-500 hover:text-gray-700">
+                  Browse by Town
+                </Link>
+                <Link href="/pricing" className="text-gray-500 hover:text-gray-700">
+                  Pricing
+                </Link>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Providers</p>
+              <div className="flex flex-col gap-1 text-sm">
+                <Link href="/for-providers" className="text-gray-500 hover:text-gray-700">
+                  For Providers
+                </Link>
+                <Link href="/claim" className="text-gray-500 hover:text-gray-700">
+                  Claim Your Nursery
+                </Link>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Company</p>
+              <div className="flex flex-col gap-1 text-sm">
+                <Link href="/privacy" className="text-gray-500 hover:text-gray-700">
+                  Privacy Policy
+                </Link>
+                <a
+                  href="mailto:hello@comparethenursery.com"
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  Contact
+                </a>
+              </div>
+            </div>
           </div>
         </div>
         <OglAttribution />

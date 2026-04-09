@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/node'
 import express from 'express'
 import compression from 'compression'
 import cors from 'cors'
+import db from './db.js'
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({
@@ -54,6 +55,9 @@ import billingRouter, { billingWebhookHandler } from './routes/billing.js'
 
 // Admin dashboard
 import adminRouter from './routes/admin.js'
+
+// Provider acquisition — invite outreach
+import providerInvitesRouter from './routes/providerInvites.js'
 
 // Blog / guides content
 import blogRouter from './routes/blog.js'
@@ -155,6 +159,23 @@ app.use(express.json({ limit: '1mb' }))
 // Optional auth — attaches req.user if a valid bearer token is present
 app.use(optionalAuth)
 
+// Track last_active_at for authenticated users (debounced — 1 hour)
+const _lastActiveCache = new Map() // userId -> timestamp of last DB write
+app.use((req, _res, next) => {
+  if (!req.user?.id || !db) return next()
+  const now = Date.now()
+  const lastWrite = _lastActiveCache.get(req.user.id) || 0
+  if (now - lastWrite < 3600_000) return next() // skip if <1 hour since last update
+  _lastActiveCache.set(req.user.id, now)
+  // Fire-and-forget — do not block the request
+  db.from('user_profiles')
+    .update({ last_active_at: new Date().toISOString() })
+    .eq('id', req.user.id)
+    .then(() => {})
+    .catch(() => {})
+  return next()
+})
+
 // Routes
 app.use('/api/v1/health', healthRouter)
 app.use('/api/v1/profile', profileRouter)
@@ -184,6 +205,7 @@ app.use('/api/v1/enquiries', messagesRouter)
 app.use('/api/v1/notifications', notificationsRouter)
 app.use('/api/v1/billing', billingRouter)
 app.use('/api/v1/admin', adminRouter)
+app.use('/api/v1/admin/provider-invites', providerInvitesRouter)
 app.use('/api/v1/blog', blogRouter)
 
 // Public OpenAPI spec for LLM agents + ChatGPT Custom GPT

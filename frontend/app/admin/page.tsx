@@ -7,9 +7,11 @@ import { getAuthToken, adminFetch } from '@/lib/api'
 
 interface AdminStats {
   users: { total: number; customers: number; providers: number; admins: number }
-  nurseries: { total: number; claimed: number }
+  nurseries: { total: number; claimed: number; featured?: number }
   claims: { pending: number; approved: number; rejected: number }
-  reviews: { pending: number; approved: number; flagged: number; rejected: number }
+  reviews: { pending: number; approved: number; flagged: number; rejected?: number }
+  subscriptions?: { provider_pro: number; provider_premium: number; parent_premium: number; mrr_gbp: number }
+  enquiries?: { total: number; this_month: number }
   mrr: number
   enquiries_this_month: number
 }
@@ -142,6 +144,17 @@ export default function AdminOverview() {
               value={stats.enquiries_this_month}
               icon={<EnvelopeIcon />}
             />
+            <StatCard
+              label="Claim Rate"
+              value={
+                stats.nurseries.total > 0
+                  ? `${((stats.nurseries.claimed / stats.nurseries.total) * 100).toFixed(1)}%`
+                  : '0%'
+              }
+              sub={`${stats.nurseries.claimed} claimed of ${stats.nurseries.total.toLocaleString()}`}
+              href="/admin/invites"
+              icon={<ClipboardIcon />}
+            />
           </>
         ) : null}
       </div>
@@ -160,6 +173,12 @@ export default function AdminOverview() {
           className="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition"
         >
           Moderate Reviews
+        </Link>
+        <Link
+          href="/admin/invites"
+          className="px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition"
+        >
+          Provider Invites
         </Link>
       </div>
     </div>

@@ -262,6 +262,10 @@ export interface Profile {
   children: ProfileChild[]
   preferences: any | null
   email_alerts: boolean
+  email_weekly_digest?: boolean
+  email_new_nurseries?: boolean
+  email_marketing?: boolean
+  last_active_at?: string | null
   created_at?: string
   updated_at?: string
 }

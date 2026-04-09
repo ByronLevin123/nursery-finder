@@ -397,6 +397,59 @@ export function renderClaimApprovedEmail(nursery = {}, providerUrl = '') {
   return { subject, html, text }
 }
 
+export function renderProviderInviteEmail(nursery = {}) {
+  const name = escapeHtml(nursery.name || 'your nursery')
+  const town = escapeHtml(nursery.town || '')
+  const urn = encodeURIComponent(nursery.urn || '')
+  const frontendUrl = process.env.FRONTEND_URL || 'https://comparethenursery.com'
+  const claimUrl = `${frontendUrl}/claim?urn=${urn}`
+  const safeClaimUrl = escapeHtml(claimUrl)
+  const subject = `${nursery.name || 'Your nursery'} — claim your free listing on CompareTheNursery`
+
+  const html = shell({
+    title: subject,
+    bodyHtml: `
+      <p style="margin:0 0 12px 0;">Hi,</p>
+      <p style="margin:0 0 16px 0;">
+        Parents are searching for nurseries like <strong>${name}</strong>${town ? ' in ' + town : ''} on CompareTheNursery.
+        Claim your free listing to take control of your profile and start connecting with families.
+      </p>
+      <p style="margin:0 0 6px 0;font-weight:600;color:#111827;">Why claim your listing?</p>
+      <ul style="margin:0 0 16px 0;padding-left:18px;font-size:14px;color:#374151;">
+        <li style="margin:4px 0;">Update your description, photos, and contact details</li>
+        <li style="margin:4px 0;">Respond to parent reviews and build your reputation</li>
+        <li style="margin:4px 0;">Receive enquiries directly from local parents looking for spaces</li>
+      </ul>
+      <p style="margin:20px 0;">
+        <a href="${safeClaimUrl}" style="display:inline-block;padding:14px 24px;background:#2563eb;color:#ffffff;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">
+          Claim your free listing
+        </a>
+      </p>
+      <p style="margin:20px 0 0 0;font-size:13px;color:#6b7280;">
+        It only takes a couple of minutes. Your listing is already live with your Ofsted data — claiming it lets you enhance and manage it.
+      </p>
+    `,
+  })
+
+  const text = [
+    'Hi,',
+    '',
+    `Parents are searching for nurseries like ${nursery.name || 'yours'}${nursery.town ? ' in ' + nursery.town : ''} on CompareTheNursery.`,
+    'Claim your free listing to take control of your profile.',
+    '',
+    'Why claim your listing?',
+    '- Update your description, photos, and contact details',
+    '- Respond to parent reviews and build your reputation',
+    '- Receive enquiries directly from local parents',
+    '',
+    `Claim now: ${claimUrl}`,
+    '',
+    'Manage preferences: ' + UNSUBSCRIBE_URL,
+  ].join('\n')
+
+  return { subject, html, text }
+}
+
 export default {
   isEmailAvailable,
   sendEmail,
@@ -405,6 +458,7 @@ export default {
   renderDigestEmail,
   renderEnquiryNotificationEmail,
   renderClaimApprovedEmail,
+  renderProviderInviteEmail,
   EmailNotConfiguredError,
   EmailSendError,
 }

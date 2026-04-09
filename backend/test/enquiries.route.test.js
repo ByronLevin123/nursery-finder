@@ -27,6 +27,10 @@ function makeQueryBuilder(table) {
       state.insertRow = row
       return builder
     },
+    update() {
+      state.op = 'update'
+      return builder
+    },
     eq(c, v) {
       state.filters.push([c, 'eq', v])
       return builder
@@ -111,6 +115,12 @@ vi.mock('../src/services/emailService.js', () => ({
   sendEmail: vi.fn(async () => ({ messageId: 'test-123' })),
   isEmailAvailable: () => false,
   escapeHtml: (s) => String(s || ''),
+  renderEnquiryNotificationEmail: vi.fn(() => ({
+    subject: 'Test',
+    html: '<p>Test</p>',
+    text: 'Test',
+  })),
+  renderProviderInviteEmail: vi.fn(() => ({ subject: 'Test', html: '<p>Test</p>', text: 'Test' })),
   EmailNotConfiguredError: class extends Error {},
   EmailSendError: class extends Error {},
 }))
