@@ -109,7 +109,7 @@ export async function smartSearch({
       search_lat: firstWithCoords?.lat ?? null,
       search_lng: firstWithCoords?.lng ?? null,
       mode: 'text',
-      query: cleaned,
+      query: cleaned.replace(/[<>]/g, ''),
     },
   }
 }
