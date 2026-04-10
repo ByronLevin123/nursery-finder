@@ -106,12 +106,32 @@ router.get('/', adminAuth, async (req, res, next) => {
     if (!db) return res.status(503).json({ error: 'Database not configured' })
     let q = db
       .from('nursery_claims')
-      .select('*, nurseries(name, town)')
+      .select('*')
       .order('created_at', { ascending: false })
     if (req.query.status) q = q.eq('status', req.query.status)
     const { data, error } = await q
     if (error) throw error
-    return res.json({ data: data || [] })
+
+    // Enrich with nursery name/town
+    const urns = [...new Set((data || []).map((c) => c.urn).filter(Boolean))]
+    let nurseryMap = {}
+    if (urns.length > 0) {
+      const { data: nurseries } = await db
+        .from('nurseries')
+        .select('urn, name, town')
+        .in('urn', urns)
+      for (const n of nurseries || []) {
+        nurseryMap[n.urn] = { name: n.name, town: n.town }
+      }
+    }
+
+    const enriched = (data || []).map((c) => ({
+      ...c,
+      nursery_name: nurseryMap[c.urn]?.name || null,
+      nursery_town: nurseryMap[c.urn]?.town || null,
+    }))
+
+    return res.json({ data: enriched })
   } catch (err) {
     next(err)
   }
