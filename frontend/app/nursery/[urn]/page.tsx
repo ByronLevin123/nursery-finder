@@ -25,6 +25,7 @@ const NurseryAvailabilityTab = dynamic(() => import('@/components/NurseryAvailab
 const BookVisitButton = dynamic(() => import('@/components/BookVisitButton'), { ssr: false })
 const ViewTracker = dynamic(() => import('@/components/ViewTracker'), { ssr: false })
 const SimilarNurseries = dynamic(() => import('@/components/SimilarNurseries'), { ssr: false })
+const NearbySchools = dynamic(() => import('@/components/NearbySchools'), { ssr: false })
 const NurseryPlaceholder = dynamic(() => import('@/components/NurseryPlaceholder'), { ssr: false })
 const RecentlyViewedTracker = dynamic(() => import('@/components/RecentlyViewedTracker'), { ssr: false })
 const ProviderPhotoGallery = dynamic(() => import('@/components/ProviderPhotoGallery'), { ssr: false })
@@ -283,6 +284,11 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
           nurseryUrn={nursery.urn}
           homePostcode={homePostcode}
         />
+      )}
+
+      {/* Nearby primary schools */}
+      {nursery.lat && nursery.lng && (
+        <NearbySchools lat={nursery.lat} lng={nursery.lng} />
       )}
 
       {/* More nurseries in this district — internal linking for SEO */}

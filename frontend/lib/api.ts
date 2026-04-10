@@ -589,6 +589,53 @@ export async function getNurseriesInDistrict(district: string) {
   }>
 }
 
+// Schools (nearby primary schools overlay) ----------------------------------
+
+export interface School {
+  id: string
+  urn: string
+  name: string
+  type: string | null
+  phase: string | null
+  ofsted_rating: string | null
+  last_inspection_date: string | null
+  address: string | null
+  town: string | null
+  postcode: string | null
+  local_authority: string | null
+  lat: number | null
+  lng: number | null
+  pupils: number | null
+  age_range: string | null
+  website: string | null
+  distance_km?: number
+}
+
+export async function getNearbySchools(
+  lat: number,
+  lng: number,
+  radius_km = 1,
+  phase: string | null = 'Primary'
+): Promise<School[]> {
+  try {
+    const params = new URLSearchParams({
+      lat: String(lat),
+      lng: String(lng),
+      radius_km: String(radius_km),
+    })
+    if (phase) params.set('phase', phase)
+
+    const res = await fetch(`${API_URL}/api/v1/schools/near?${params}`, {
+      next: { revalidate: 3600 },
+    })
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.data || []
+  } catch {
+    return []
+  }
+}
+
 // Similar nurseries + autocomplete ---------------------------------------------
 
 export async function getSimilarNurseries(urn: string): Promise<Nursery[]> {

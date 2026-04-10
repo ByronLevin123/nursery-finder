@@ -403,7 +403,83 @@ export function renderSavedSearchAlertEmail({ searchResults = [], userName } = {
   return { subject, html, text: textLines.join('\n') }
 }
 
-// ---------- 8. Provider enquiry digest ----------
+// ---------- 8. Ofsted rating change ----------
+
+export function renderOfstedChangeEmail({
+  nurseryName,
+  town,
+  urn,
+  previousGrade,
+  newGrade,
+  userName,
+} = {}) {
+  const greeting = userName ? `Hi ${escapeHtml(userName)},` : 'Hi,'
+  const safeName = escapeHtml(nurseryName || 'A nursery')
+  const safeTown = escapeHtml(town || '')
+  const safePrev = escapeHtml(previousGrade || 'Unknown')
+  const safeNew = escapeHtml(newGrade || 'Unknown')
+  const subject = `Ofsted rating change: ${nurseryName || 'A nursery'}`
+
+  // Determine if this is an upgrade or downgrade for styling
+  const gradeOrder = { Outstanding: 1, Good: 2, 'Requires Improvement': 3, Inadequate: 4 }
+  const prevRank = gradeOrder[previousGrade] || 99
+  const newRank = gradeOrder[newGrade] || 99
+  const isUpgrade = newRank < prevRank
+  const isDowngrade = newRank > prevRank
+
+  const badgeColor = isUpgrade ? '#16a34a' : isDowngrade ? '#d97706' : '#6b7280'
+  const badgeBg = isUpgrade ? '#f0fdf4' : isDowngrade ? '#fffbeb' : '#f9fafb'
+  const changeLabel = isUpgrade ? 'Upgraded' : isDowngrade ? 'Downgraded' : 'Changed'
+
+  const nurseryUrl = urn
+    ? `${FRONTEND_URL}/nursery/${encodeURIComponent(urn)}`
+    : `${FRONTEND_URL}/search`
+  const safeUrl = escapeHtml(nurseryUrl)
+
+  const html = shell({
+    title: subject,
+    bodyHtml: `
+      <p style="margin:0 0 12px 0;">${greeting}</p>
+      <p style="margin:0 0 16px 0;">
+        <strong>${safeName}</strong>${safeTown ? ' in ' + safeTown : ''} has received a new Ofsted rating.
+      </p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px 0;">
+        <tr>
+          <td style="padding:16px;background:${badgeBg};border-radius:8px;border:1px solid ${badgeColor}20;">
+            <div style="font-size:12px;font-weight:600;color:${badgeColor};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">${changeLabel}</div>
+            <div style="font-size:15px;color:#374151;">
+              <span style="text-decoration:line-through;color:#9ca3af;">${safePrev}</span>
+              <span style="margin:0 8px;color:#9ca3af;">&rarr;</span>
+              <span style="font-weight:700;color:${badgeColor};">${safeNew}</span>
+            </div>
+          </td>
+        </tr>
+      </table>
+      <p style="margin:0 0 20px 0;">
+        ${ctaButton(nurseryUrl, 'View nursery profile')}
+      </p>
+      <p style="margin:0;font-size:13px;color:#6b7280;">
+        Ofsted ratings are sourced from the official register under the Open Government Licence.
+      </p>
+    `,
+  })
+
+  const text = [
+    greeting,
+    '',
+    `${nurseryName || 'A nursery'}${town ? ' in ' + town : ''} has received a new Ofsted rating.`,
+    '',
+    `${changeLabel}: ${previousGrade || 'Unknown'} -> ${newGrade || 'Unknown'}`,
+    '',
+    `View nursery: ${nurseryUrl}`,
+    '',
+    `Manage preferences: ${UNSUBSCRIBE_URL}`,
+  ].join('\n')
+
+  return { subject, html, text }
+}
+
+// ---------- 9. Provider enquiry digest ----------
 
 export function renderProviderEnquiryDigestEmail({
   providerName,
@@ -451,6 +527,7 @@ export default {
   renderWeeklyDigestEmail,
   renderReengagementEmail,
   renderSavedSearchAlertEmail,
+  renderOfstedChangeEmail,
   renderProviderInviteEmail,
   renderProviderEnquiryDigestEmail,
 }

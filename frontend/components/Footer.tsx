@@ -47,12 +47,9 @@ export default function Footer() {
                 <Link href="/terms" className="text-gray-500 hover:text-gray-700">
                   Terms of Service
                 </Link>
-                <a
-                  href="mailto:hello@comparethenursery.com"
-                  className="text-gray-500 hover:text-gray-700"
-                >
+                <Link href="/contact" className="text-gray-500 hover:text-gray-700">
                   Contact
-                </a>
+                </Link>
               </div>
             </div>
           </div>

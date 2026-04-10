@@ -372,7 +372,7 @@ router.get('/reviews', async (req, res, next) => {
     let query = db
       .from('nursery_reviews')
       .select(
-        'id, urn, author_display_name, rating, title, body, status, created_at, nurseries!nursery_reviews_urn_fkey(name)',
+        'id, urn, author_display_name, rating, title, body, status, admin_note, moderated_at, created_at, nurseries!nursery_reviews_urn_fkey(name)',
         { count: 'exact' }
       )
 
@@ -388,7 +388,7 @@ router.get('/reviews', async (req, res, next) => {
       logger.warn({ err: error.message }, 'reviews join failed, falling back to simple query')
       let fallbackQuery = db
         .from('nursery_reviews')
-        .select('id, urn, author_display_name, rating, title, body, status, created_at', {
+        .select('id, urn, author_display_name, rating, title, body, status, admin_note, moderated_at, created_at', {
           count: 'exact',
         })
       if (status) {
@@ -422,6 +422,8 @@ router.get('/reviews', async (req, res, next) => {
         title: row.title,
         body: row.body,
         status: row.status,
+        admin_note: row.admin_note ?? null,
+        moderated_at: row.moderated_at ?? null,
         created_at: row.created_at,
       }
     })
@@ -444,22 +446,27 @@ router.patch('/reviews/:id', async (req, res, next) => {
   try {
     if (!db) return res.status(503).json({ error: 'Database not configured' })
     const { id } = req.params
-    const { status } = req.body || {}
+    const { status, admin_note } = req.body || {}
 
     const validStatuses = ['approved', 'rejected', 'flagged']
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: `status must be one of: ${validStatuses.join(', ')}` })
     }
 
-    const updateFields = { status }
+    const now = new Date().toISOString()
+    const updateFields = { status, moderated_at: now }
 
     // Map 'approved' to 'published' which is the actual DB status value for live reviews
     if (status === 'approved') {
       updateFields.status = 'published'
     }
 
+    if (admin_note !== undefined) {
+      updateFields.admin_note = admin_note || null
+    }
+
     if (status === 'flagged') {
-      updateFields.flagged_at = new Date().toISOString()
+      updateFields.flagged_at = now
       updateFields.flagged_by = req.user.id
     }
 
@@ -584,6 +591,71 @@ router.get('/subscriptions', async (req, res, next) => {
     })
   } catch (err) {
     logger.error({ err: err?.message }, 'admin subscriptions list failed')
+    next(err)
+  }
+})
+
+// ---------------------------------------------------------------------------
+// GET /ofsted-changes — recent Ofsted grade changes
+// ---------------------------------------------------------------------------
+router.get('/ofsted-changes', async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+    const { page, limit, offset } = paginate(req.query)
+    const { notified } = req.query
+
+    let query = db
+      .from('ofsted_changes')
+      .select('id, nursery_urn, previous_grade, new_grade, change_date, notified', {
+        count: 'exact',
+      })
+
+    if (notified === 'true') {
+      query = query.eq('notified', true)
+    } else if (notified === 'false') {
+      query = query.eq('notified', false)
+    }
+
+    query = query.order('change_date', { ascending: false }).range(offset, offset + limit - 1)
+
+    const { data, error, count } = await query
+    if (error) throw error
+
+    // Enrich with nursery names
+    const urns = [...new Set((data || []).map((r) => r.nursery_urn).filter(Boolean))]
+    let nurseryMap = {}
+    if (urns.length > 0) {
+      const { data: nurseries } = await db
+        .from('nurseries')
+        .select('urn, name, town, postcode')
+        .in('urn', urns)
+      if (nurseries) {
+        nurseryMap = Object.fromEntries(nurseries.map((n) => [n.urn, n]))
+      }
+    }
+
+    const rows = (data || []).map((row) => {
+      const nursery = nurseryMap[row.nursery_urn] || {}
+      return {
+        id: row.id,
+        nursery_urn: row.nursery_urn,
+        nursery_name: nursery.name ?? null,
+        nursery_town: nursery.town ?? null,
+        nursery_postcode: nursery.postcode ?? null,
+        previous_grade: row.previous_grade,
+        new_grade: row.new_grade,
+        change_date: row.change_date,
+        notified: row.notified,
+      }
+    })
+
+    logger.info({ page, limit, notified }, 'admin ofsted-changes list')
+    return res.json({
+      data: rows,
+      meta: paginationMeta(count ?? 0, page, limit),
+    })
+  } catch (err) {
+    logger.error({ err: err?.message }, 'admin ofsted-changes list failed')
     next(err)
   }
 })

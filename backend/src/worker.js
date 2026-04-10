@@ -11,6 +11,7 @@ import { processDripQueue } from './services/dripEngine.js'
 import { sendWeeklyDigests } from './services/weeklyDigest.js'
 import { sendReengagementEmails } from './services/reengagement.js'
 import { processSavedSearchAlerts } from './services/savedSearchAlerts.js'
+import { processOfstedChangeNotifications } from './services/ofstedChangeNotifier.js'
 import db from './db.js'
 import { logger } from './logger.js'
 
@@ -35,6 +36,17 @@ cron.schedule('0 2 1 * *', async () => {
     logger.info(result, 'cron: Ofsted sync complete')
   } catch (err) {
     logger.error({ err: err.message }, 'cron: Ofsted sync failed')
+  }
+})
+
+// Ofsted grade change notifications — 2nd of each month at 3am (after re-sync at 2am on the 1st)
+cron.schedule('0 3 2 * *', async () => {
+  logger.info('cron: starting Ofsted change notifications')
+  try {
+    const result = await processOfstedChangeNotifications()
+    logger.info(result, 'cron: Ofsted change notifications complete')
+  } catch (err) {
+    logger.error({ err: err.message }, 'cron: Ofsted change notifications failed')
   }
 })
 

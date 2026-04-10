@@ -1,5 +1,6 @@
 import express from 'express'
 import { ingestOfstedRegister } from '../services/ofstedIngest.js'
+import { ingestSchoolsFromCsv, geocodeSchoolsBatch } from '../services/schoolIngest.js'
 import { geocodeNurseriesBatch } from '../services/geocoding.js'
 import { ingestLandRegistryYear, refreshPropertyStats } from '../services/landRegistry.js'
 import { refreshCrimeForDistricts } from '../services/policeApi.js'
@@ -151,6 +152,35 @@ router.post('/dimension-scores', async (req, res, next) => {
     res.json(result)
   } catch (err) {
     logger.error({ err: err.message }, 'ingest: dimension scores failed')
+    next(err)
+  }
+})
+
+// POST /api/v1/ingest/schools — import schools from a CSV URL
+router.post('/schools', async (req, res, next) => {
+  try {
+    const csvUrl = req.body?.csv_url || req.query.csv_url
+    if (!csvUrl) {
+      return res.status(400).json({ error: 'csv_url is required (body or query param)' })
+    }
+    logger.info({ csvUrl }, 'ingest: starting school import')
+    const result = await ingestSchoolsFromCsv(csvUrl)
+    res.json(result)
+  } catch (err) {
+    logger.error({ err: err.message }, 'ingest: school import failed')
+    next(err)
+  }
+})
+
+// POST /api/v1/ingest/schools-geocode — geocode schools with missing lat/lng
+router.post('/schools-geocode', async (req, res, next) => {
+  try {
+    const limit = parseInt(req.query.limit) || 500
+    logger.info({ limit }, 'ingest: starting school geocoding batch')
+    const result = await geocodeSchoolsBatch(limit)
+    res.json(result)
+  } catch (err) {
+    logger.error({ err: err.message }, 'ingest: school geocoding failed')
     next(err)
   }
 })

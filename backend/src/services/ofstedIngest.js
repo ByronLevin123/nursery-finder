@@ -121,8 +121,54 @@ export async function ingestOfstedRegister() {
 
   logger.info({ total: records.length, skipped }, 'ofsted: CSV parsed, starting upsert')
 
+  let gradeChanges = 0
+
   for (let i = 0; i < records.length; i += BATCH_SIZE) {
     const batch = records.slice(i, i + BATCH_SIZE)
+
+    // Detect grade changes before upserting
+    try {
+      const urns = batch.map((r) => r.urn).filter(Boolean)
+      if (urns.length > 0) {
+        const { data: existing } = await db
+          .from('nurseries')
+          .select('urn, ofsted_overall_grade')
+          .in('urn', urns)
+
+        if (existing && existing.length > 0) {
+          const existingByUrn = new Map(existing.map((n) => [n.urn, n.ofsted_overall_grade]))
+          const changes = []
+
+          for (const record of batch) {
+            if (!record.urn || !record.ofsted_overall_grade) continue
+            const previousGrade = existingByUrn.get(record.urn)
+            if (previousGrade && previousGrade !== record.ofsted_overall_grade) {
+              changes.push({
+                nursery_urn: record.urn,
+                previous_grade: previousGrade,
+                new_grade: record.ofsted_overall_grade,
+              })
+              logger.info(
+                { urn: record.urn, name: record.name, previousGrade, newGrade: record.ofsted_overall_grade },
+                'ofsted: grade change detected'
+              )
+            }
+          }
+
+          if (changes.length > 0) {
+            const { error: changeErr } = await db.from('ofsted_changes').insert(changes)
+            if (changeErr) {
+              logger.error({ error: changeErr.message }, 'ofsted: failed to insert grade changes')
+            } else {
+              gradeChanges += changes.length
+            }
+          }
+        }
+      }
+    } catch (detectErr) {
+      logger.warn({ err: detectErr?.message, batchStart: i }, 'ofsted: grade change detection failed, continuing with upsert')
+    }
+
     const { error } = await db.from('nurseries').upsert(batch, {
       onConflict: 'urn',
       ignoreDuplicates: false,
@@ -141,6 +187,6 @@ export async function ingestOfstedRegister() {
   }
 
   const duration = Date.now() - startTime
-  logger.info({ imported, skipped, errors, duration_ms: duration }, 'ofsted: ingest complete')
-  return { imported, skipped, errors, duration_ms: duration }
+  logger.info({ imported, skipped, errors, gradeChanges, duration_ms: duration }, 'ofsted: ingest complete')
+  return { imported, skipped, errors, gradeChanges, duration_ms: duration }
 }

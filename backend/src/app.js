@@ -62,6 +62,9 @@ import providerInvitesRouter from './routes/providerInvites.js'
 // Blog / guides content
 import blogRouter from './routes/blog.js'
 
+// Schools (nearby primary schools overlay)
+import schoolsRouter from './routes/schools.js'
+
 // AI feature routes (Claude-powered) — separate block, do not merge with mounts above
 import aiRouter from './routes/ai.js'
 import assistantRouter from './routes/assistant.js'
@@ -114,6 +117,7 @@ const publicCorsPaths = [
   '/api/v1/areas',
   '/api/v1/properties/districts',
   '/api/v1/overlays',
+  '/api/v1/schools',
   '/api/v1/public',
   '/api/v1/blog',
   '/api/openapi.json',
@@ -159,6 +163,7 @@ app.use('/api/v1/nurseries', publicLimiter)
 app.use('/api/v1/areas', publicLimiter)
 app.use('/api/v1/properties', publicLimiter)
 app.use('/api/v1/overlays', publicLimiter)
+app.use('/api/v1/schools', publicLimiter)
 app.use('/api/v1/public', publicLimiter)
 
 // Stripe webhook — MUST be before json body parser (needs raw body)
@@ -222,6 +227,7 @@ app.use('/api/v1/billing', billingRouter)
 app.use('/api/v1/admin', adminRouter)
 app.use('/api/v1/admin/provider-invites', providerInvitesRouter)
 app.use('/api/v1/blog', blogRouter)
+app.use('/api/v1/schools', schoolsRouter)
 
 // Public OpenAPI spec for LLM agents + ChatGPT Custom GPT
 app.get('/api/openapi.json', (req, res, next) => {
