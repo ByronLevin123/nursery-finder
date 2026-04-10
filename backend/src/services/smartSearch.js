@@ -99,17 +99,80 @@ export async function smartSearch({
     return (a.name || '').localeCompare(b.name || '')
   })
 
-  // For text search, centre map on first geocoded result if available
-  const firstWithCoords = sorted.find((n) => n.lat != null && n.lng != null)
+  // If text search returned results, return them
+  if (sorted.length > 0) {
+    const firstWithCoords = sorted.find((n) => n.lat != null && n.lng != null)
+    return {
+      data: sorted,
+      meta: {
+        total: sorted.length,
+        search_lat: firstWithCoords?.lat ?? null,
+        search_lng: firstWithCoords?.lng ?? null,
+        mode: 'text',
+        query: cleaned.replace(/[<>]/g, ''),
+      },
+    }
+  }
+
+  // Fuzzy fallback — text search returned 0 results
+  logger.info({ query: cleaned }, 'text search empty, trying fuzzy fallback')
+  const { data: fuzzyData, error: fuzzyError } = await db.rpc('fuzzy_search_nurseries', {
+    query_text: cleaned,
+    max_results: 50,
+    min_similarity: 0.15,
+  })
+
+  if (fuzzyError) {
+    logger.warn({ error: fuzzyError, query: cleaned }, 'fuzzy search RPC failed')
+    // Return empty results if RPC is not available
+    return {
+      data: [],
+      meta: {
+        total: 0,
+        search_lat: null,
+        search_lng: null,
+        mode: 'text',
+        query: cleaned.replace(/[<>]/g, ''),
+      },
+    }
+  }
+
+  let fuzzyResults = fuzzyData || []
+
+  // Apply grade/funded filters client-side
+  if (grade) {
+    fuzzyResults = fuzzyResults.filter((n) => n.ofsted_overall_grade === grade)
+  }
+  if (funded_2yr) {
+    fuzzyResults = fuzzyResults.filter((n) => n.places_funded_2yr > 0)
+  }
+  if (funded_3yr) {
+    fuzzyResults = fuzzyResults.filter((n) => n.places_funded_3_4yr > 0)
+  }
+
+  // Sort: featured first, then by match_score descending
+  fuzzyResults.sort((a, b) => {
+    const fa = a.featured ? 0 : 1
+    const fb = b.featured ? 0 : 1
+    if (fa !== fb) return fa - fb
+    return (b.match_score || 0) - (a.match_score || 0)
+  })
+
+  // Extract "did you mean" from the top match
+  const topMatch = fuzzyResults[0]
+  const didYouMean = topMatch?.matched_field || null
+
+  const firstFuzzyWithCoords = fuzzyResults.find((n) => n.lat != null && n.lng != null)
 
   return {
-    data: sorted,
+    data: fuzzyResults,
     meta: {
-      total: sorted.length,
-      search_lat: firstWithCoords?.lat ?? null,
-      search_lng: firstWithCoords?.lng ?? null,
-      mode: 'text',
+      total: fuzzyResults.length,
+      search_lat: firstFuzzyWithCoords?.lat ?? null,
+      search_lng: firstFuzzyWithCoords?.lng ?? null,
+      mode: 'fuzzy',
       query: cleaned.replace(/[<>]/g, ''),
+      did_you_mean: didYouMean,
     },
   }
 }

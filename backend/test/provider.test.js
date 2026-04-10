@@ -125,18 +125,26 @@ describe('PATCH /api/v1/provider/nurseries/:urn', () => {
     expect(res.status).toBe(403)
   })
 
-  it('updates editable fields for the owner', async () => {
+  it('updates free-tier editable fields for the owner', async () => {
     const res = await request(app)
       .patch('/api/v1/provider/nurseries/URN1')
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({
-        description: 'A wonderful place',
         website_url: 'https://example.com',
-        photos: ['https://cdn.example.com/a.jpg'],
+        contact_phone: '020 1234 5678',
       })
     expect(res.status).toBe(200)
-    expect(res.body.description).toBe('A wonderful place')
+    expect(res.body.website_url).toBe('https://example.com')
     expect(res.body.provider_updated_at).toBeTruthy()
+  })
+
+  it('rejects description edit for free-tier provider', async () => {
+    const res = await request(app)
+      .patch('/api/v1/provider/nurseries/URN1')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ description: 'A wonderful place' })
+    expect(res.status).toBe(403)
+    expect(res.body.error).toMatch(/subscription/i)
   })
 
   it('rejects unknown fields', async () => {

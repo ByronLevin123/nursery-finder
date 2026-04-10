@@ -48,11 +48,14 @@ export interface SearchResult {
   data: Nursery[]
   meta: {
     total: number
-    page: number
-    limit: number
-    pages: number
+    page?: number
+    limit?: number
+    pages?: number
     search_lat: number
     search_lng: number
+    mode?: string
+    did_you_mean?: string
+    query?: string
   }
 }
 
@@ -750,6 +753,220 @@ export async function getBlogPost(slug: string): Promise<BlogPost | null> {
   })
   if (!res.ok) return null
   return res.json()
+}
+
+// Enhanced provider features ---------------------------------------------------
+
+export interface ProviderFeatures {
+  tier: string
+  can_edit_description: boolean
+  can_upload_photos: boolean
+  can_manage_fees: boolean
+  photo_limit: number
+  featured_listing: boolean
+  analytics_advanced: boolean
+  priority_search: boolean
+  custom_branding: boolean
+}
+
+export async function getProviderFeatures(token: string): Promise<ProviderFeatures> {
+  const res = await fetch(`${API_URL}/api/v1/provider/features`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  })
+  if (!res.ok) {
+    return {
+      tier: 'free',
+      can_edit_description: false,
+      can_upload_photos: false,
+      can_manage_fees: false,
+      photo_limit: 0,
+      featured_listing: false,
+      analytics_advanced: false,
+      priority_search: false,
+      custom_branding: false,
+    }
+  }
+  return res.json()
+}
+
+export interface NurseryPhoto {
+  id: string
+  nursery_urn: string
+  storage_path: string
+  public_url: string
+  display_order: number
+  caption: string | null
+  uploaded_at: string
+}
+
+export async function getNurseryPhotos(urn: string): Promise<NurseryPhoto[]> {
+  try {
+    const res = await fetch(`${API_URL}/api/v1/provider/nurseries/${encodeURIComponent(urn)}/photos`, {
+      cache: 'no-store',
+    })
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.data || []
+  } catch {
+    return []
+  }
+}
+
+export async function uploadNurseryPhoto(
+  token: string,
+  urn: string,
+  imageFile: File,
+  caption?: string
+): Promise<NurseryPhoto> {
+  const base64 = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(imageFile)
+  })
+
+  const res = await fetch(`${API_URL}/api/v1/provider/nurseries/${encodeURIComponent(urn)}/photos`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ image: base64, caption }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `Upload failed: ${res.status}`)
+  }
+  return res.json()
+}
+
+export async function deleteNurseryPhoto(
+  token: string,
+  urn: string,
+  photoId: string
+): Promise<void> {
+  const res = await fetch(
+    `${API_URL}/api/v1/provider/nurseries/${encodeURIComponent(urn)}/photos/${encodeURIComponent(photoId)}`,
+    {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  )
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `Delete failed: ${res.status}`)
+  }
+}
+
+export async function reorderNurseryPhotos(
+  token: string,
+  urn: string,
+  order: string[]
+): Promise<NurseryPhoto[]> {
+  const res = await fetch(
+    `${API_URL}/api/v1/provider/nurseries/${encodeURIComponent(urn)}/photos/reorder`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ order }),
+    }
+  )
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `Reorder failed: ${res.status}`)
+  }
+  const data = await res.json()
+  return data.data || []
+}
+
+export interface NurseryFee {
+  id: string
+  nursery_urn: string
+  age_group: string
+  session_type: string
+  price_gbp: number
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export async function getNurseryFees(urn: string): Promise<NurseryFee[]> {
+  try {
+    const res = await fetch(`${API_URL}/api/v1/provider/nurseries/${encodeURIComponent(urn)}/fees`, {
+      cache: 'no-store',
+    })
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.data || []
+  } catch {
+    return []
+  }
+}
+
+export async function addNurseryFee(
+  token: string,
+  urn: string,
+  fee: { age_group: string; session_type: string; price_gbp: number; notes?: string }
+): Promise<NurseryFee> {
+  const res = await fetch(`${API_URL}/api/v1/provider/nurseries/${encodeURIComponent(urn)}/fees`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(fee),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `Add fee failed: ${res.status}`)
+  }
+  return res.json()
+}
+
+export async function updateNurseryFee(
+  token: string,
+  urn: string,
+  feeId: string,
+  patch: Partial<{ age_group: string; session_type: string; price_gbp: number; notes: string }>
+): Promise<NurseryFee> {
+  const res = await fetch(
+    `${API_URL}/api/v1/provider/nurseries/${encodeURIComponent(urn)}/fees/${encodeURIComponent(feeId)}`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(patch),
+    }
+  )
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `Update fee failed: ${res.status}`)
+  }
+  return res.json()
+}
+
+export async function deleteNurseryFee(
+  token: string,
+  urn: string,
+  feeId: string
+): Promise<void> {
+  const res = await fetch(
+    `${API_URL}/api/v1/provider/nurseries/${encodeURIComponent(urn)}/fees/${encodeURIComponent(feeId)}`,
+    {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  )
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `Delete fee failed: ${res.status}`)
+  }
 }
 
 // Admin API helpers ------------------------------------------------------------

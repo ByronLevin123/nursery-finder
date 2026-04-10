@@ -27,6 +27,7 @@ const ViewTracker = dynamic(() => import('@/components/ViewTracker'), { ssr: fal
 const SimilarNurseries = dynamic(() => import('@/components/SimilarNurseries'), { ssr: false })
 const NurseryPlaceholder = dynamic(() => import('@/components/NurseryPlaceholder'), { ssr: false })
 const RecentlyViewedTracker = dynamic(() => import('@/components/RecentlyViewedTracker'), { ssr: false })
+const ProviderPhotoGallery = dynamic(() => import('@/components/ProviderPhotoGallery'), { ssr: false })
 
 export async function generateMetadata({ params }: { params: { urn: string } }): Promise<Metadata> {
   try {
@@ -224,6 +225,10 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         </div>
       )}
 
+      {/* Provider photo gallery (from enhanced listings) */}
+      <ProviderPhotoGallery urn={nursery.urn} nurseryName={nursery.name} />
+
+      {/* Legacy photos from nurseries table (fallback for non-gallery photos) */}
       {nursery.photos && nursery.photos.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-6">
           {nursery.photos.map((src, i) => (

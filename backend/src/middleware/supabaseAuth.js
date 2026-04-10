@@ -81,4 +81,64 @@ export function requireRole(...allowed) {
   }
 }
 
-export default { optionalAuth, requireAuth, requireRole }
+// requirePaidProvider — verifies user has an active pro/premium provider subscription
+// AND owns the nursery identified by req.params.urn.
+// Attaches req.providerTier and req.tierLimits.
+export function requirePaidProvider(req, res, next) {
+  return requireAuth(req, res, async () => {
+    try {
+      if (!db) return res.status(503).json({ error: 'Database not configured' })
+
+      const urn = req.params.urn
+      if (!urn) return res.status(400).json({ error: 'Missing nursery URN' })
+
+      // Check nursery ownership
+      const { data: nursery, error: nErr } = await db
+        .from('nurseries')
+        .select('urn, claimed_by_user_id')
+        .eq('urn', urn)
+        .maybeSingle()
+      if (nErr) throw nErr
+      if (!nursery) return res.status(404).json({ error: 'Nursery not found' })
+      if (nursery.claimed_by_user_id !== req.user.id) {
+        return res.status(403).json({ error: 'You do not own this nursery' })
+      }
+
+      // Check provider subscription tier
+      const { data: sub, error: sErr } = await db
+        .from('provider_subscriptions')
+        .select('tier, status')
+        .eq('user_id', req.user.id)
+        .maybeSingle()
+      if (sErr) throw sErr
+
+      const tier = sub?.tier || 'free'
+      const isActive = !sub || sub.status === 'active' || sub.status === 'trialing'
+
+      if (tier === 'free' || !isActive) {
+        return res.status(403).json({
+          error: 'This feature requires a Pro or Premium subscription',
+          upgrade_url: '/provider/billing',
+          current_tier: tier,
+        })
+      }
+
+      // Fetch tier limits
+      const { data: limits, error: lErr } = await db
+        .from('tier_limits')
+        .select('*')
+        .eq('tier', tier)
+        .maybeSingle()
+      if (lErr) throw lErr
+
+      req.providerTier = tier
+      req.tierLimits = limits || {}
+      return next()
+    } catch (err) {
+      logger.warn({ err: err?.message }, 'requirePaidProvider failed')
+      return res.status(500).json({ error: 'Subscription check failed' })
+    }
+  })
+}
+
+export default { optionalAuth, requireAuth, requireRole, requirePaidProvider }

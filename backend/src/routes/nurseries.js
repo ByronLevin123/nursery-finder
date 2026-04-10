@@ -2,6 +2,7 @@ import express from 'express'
 import db from '../db.js'
 import { geocodePostcode } from '../services/geocoding.js'
 import { searchCache, searchCacheKey } from '../services/cache.js'
+import { autocompleteCache } from '../services/cache.js'
 import { smartSearch } from '../services/smartSearch.js'
 import { logger } from '../logger.js'
 
@@ -181,52 +182,47 @@ router.get('/autocomplete', async (req, res, next) => {
     const q = (req.query.q || '').toString().trim()
     if (q.length < 2) return res.json({ suggestions: [] })
 
-    const suggestions = []
+    // Check cache first (60s TTL)
+    const cacheKey = `ac:${q.toLowerCase()}`
+    const cached = autocompleteCache.get(cacheKey)
+    if (cached) return res.json({ suggestions: cached })
 
-    // Search nurseries by name
-    const { data: nurseries } = await db
-      .from('nurseries')
-      .select('urn, name, postcode, town')
-      .ilike('name', `%${q}%`)
-      .not('location', 'is', null)
-      .limit(6)
+    const { data, error } = await db.rpc('autocomplete_suggestions', {
+      query_text: q,
+      max_results: 8,
+    })
 
-    if (nurseries) {
-      for (const n of nurseries) {
-        suggestions.push({
-          type: 'nursery',
-          label: `${n.name}${n.town ? `, ${n.town}` : ''}`,
-          urn: n.urn,
-        })
-      }
-    }
-
-    // Search by postcode prefix
-    if (suggestions.length < 8) {
-      const { data: areas } = await db
+    if (error) {
+      logger.warn({ error, q }, 'autocomplete RPC failed, falling back to ilike')
+      // Fallback to simple ilike if RPC not available yet
+      const suggestions = []
+      const { data: nurseries } = await db
         .from('nurseries')
-        .select('postcode, town')
-        .ilike('postcode', `${q}%`)
+        .select('urn, name, postcode, town')
+        .ilike('name', `%${q}%`)
         .not('location', 'is', null)
-        .limit(8 - suggestions.length)
-
-      if (areas) {
-        const seen = new Set()
-        for (const a of areas) {
-          const district = a.postcode?.split(' ')[0]
-          if (district && !seen.has(district)) {
-            seen.add(district)
-            suggestions.push({
-              type: 'area',
-              label: `${district}${a.town ? ` — ${a.town}` : ''}`,
-              postcode: district,
-            })
-          }
+        .limit(6)
+      if (nurseries) {
+        for (const n of nurseries) {
+          suggestions.push({
+            type: 'nursery',
+            label: `${n.name}${n.town ? `, ${n.town}` : ''}`,
+            urn: n.urn,
+          })
         }
       }
+      return res.json({ suggestions: suggestions.slice(0, 8) })
     }
 
-    res.json({ suggestions: suggestions.slice(0, 8) })
+    const suggestions = (data || []).map((r) => ({
+      type: r.type,
+      label: r.label,
+      urn: r.urn || undefined,
+      postcode: r.postcode || undefined,
+    }))
+
+    autocompleteCache.set(cacheKey, suggestions)
+    res.json({ suggestions })
   } catch (err) {
     next(err)
   }

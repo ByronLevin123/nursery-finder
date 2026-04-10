@@ -338,7 +338,72 @@ export function renderProviderInviteEmail({ nurseryName, urn } = {}) {
   return { subject, html, text }
 }
 
-// ---------- 7. Provider enquiry digest ----------
+// ---------- 7. Saved-search new-nursery alerts ----------
+
+export function renderSavedSearchAlertEmail({ searchResults = [], userName } = {}) {
+  const greeting = userName ? `Hi ${escapeHtml(userName)},` : 'Hi,'
+  const totalNew = searchResults.reduce((sum, r) => sum + (r.nurseries?.length || 0), 0)
+  const subject =
+    totalNew > 0
+      ? `${totalNew} new ${totalNew === 1 ? 'nursery' : 'nurseries'} matching your saved searches`
+      : 'Saved search update from CompareTheNursery'
+
+  const sections = searchResults
+    .map((r) => {
+      const searchName = escapeHtml(r.search?.name || r.search?.postcode || 'Saved search')
+      const postcode = escapeHtml(r.search?.postcode || '')
+      const heading = postcode && r.search?.name
+        ? `${searchName} (${postcode})`
+        : searchName
+
+      const rows = (r.nurseries || []).slice(0, 5).map(nurseryRowHtml).join('')
+
+      return `
+        <div style="margin:0 0 20px 0;">
+          <div style="font-weight:600;color:#111827;margin-bottom:6px;font-size:15px;">${heading}</div>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+            ${rows}
+          </table>
+        </div>`
+    })
+    .join('')
+
+  const searchUrl = `${FRONTEND_URL}/search`
+
+  const html = shell({
+    title: subject,
+    bodyHtml: `
+      <p style="margin:0 0 12px 0;">${greeting}</p>
+      <p style="margin:0 0 16px 0;">New nurseries have appeared in areas you are watching. Here is a summary:</p>
+      ${sections}
+      <p style="margin:20px 0 0 0;">
+        ${ctaButton(searchUrl, 'Search nurseries')}
+      </p>
+    `,
+  })
+
+  const textLines = [greeting, '', 'New nurseries matching your saved searches:', '']
+  for (const r of searchResults) {
+    const label = r.search?.name || r.search?.postcode || 'Saved search'
+    textLines.push(`# ${label}`)
+    const nurseries = r.nurseries || []
+    if (nurseries.length === 0) {
+      textLines.push('  (no new nurseries)')
+    } else {
+      for (const n of nurseries.slice(0, 5)) {
+        textLines.push(nurseryRowText(n))
+      }
+    }
+    textLines.push('')
+  }
+  textLines.push(`Search nurseries: ${searchUrl}`)
+  textLines.push('')
+  textLines.push(`Manage preferences: ${UNSUBSCRIBE_URL}`)
+
+  return { subject, html, text: textLines.join('\n') }
+}
+
+// ---------- 8. Provider enquiry digest ----------
 
 export function renderProviderEnquiryDigestEmail({
   providerName,
@@ -385,6 +450,7 @@ export default {
   renderWelcomeDay7Email,
   renderWeeklyDigestEmail,
   renderReengagementEmail,
+  renderSavedSearchAlertEmail,
   renderProviderInviteEmail,
   renderProviderEnquiryDigestEmail,
 }

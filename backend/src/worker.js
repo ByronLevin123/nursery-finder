@@ -10,6 +10,7 @@ import { notifyVisitReminder } from './services/notificationService.js'
 import { processDripQueue } from './services/dripEngine.js'
 import { sendWeeklyDigests } from './services/weeklyDigest.js'
 import { sendReengagementEmails } from './services/reengagement.js'
+import { processSavedSearchAlerts } from './services/savedSearchAlerts.js'
 import db from './db.js'
 import { logger } from './logger.js'
 
@@ -142,6 +143,17 @@ cron.schedule('0 * * * *', async () => {
     logger.info(result, 'cron: drip queue complete')
   } catch (err) {
     logger.error({ err: err.message }, 'cron: drip queue failed')
+  }
+})
+
+// Daily 8:30am: saved-search new-nursery alerts
+cron.schedule('30 8 * * *', async () => {
+  logger.info('cron: starting saved-search alerts')
+  try {
+    const result = await processSavedSearchAlerts()
+    logger.info(result, 'cron: saved-search alerts complete')
+  } catch (err) {
+    logger.error({ err: err.message }, 'cron: saved-search alerts failed')
   }
 })
 

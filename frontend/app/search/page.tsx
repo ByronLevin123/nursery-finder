@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useMemo, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
-import { smartSearchNurseries, Nursery, SearchResult, AreaSummary, getAreaSummary, postcodeDistrict, getTravelTime, TravelMode } from '@/lib/api'
+import { useState, useEffect, useMemo, useRef, useCallback, Suspense } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
+import { smartSearchNurseries, Nursery, SearchResult, AreaSummary, getAreaSummary, postcodeDistrict, getTravelTime, TravelMode, getSearchSuggestions, SearchSuggestion } from '@/lib/api'
 import PostcodeAutocomplete from '@/components/PostcodeAutocomplete'
 import NurseryCard from '@/components/NurseryCard'
 import NurseryModal from '@/components/NurseryModal'
@@ -49,6 +49,14 @@ function SearchContent() {
   const [travelFrom, setTravelFrom] = useState('')
   const [travelTimes, setTravelTimes] = useState<Map<string, number>>(new Map())
 
+  // Autocomplete state
+  const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [sugLoading, setSugLoading] = useState(false)
+  const debounceRef = useRef<NodeJS.Timeout | null>(null)
+  const searchWrapperRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
+
   useEffect(() => {
     setPrefs(loadPreferences())
     setPrefsLoaded(true)
@@ -92,6 +100,46 @@ function SearchContent() {
     })
     return () => { cancelled = true }
   }, [results]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Autocomplete: fetch suggestions with debounce
+  const fetchSuggestions = useCallback((q: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (q.length < 2) { setSuggestions([]); setShowSuggestions(false); return }
+    setSugLoading(true)
+    debounceRef.current = setTimeout(async () => {
+      const results = await getSearchSuggestions(q)
+      setSuggestions(results)
+      setSugLoading(false)
+      setShowSuggestions(true)
+    }, 300)
+  }, [])
+
+  function handleQueryChange(val: string) {
+    setQuery(val)
+    fetchSuggestions(val)
+  }
+
+  function selectSuggestion(s: SearchSuggestion) {
+    setShowSuggestions(false)
+    if (s.type === 'nursery' && s.urn) {
+      setSelectedUrn(s.urn)
+    } else {
+      const term = s.postcode || s.label
+      setQuery(term)
+      doSearch(term)
+    }
+  }
+
+  // Close autocomplete on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (searchWrapperRef.current && !searchWrapperRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
 
   const prefsActive = useMemo(() => prefsLoaded && hasActivePreferences(prefs), [prefs, prefsLoaded])
 
@@ -159,13 +207,14 @@ function SearchContent() {
     [scoredResults]
   )
 
-  async function doSearch() {
-    if (!query.trim()) return
+  async function doSearch(overrideQuery?: string) {
+    const searchQuery = overrideQuery ?? query
+    if (!searchQuery.trim()) return
     setLoading(true)
     setError('')
     try {
       const data = await smartSearchNurseries({
-        query: query.trim(),
+        query: searchQuery.trim(),
         radius_km: radiusKm,
         grade,
         funded_2yr: funded2yr,
@@ -188,18 +237,50 @@ function SearchContent() {
       {/* Left panel: filters + results */}
       <div className="w-full lg:w-1/3 overflow-y-auto border-r border-gray-200 bg-white">
         <div className="p-4 border-b border-gray-200">
-          {/* Search bar */}
-          <div className="flex gap-2 mb-4">
-            <input
-              type="text"
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && doSearch()}
-              placeholder="Postcode, area, or nursery name..."
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            />
+          {/* Search bar with autocomplete */}
+          <div className="flex gap-2 mb-4" ref={searchWrapperRef}>
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={query}
+                onChange={e => handleQueryChange(e.target.value)}
+                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    setShowSuggestions(false)
+                    doSearch()
+                  }
+                }}
+                placeholder="Postcode, area, or nursery name..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                autoComplete="off"
+              />
+              {showSuggestions && (suggestions.length > 0 || sugLoading) && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                  {sugLoading && suggestions.length === 0 && (
+                    <div className="px-3 py-2 text-xs text-gray-400">Searching...</div>
+                  )}
+                  {suggestions.map((s, i) => (
+                    <button
+                      key={`${s.type}-${s.urn || s.postcode}-${i}`}
+                      type="button"
+                      onClick={() => selectSuggestion(s)}
+                      className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 border-b border-gray-50 last:border-0"
+                    >
+                      <span className="text-gray-400 text-xs">
+                        {s.type === 'nursery' ? '\uD83C\uDFEB' : '\uD83D\uDCCD'}
+                      </span>
+                      <span className="text-sm text-gray-800 truncate">{s.label}</span>
+                      <span className="text-xs text-gray-400 ml-auto flex-shrink-0">
+                        {s.type === 'nursery' ? 'Nursery' : 'Area'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <button
-              onClick={doSearch}
+              onClick={() => { setShowSuggestions(false); doSearch() }}
               disabled={loading}
               className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
@@ -304,7 +385,7 @@ function SearchContent() {
             </div>
 
             <button
-              onClick={doSearch}
+              onClick={() => doSearch()}
               disabled={loading}
               className="w-full py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
@@ -348,6 +429,28 @@ function SearchContent() {
           {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
           {!results && !loading && <RecentlyViewed />}
+
+          {/* Did you mean banner for fuzzy results */}
+          {results?.meta?.mode === 'fuzzy' && results?.meta?.did_you_mean && (
+            <div className="mb-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-sm text-amber-800">
+                Showing results for{' '}
+                <button
+                  onClick={() => {
+                    const term = results.meta.did_you_mean!
+                    setQuery(term)
+                    doSearch(term)
+                  }}
+                  className="font-bold underline hover:text-amber-900"
+                >
+                  {results.meta.did_you_mean}
+                </button>
+                {results.meta.query && (
+                  <span className="text-amber-600"> (searched for &ldquo;{results.meta.query}&rdquo;)</span>
+                )}
+              </p>
+            </div>
+          )}
 
           {results && (
             <div className="mb-3 flex items-center justify-between">
