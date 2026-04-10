@@ -122,9 +122,25 @@ const publicCorsPaths = [
 app.use(publicCorsPaths, cors({ origin: '*', methods: ['GET', 'POST'] }))
 
 // Default CORS for everything else (auth-protected etc.)
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'https://comparethenursery.com',
+  'https://www.comparethenursery.com',
+  'https://nursery-finder.vercel.app',
+  'http://localhost:3000',
+].filter(Boolean)
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || '*',
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, etc.)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, origin || '*')
+      } else {
+        callback(null, false)
+      }
+    },
+    credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
   })
 )
