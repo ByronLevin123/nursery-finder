@@ -60,8 +60,14 @@ router.post('/ai/match-narrative', async (req, res, next) => {
   try {
     if (!isClaudeAvailable()) return unavailable(res)
     const { nursery, area, match } = req.body || {}
-    if (!nursery || !match) {
-      return res.status(400).json({ error: 'nursery and match are required' })
+    if (!nursery || typeof nursery !== 'object' || !nursery.name) {
+      return res.status(400).json({ error: 'nursery object with name is required' })
+    }
+    if (!match || typeof match !== 'object') {
+      return res.status(400).json({ error: 'match object is required' })
+    }
+    if (area != null && typeof area !== 'object') {
+      return res.status(400).json({ error: 'area must be an object if provided' })
     }
     const narrative = await generateMatchNarrative(nursery, area, match)
     res.json({ narrative })

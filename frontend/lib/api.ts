@@ -392,6 +392,25 @@ export async function updateProfile(
   return res.json()
 }
 
+// GDPR data export
+export async function exportMyData(token: string): Promise<Record<string, unknown>> {
+  const res = await fetch(`${API_URL}/api/v1/profile/export`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(`Export failed: ${res.status}`)
+  return res.json()
+}
+
+// GDPR account deletion
+export async function deleteMyAccount(token: string): Promise<void> {
+  const res = await fetch(`${API_URL}/api/v1/profile`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) throw new Error(`Deletion failed: ${res.status}`)
+}
+
 // AI Family Move Assistant ----------------------------------------------------
 
 export interface AssistantCriteria {

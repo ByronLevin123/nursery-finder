@@ -71,6 +71,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="manifest" href="/manifest.json" />
         {apiOrigin && <link rel="preconnect" href={apiOrigin} crossOrigin="" />}
         <link rel="dns-prefetch" href="https://api.postcodes.io" />

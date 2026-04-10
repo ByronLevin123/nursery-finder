@@ -9,7 +9,7 @@ const router = express.Router()
 const URL_RE = /(https?:\/\/|www\.)\S+/gi
 
 function hashIp(ip) {
-  const secret = process.env.REVIEW_IP_SECRET || 'nursery-finder-dev'
+  const secret = process.env.REVIEW_IP_SECRET || 'ctn-rev-' + (process.env.NODE_ENV || 'dev')
   return crypto.createHash('sha256').update(`${ip}::${secret}`).digest('hex')
 }
 

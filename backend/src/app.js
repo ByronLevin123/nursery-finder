@@ -83,29 +83,28 @@ app.use((req, res, next) => {
   next()
 })
 
-// Cache headers
+// Cache headers — hook into res.json/res.send to set after all middleware
 app.use((req, res, next) => {
-  if (req.method !== 'GET') {
-    res.setHeader('Cache-Control', 'no-store')
-    return next()
+  const origJson = res.json.bind(res)
+  res.json = function (body) {
+    if (req.method !== 'GET') {
+      res.set('Cache-Control', 'no-store')
+    } else {
+      const p = req.originalUrl.split('?')[0]
+      if (p === '/api/v1/health') {
+        res.set('Cache-Control', 'no-cache')
+      } else if (p === '/api/v1/nurseries/search' || p === '/api/v1/nurseries/smart-search') {
+        res.set('Cache-Control', 'public, max-age=300')
+      } else if (/^\/api\/v1\/nurseries\/[^/]+$/.test(p)) {
+        res.set('Cache-Control', 'public, max-age=3600')
+      } else if (/^\/api\/v1\/areas\/[^/]+$/.test(p)) {
+        res.set('Cache-Control', 'public, max-age=3600')
+      } else if (p === '/api/v1/billing/tiers') {
+        res.set('Cache-Control', 'public, max-age=86400')
+      }
+    }
+    return origJson(body)
   }
-
-  const path = req.path
-
-  if (path === '/api/v1/health') {
-    res.setHeader('Cache-Control', 'no-cache')
-  } else if (path === '/api/v1/nurseries/search' || path === '/api/v1/nurseries/smart-search') {
-    res.setHeader('Cache-Control', 'public, max-age=300')
-  } else if (/^\/api\/v1\/nurseries\/[^/]+$/.test(path)) {
-    // /api/v1/nurseries/:urn
-    res.setHeader('Cache-Control', 'public, max-age=3600')
-  } else if (/^\/api\/v1\/areas\/[^/]+$/.test(path)) {
-    // /api/v1/areas/:district
-    res.setHeader('Cache-Control', 'public, max-age=3600')
-  } else if (path === '/api/v1/billing/tiers') {
-    res.setHeader('Cache-Control', 'public, max-age=86400')
-  }
-
   next()
 })
 

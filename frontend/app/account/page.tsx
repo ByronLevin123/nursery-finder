@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useSession } from '@/components/SessionProvider'
-import { getProfile, updateProfile, getSubscription, createPortalSession, getAuthToken, type Profile, type ProfileChild, type SubscriptionInfo } from '@/lib/api'
+import { getProfile, updateProfile, getSubscription, createPortalSession, getAuthToken, exportMyData, deleteMyAccount, type Profile, type ProfileChild, type SubscriptionInfo } from '@/lib/api'
 import { loadPreferences, savePreferences, hasActivePreferences, DEFAULT_PREFERENCES, type Preferences } from '@/lib/preferences'
 
 interface SavedSearch {
@@ -535,6 +535,59 @@ export default function AccountPage() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* GDPR — Data & Account */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
+        <h2 className="text-lg font-semibold text-gray-900 mb-2">Your Data</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Under UK GDPR you have the right to export or delete all your data.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={async () => {
+              if (!session) return
+              try {
+                const data = await exportMyData(session.access_token)
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = 'my-comparethenursery-data.json'
+                a.click()
+                URL.revokeObjectURL(url)
+              } catch (err: any) {
+                setError(err?.message || 'Export failed')
+              }
+            }}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200"
+          >
+            Download my data
+          </button>
+          <button
+            onClick={async () => {
+              if (!session) return
+              const confirmed = window.confirm(
+                'Are you sure you want to permanently delete your account and all associated data? This cannot be undone.'
+              )
+              if (!confirmed) return
+              const doubleConfirm = window.confirm(
+                'This will delete your profile, reviews, claims, messages, saved searches, and all other data. Proceed?'
+              )
+              if (!doubleConfirm) return
+              try {
+                await deleteMyAccount(session.access_token)
+                await signOut()
+                router.push('/?deleted=1')
+              } catch (err: any) {
+                setError(err?.message || 'Deletion failed')
+              }
+            }}
+            className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 border border-red-200"
+          >
+            Delete my account
+          </button>
+        </div>
       </div>
 
       <div>

@@ -44,6 +44,9 @@ export default function Footer() {
                 <Link href="/privacy" className="text-gray-500 hover:text-gray-700">
                   Privacy Policy
                 </Link>
+                <Link href="/terms" className="text-gray-500 hover:text-gray-700">
+                  Terms of Service
+                </Link>
                 <a
                   href="mailto:hello@comparethenursery.com"
                   className="text-gray-500 hover:text-gray-700"

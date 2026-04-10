@@ -133,4 +133,82 @@ router.patch('/', requireAuth, async (req, res, next) => {
   }
 })
 
+// GET /api/v1/profile/export — GDPR data export (returns all user data as JSON)
+router.get('/export', requireAuth, async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+    const userId = req.user.id
+
+    // Gather all user data in parallel
+    const [profileRes, claimsRes, reviewsRes, searchesRes, enquiriesRes, visitsRes, messagesRes, notificationsRes] =
+      await Promise.all([
+        db.from('user_profiles').select('*').eq('id', userId).maybeSingle(),
+        db.from('nursery_claims').select('*').eq('user_id', userId),
+        db.from('nursery_reviews').select('*').eq('user_id', userId),
+        db.from('saved_searches').select('*').eq('user_id', userId),
+        db.from('enquiries').select('*').eq('user_id', userId),
+        db.from('visit_bookings').select('*').eq('user_id', userId),
+        db.from('messages').select('*').eq('sender_id', userId),
+        db.from('notifications').select('*').eq('user_id', userId),
+      ])
+
+    const exportData = {
+      exported_at: new Date().toISOString(),
+      profile: profileRes.data || null,
+      claims: claimsRes.data || [],
+      reviews: reviewsRes.data || [],
+      saved_searches: searchesRes.data || [],
+      enquiries: enquiriesRes.data || [],
+      visit_bookings: visitsRes.data || [],
+      messages: messagesRes.data || [],
+      notifications: notificationsRes.data || [],
+    }
+
+    logger.info({ userId }, 'GDPR data export requested')
+    res.setHeader('Content-Disposition', 'attachment; filename="my-data.json"')
+    return res.json(exportData)
+  } catch (err) {
+    next(err)
+  }
+})
+
+// DELETE /api/v1/profile — GDPR right to erasure (delete account and all user data)
+router.delete('/', requireAuth, async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+    const userId = req.user.id
+
+    // Delete user data from all tables (order matters for FK constraints)
+    const tables = [
+      { table: 'notifications', column: 'user_id' },
+      { table: 'messages', column: 'sender_id' },
+      { table: 'visit_bookings', column: 'user_id' },
+      { table: 'enquiries', column: 'user_id' },
+      { table: 'saved_searches', column: 'user_id' },
+      { table: 'nursery_reviews', column: 'user_id' },
+      { table: 'nursery_claims', column: 'user_id' },
+      { table: 'drip_queue', column: 'user_id' },
+      { table: 'user_profiles', column: 'id' },
+    ]
+
+    for (const { table, column } of tables) {
+      const { error } = await db.from(table).delete().eq(column, userId)
+      if (error) {
+        logger.warn({ table, userId, err: error.message }, 'GDPR delete failed for table')
+      }
+    }
+
+    // Unclaim any nurseries this user had claimed
+    await db
+      .from('nurseries')
+      .update({ claimed_by_user_id: null, claimed_at: null })
+      .eq('claimed_by_user_id', userId)
+
+    logger.info({ userId }, 'GDPR account deletion completed')
+    return res.json({ message: 'Account and all associated data deleted' })
+  } catch (err) {
+    next(err)
+  }
+})
+
 export default router
