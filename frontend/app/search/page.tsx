@@ -21,6 +21,7 @@ import dynamic from 'next/dynamic'
 
 import SaveSearchButton from '@/components/SaveSearchButton'
 import RecentlyViewed from '@/components/RecentlyViewed'
+import OglAttribution from '@/components/OglAttribution'
 
 const NurseryMap = dynamic(() => import('@/components/NurseryMap'), { ssr: false })
 
@@ -422,6 +423,7 @@ function SearchContent() {
       </div>
 
       <NurseryModal urn={selectedUrn} onClose={() => setSelectedUrn(null)} />
+      <OglAttribution />
     </div>
   )
 }

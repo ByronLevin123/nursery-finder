@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { getShortlist, removeFromShortlist } from '@/lib/shortlist'
 import { getNursery, Nursery } from '@/lib/api'
 import NurseryCard from '@/components/NurseryCard'
+import OglAttribution from '@/components/OglAttribution'
 import Link from 'next/link'
 import { useSession } from '@/components/SessionProvider'
 
@@ -154,6 +155,7 @@ export default function ShortlistPage() {
           </div>
         ))}
       </div>
+      <OglAttribution />
     </div>
   )
 }
