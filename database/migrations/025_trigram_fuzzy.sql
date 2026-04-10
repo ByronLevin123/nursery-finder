@@ -128,7 +128,7 @@ BEGIN
     n.phone, n.email, n.website,
     n.ofsted_overall_grade, n.last_inspection_date, n.inspection_report_url,
     n.total_places, n.places_funded_2yr, n.places_funded_3_4yr,
-    n.lat, n.lng,
+    n.lat::double precision, n.lng::double precision,
     n.google_rating, n.google_review_count,
     n.fee_avg_monthly, n.fee_report_count,
     n.review_count, n.review_avg_rating,
