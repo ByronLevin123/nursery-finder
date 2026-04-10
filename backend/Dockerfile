@@ -14,6 +14,9 @@ RUN npm ci --only=production
 # Copy source code
 COPY src/ ./src/
 
+# Copy blog content
+COPY content/ ./content/
+
 # Expose port
 EXPOSE 3001
 

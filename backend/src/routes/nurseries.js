@@ -244,16 +244,22 @@ router.get('/towns', async (req, res, next) => {
 
     if (error) throw error
 
-    // Aggregate counts in JS since Supabase JS client doesn't support GROUP BY easily
+    // Aggregate counts in JS — normalize casing (title case) to merge duplicates
     const counts = {}
+    const canonical = {}
     for (const row of data || []) {
       const t = row.town.trim()
       if (!t) continue
-      counts[t] = (counts[t] || 0) + 1
+      const key = t.toLowerCase()
+      counts[key] = (counts[key] || 0) + 1
+      // Keep the most common casing (title case preferred)
+      if (!canonical[key] || (t[0] === t[0].toUpperCase() && t !== t.toUpperCase())) {
+        canonical[key] = t.charAt(0).toUpperCase() + t.slice(1).toLowerCase()
+      }
     }
 
     const towns = Object.entries(counts)
-      .map(([name, count]) => ({ name, count }))
+      .map(([key, count]) => ({ name: canonical[key] || key, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, limit)
 

@@ -10,7 +10,10 @@ let postsCache = null
 let postsCacheTime = 0
 const CACHE_TTL = 5 * 60 * 1000
 
-const BLOG_DIR = path.resolve(process.cwd(), 'content', 'blog')
+// Look for blog content in multiple locations (backend/content or root/content)
+const BLOG_DIR = fs.existsSync(path.resolve(process.cwd(), 'content', 'blog'))
+  ? path.resolve(process.cwd(), 'content', 'blog')
+  : path.resolve(process.cwd(), '..', 'content', 'blog')
 
 function parseFrontmatter(content) {
   const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)
