@@ -143,8 +143,8 @@ router.post('/smart-search', async (req, res, next) => {
 router.post('/compare', async (req, res, next) => {
   try {
     const { urns } = req.body
-    if (!Array.isArray(urns) || urns.length < 2 || urns.length > 5) {
-      return res.status(400).json({ error: 'Provide 2-5 URNs to compare' })
+    if (!Array.isArray(urns) || urns.length < 1 || urns.length > 10) {
+      return res.status(400).json({ error: 'Provide 1-10 URNs' })
     }
 
     const { data, error } = await db.from('nurseries').select('*').in('urn', urns)
