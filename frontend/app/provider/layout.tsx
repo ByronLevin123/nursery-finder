@@ -16,6 +16,13 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
   const { user, role, loading } = useSession()
   const pathname = usePathname()
 
+  // Allow /provider/register to bypass auth — it's for new provider sign-ups
+  const isRegisterPage = pathname === '/provider/register'
+
+  if (isRegisterPage) {
+    return <>{children}</>
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
