@@ -27,7 +27,7 @@ export default function FeeModal({ nurseryId }: Props) {
 
     try {
       await submitFee({
-        nursery_id: nurseryId,
+        nursery_urn: nurseryId,
         fee_per_month: fee,
         hours_per_week: hoursPerWeek ? parseInt(hoursPerWeek) : undefined,
         age_group: ageGroup || undefined,

@@ -90,8 +90,6 @@ router.post('/smart-search', async (req, res, next) => {
       query,
       radius_km = 5,
       grade = null,
-      funded_2yr = false,
-      funded_3yr = false,
       has_availability = false,
       min_rating = null,
       provider_type = null,
@@ -106,8 +104,8 @@ router.post('/smart-search', async (req, res, next) => {
       postcode: `smart:${query}`,
       radiusKm: radius_km,
       grade,
-      funded2yr: funded_2yr,
-      funded3yr: funded_3yr,
+      funded2yr: has_funded_2yr,
+      funded3yr: has_funded_3yr,
       hasAvailability: has_availability,
       minRating: min_rating,
       providerType: provider_type,
@@ -121,8 +119,6 @@ router.post('/smart-search', async (req, res, next) => {
       query,
       radius_km,
       grade,
-      funded_2yr,
-      funded_3yr,
       has_availability,
       min_rating,
       provider_type,
@@ -163,17 +159,17 @@ router.post('/compare', async (req, res, next) => {
 // POST /api/v1/nurseries/fees — submit anonymous fee
 router.post('/fees', async (req, res, next) => {
   try {
-    const { nursery_id, fee_per_month, hours_per_week, age_group } = req.body
+    const { nursery_urn, fee_per_month, hours_per_week, age_group } = req.body
 
-    if (!nursery_id || !fee_per_month) {
-      return res.status(400).json({ error: 'nursery_id and fee_per_month required' })
+    if (!nursery_urn || !fee_per_month) {
+      return res.status(400).json({ error: 'nursery_urn and fee_per_month required' })
     }
     if (fee_per_month < 100 || fee_per_month > 5000) {
       return res.status(400).json({ error: 'fee_per_month must be between 100 and 5000' })
     }
 
     const { error } = await db.from('nursery_fees').insert({
-      nursery_id,
+      nursery_urn,
       fee_per_month,
       hours_per_week,
       age_group,
@@ -184,7 +180,7 @@ router.post('/fees', async (req, res, next) => {
     const { data: fees } = await db
       .from('nursery_fees')
       .select('fee_per_month')
-      .eq('nursery_id', nursery_id)
+      .eq('nursery_urn', nursery_urn)
 
     if (fees?.length >= 3) {
       const avg = Math.round(fees.reduce((s, f) => s + f.fee_per_month, 0) / fees.length)
@@ -194,7 +190,7 @@ router.post('/fees', async (req, res, next) => {
           fee_avg_monthly: avg,
           fee_report_count: fees.length,
         })
-        .eq('id', nursery_id)
+        .eq('urn', nursery_urn)
     }
 
     res.json({ success: true, message: 'Fee submitted anonymously. Thank you!' })

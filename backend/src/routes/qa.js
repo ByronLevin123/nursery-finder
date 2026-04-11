@@ -127,7 +127,7 @@ router.post('/:urn/questions/:questionId/answers', requireAuth, async (req, res,
     const { data: claim } = await db
       .from('nursery_claims')
       .select('id')
-      .eq('nursery_urn', urn)
+      .eq('urn', urn)
       .eq('user_id', req.user.id)
       .eq('status', 'approved')
       .maybeSingle()

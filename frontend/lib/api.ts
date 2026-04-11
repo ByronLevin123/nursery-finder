@@ -116,7 +116,7 @@ export async function getNursery(urn: string): Promise<Nursery> {
 }
 
 export async function submitFee(params: {
-  nursery_id: string
+  nursery_urn: string
   fee_per_month: number
   hours_per_week?: number
   age_group?: string

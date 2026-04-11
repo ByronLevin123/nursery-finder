@@ -23,8 +23,6 @@ export async function smartSearch({
   query,
   radius_km = 5,
   grade = null,
-  funded_2yr = false,
-  funded_3yr = false,
   has_availability = false,
   min_rating = null,
   provider_type = null,
@@ -44,8 +42,8 @@ export async function smartSearch({
       search_lng: lng,
       radius_km: Number(radius_km),
       grade_filter: grade || null,
-      funded_2yr: Boolean(funded_2yr),
-      funded_3yr: Boolean(funded_3yr),
+      funded_2yr: Boolean(has_funded_2yr),
+      funded_3yr: Boolean(has_funded_3yr),
     })
     if (error) throw error
 
@@ -94,13 +92,11 @@ export async function smartSearch({
     .limit(50)
 
   if (grade) q = q.eq('ofsted_overall_grade', grade)
-  if (funded_2yr) q = q.gt('places_funded_2yr', 0)
-  if (funded_3yr) q = q.gt('places_funded_3_4yr', 0)
+  if (has_funded_2yr) q = q.gt('places_funded_2yr', 0)
+  if (has_funded_3yr) q = q.gt('places_funded_3_4yr', 0)
   if (has_availability) q = q.gt('spots_available', 0)
   if (min_rating) q = q.gte('google_rating', Number(min_rating))
   if (provider_type) q = q.eq('provider_type', provider_type)
-  if (has_funded_2yr) q = q.gt('places_funded_2yr', 0)
-  if (has_funded_3yr) q = q.gt('places_funded_3_4yr', 0)
 
   const { data, error } = await q
   if (error) throw error
@@ -161,10 +157,10 @@ export async function smartSearch({
   if (grade) {
     fuzzyResults = fuzzyResults.filter((n) => n.ofsted_overall_grade === grade)
   }
-  if (funded_2yr) {
+  if (has_funded_2yr) {
     fuzzyResults = fuzzyResults.filter((n) => n.places_funded_2yr > 0)
   }
-  if (funded_3yr) {
+  if (has_funded_3yr) {
     fuzzyResults = fuzzyResults.filter((n) => n.places_funded_3_4yr > 0)
   }
   if (has_availability) {
@@ -175,12 +171,6 @@ export async function smartSearch({
   }
   if (provider_type) {
     fuzzyResults = fuzzyResults.filter((n) => n.provider_type === provider_type)
-  }
-  if (has_funded_2yr) {
-    fuzzyResults = fuzzyResults.filter((n) => n.places_funded_2yr > 0)
-  }
-  if (has_funded_3yr) {
-    fuzzyResults = fuzzyResults.filter((n) => n.places_funded_3_4yr > 0)
   }
 
   // Sort: featured first, then by match_score descending

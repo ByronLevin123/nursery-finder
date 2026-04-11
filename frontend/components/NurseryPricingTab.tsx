@@ -62,7 +62,7 @@ export default function NurseryPricingTab({ urn, nurseryId }: Props) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nursery_id: nurseryId,
+          nursery_urn: nurseryId,
           fee_per_month: Number(formFee),
           age_group: formAge,
         }),

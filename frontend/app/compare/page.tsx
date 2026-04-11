@@ -321,7 +321,7 @@ function CompareContent() {
                   pick: () => {
                     let best: any = null
                     for (const n of nurseries) { if ((n as any).review_avg_rating && (!best || (n as any).review_avg_rating > best.review_avg_rating)) best = n }
-                    return best ? `${best.name} (${best.review_avg_rating.toFixed(1)}★)` : null
+                    return best ? `${best.name} (${Number(best.review_avg_rating).toFixed(1)}★)` : null
                   },
                 },
                 {
