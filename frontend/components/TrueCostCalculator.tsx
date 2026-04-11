@@ -67,7 +67,32 @@ export default function TrueCostCalculator({
     return feeAvgMonthly / ((40 * 52) / 12)
   }, [feeAvgMonthly, feeReportCount])
 
-  if (!estimatedHourlyRate) return null
+  if (!estimatedHourlyRate) {
+    return (
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5 mb-6">
+        <h2 className="text-base font-semibold text-gray-900 mb-1">True Cost Calculator</h2>
+        <p className="text-sm text-gray-600 mb-3">
+          Estimate your real monthly cost after UK government funded hours are applied.
+        </p>
+        <div className="bg-white rounded-lg border border-gray-200 p-4 text-center">
+          <p className="text-sm text-gray-500 mb-1">
+            No fee data available yet for {nurseryName}.
+          </p>
+          <p className="text-xs text-gray-400">
+            Be the first parent to report fees — this helps other families estimate their costs.
+          </p>
+        </div>
+        <div className="mt-3 bg-white/70 rounded-lg border border-blue-100 p-3">
+          <p className="text-xs font-medium text-blue-800 mb-1">UK Funded Hours Entitlements</p>
+          <ul className="text-xs text-blue-700 space-y-0.5">
+            <li>Under 2 (working parents): <strong>15 free hours/week</strong></li>
+            <li>2-year-olds: <strong>15 free hours/week</strong></li>
+            <li>3-4-year-olds: <strong>15 hrs universal</strong>, <strong>30 hrs</strong> for working parents</li>
+          </ul>
+        </div>
+      </div>
+    )
+  }
 
   const weeklyHours = sessions * hoursPerSession
   const entitlement = FUNDED_HOURS[ageGroup]
