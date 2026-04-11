@@ -10,7 +10,6 @@ import {
   createPortalSession,
   handleWebhook,
   getProviderSubscription,
-  getParentSubscription,
 } from '../services/stripeService.js'
 
 const router = express.Router()
@@ -41,8 +40,8 @@ router.get('/subscription', requireAuth, async (req, res, next) => {
       return res.json({ type: 'provider', subscription: sub })
     }
 
-    const sub = await getParentSubscription(req.user.id)
-    res.json({ type: 'parent', subscription: sub })
+    // Parents use everything free — no subscription needed
+    res.json({ type: 'parent', subscription: { tier: 'free', status: 'active' } })
   } catch (err) {
     logger.error({ err: err.message, userId: req.user.id }, 'billing: subscription fetch failed')
     next(err)
@@ -53,24 +52,21 @@ router.get('/subscription', requireAuth, async (req, res, next) => {
 router.post('/checkout', requireAuth, stripeGuard, async (req, res, next) => {
   try {
     const { tier, type, successUrl, cancelUrl } = req.body
-    if (!tier || !type) {
-      return res.status(400).json({ error: 'tier and type are required' })
+    if (!tier) {
+      return res.status(400).json({ error: 'tier is required' })
     }
-    if (!['provider', 'parent'].includes(type)) {
-      return res.status(400).json({ error: 'type must be provider or parent' })
+    if (type && type !== 'provider') {
+      return res.status(400).json({ error: 'Only provider subscriptions are supported. Parents use everything free.' })
     }
-    if (type === 'provider' && !['pro', 'premium'].includes(tier)) {
-      return res.status(400).json({ error: 'provider tier must be pro or premium' })
-    }
-    if (type === 'parent' && tier !== 'premium') {
-      return res.status(400).json({ error: 'parent tier must be premium' })
+    if (!['pro', 'premium'].includes(tier)) {
+      return res.status(400).json({ error: 'tier must be pro or premium' })
     }
 
     const result = await createCheckoutSession({
       userId: req.user.id,
       email: req.user.email,
       tier,
-      type,
+      type: 'provider',
       successUrl,
       cancelUrl,
     })
@@ -86,22 +82,8 @@ router.post('/checkout', requireAuth, stripeGuard, async (req, res, next) => {
 // POST /api/v1/billing/portal — create Stripe billing portal session
 router.post('/portal', requireAuth, stripeGuard, async (req, res, next) => {
   try {
-    const { type } = req.body
-
-    // Auto-detect type from user role if not provided
-    let resolvedType = type
-    if (!resolvedType) {
-      const { data: profile } = await db
-        .from('user_profiles')
-        .select('role')
-        .eq('id', req.user.id)
-        .maybeSingle()
-      resolvedType =
-        profile?.role === 'provider' || profile?.role === 'admin' ? 'provider' : 'parent'
-    }
-
-    const result = await createPortalSession({ userId: req.user.id, type: resolvedType })
-    logger.info({ userId: req.user.id, type: resolvedType }, 'billing: portal session created')
+    const result = await createPortalSession({ userId: req.user.id })
+    logger.info({ userId: req.user.id }, 'billing: portal session created')
     res.json(result)
   } catch (err) {
     if (err.message?.includes('No subscription found')) {

@@ -85,6 +85,19 @@ function ClaimContent() {
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-3xl mx-auto px-4 py-12">
+        {/* Provider registration banner */}
+        <div className="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-xl text-center">
+          <p className="text-sm text-indigo-800 mb-2">
+            <strong>Nursery provider?</strong> Register and claim your nursery in one step.
+          </p>
+          <Link
+            href="/provider/register"
+            className="inline-block px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition"
+          >
+            Register as a provider
+          </Link>
+        </div>
+
         <div className="text-center mb-8">
           <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Claim your nursery</h1>
           <p className="text-gray-500">

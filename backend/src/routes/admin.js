@@ -529,65 +529,39 @@ router.get('/enquiries', async (req, res, next) => {
 })
 
 // ---------------------------------------------------------------------------
-// GET /subscriptions — paginated subscription list (provider + parent)
+// GET /subscriptions — paginated provider subscription list
 // ---------------------------------------------------------------------------
 router.get('/subscriptions', async (req, res, next) => {
   try {
     if (!db) return res.status(503).json({ error: 'Database not configured' })
     const { page, limit, offset } = paginate(req.query)
 
-    // Fetch both subscription types in parallel
-    const [providerResult, parentResult] = await Promise.all([
-      db
-        .from('provider_subscriptions')
-        .select(
-          'id, user_id, tier, status, current_period_end, created_at, user_profiles(display_name)',
-          { count: 'exact' }
-        )
-        .order('created_at', { ascending: false }),
-      db
-        .from('parent_subscriptions')
-        .select(
-          'id, user_id, tier, status, current_period_end, created_at, user_profiles(display_name)',
-          { count: 'exact' }
-        )
-        .order('created_at', { ascending: false }),
-    ])
+    const { data, error, count } = await db
+      .from('provider_subscriptions')
+      .select(
+        'id, user_id, tier, status, current_period_end, created_at, user_profiles(display_name)',
+        { count: 'exact' }
+      )
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
 
-    if (providerResult.error) throw providerResult.error
-    if (parentResult.error) throw parentResult.error
+    if (error) throw error
 
-    // Merge, tag type, sort by created_at desc, then paginate in-memory
-    const allSubs = [
-      ...(providerResult.data || []).map((s) => ({
-        id: s.id,
-        user_id: s.user_id,
-        display_name: s.user_profiles?.display_name ?? null,
-        type: 'provider',
-        tier: s.tier,
-        status: s.status,
-        current_period_end: s.current_period_end,
-        created_at: s.created_at,
-      })),
-      ...(parentResult.data || []).map((s) => ({
-        id: s.id,
-        user_id: s.user_id,
-        display_name: s.user_profiles?.display_name ?? null,
-        type: 'parent',
-        tier: s.tier,
-        status: s.status,
-        current_period_end: s.current_period_end,
-        created_at: s.created_at,
-      })),
-    ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-
-    const total = allSubs.length
-    const paged = allSubs.slice(offset, offset + limit)
+    const rows = (data || []).map((s) => ({
+      id: s.id,
+      user_id: s.user_id,
+      display_name: s.user_profiles?.display_name ?? null,
+      type: 'provider',
+      tier: s.tier,
+      status: s.status,
+      current_period_end: s.current_period_end,
+      created_at: s.created_at,
+    }))
 
     logger.info({ page, limit }, 'admin subscriptions list')
     return res.json({
-      data: paged,
-      meta: paginationMeta(total, page, limit),
+      data: rows,
+      meta: paginationMeta(count ?? 0, page, limit),
     })
   } catch (err) {
     logger.error({ err: err?.message }, 'admin subscriptions list failed')
@@ -986,6 +960,115 @@ router.get('/activity', async (req, res, next) => {
     return res.json({ data: trimmed })
   } catch (err) {
     logger.error({ err: err?.message }, 'admin activity feed failed')
+    next(err)
+  }
+})
+
+// ---------------------------------------------------------------------------
+// GET /reports — admin platform reports (revenue, growth, coverage)
+// ---------------------------------------------------------------------------
+router.get('/reports', async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+
+    const { range = '90' } = req.query
+    const days = parseInt(range) || 90
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - days)
+    const startDateStr = startDate.toISOString().split('T')[0]
+
+    // Fetch cached admin reports
+    const { data: reports, error } = await db
+      .from('admin_reports_cache')
+      .select('*')
+      .gte('report_date', startDateStr)
+      .order('report_date', { ascending: true })
+
+    if (error) throw error
+
+    // Compute latest snapshot + timeseries
+    const timeseries = (reports || []).map((r) => ({
+      date: r.report_date,
+      total_users: r.total_users,
+      new_users: r.new_users,
+      total_providers: r.total_providers,
+      total_nurseries: r.total_nurseries,
+      claimed_nurseries: r.claimed_nurseries,
+      active_subscriptions: r.active_subscriptions,
+      mrr_gbp: parseFloat(r.mrr_gbp) || 0,
+      total_enquiries: r.total_enquiries,
+      new_enquiries: r.new_enquiries,
+    }))
+
+    const latest = timeseries.length > 0 ? timeseries[timeseries.length - 1] : null
+
+    // Live claim pipeline counts
+    const [pendingClaims, approvedClaims, payingProviders] = await Promise.all([
+      db.from('nursery_claims').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+      db.from('nursery_claims').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
+      db.from('provider_subscriptions').select('id', { count: 'exact', head: true })
+        .neq('tier', 'free').eq('status', 'active'),
+    ])
+
+    res.json({
+      latest,
+      timeseries,
+      claim_pipeline: {
+        pending: pendingClaims.count ?? 0,
+        approved: approvedClaims.count ?? 0,
+        paying: payingProviders.count ?? 0,
+      },
+    })
+  } catch (err) {
+    logger.error({ err: err.message }, 'admin reports failed')
+    next(err)
+  }
+})
+
+// ---------------------------------------------------------------------------
+// GET /reports/export — admin CSV export
+// ---------------------------------------------------------------------------
+router.get('/reports/export', async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+
+    const { range = '90', metric = 'all' } = req.query
+    const days = parseInt(range) || 90
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - days)
+    const startDateStr = startDate.toISOString().split('T')[0]
+
+    const { data: reports, error } = await db
+      .from('admin_reports_cache')
+      .select('*')
+      .gte('report_date', startDateStr)
+      .order('report_date', { ascending: true })
+
+    if (error) throw error
+
+    const headers = ['date', 'total_users', 'new_users', 'total_providers', 'total_nurseries', 'claimed_nurseries', 'active_subscriptions', 'mrr_gbp', 'total_enquiries', 'new_enquiries']
+    const rows = [headers.join(',')]
+
+    for (const r of reports || []) {
+      rows.push([
+        r.report_date,
+        r.total_users || 0,
+        r.new_users || 0,
+        r.total_providers || 0,
+        r.total_nurseries || 0,
+        r.claimed_nurseries || 0,
+        r.active_subscriptions || 0,
+        r.mrr_gbp || 0,
+        r.total_enquiries || 0,
+        r.new_enquiries || 0,
+      ].join(','))
+    }
+
+    res.setHeader('Content-Type', 'text/csv')
+    res.setHeader('Content-Disposition', `attachment; filename="admin-reports-${days}d.csv"`)
+    res.send(rows.join('\n'))
+  } catch (err) {
+    logger.error({ err: err.message }, 'admin reports export failed')
     next(err)
   }
 })

@@ -2,7 +2,6 @@
 
 const STORAGE_KEY = 'nursery-compare'
 const MAX_COMPARE = 5
-export const FREE_COMPARE_LIMIT = 3
 
 export function getCompareList(): string[] {
   if (typeof window === 'undefined') return []
@@ -13,12 +12,11 @@ export function getCompareList(): string[] {
   }
 }
 
-export type AddResult = 'added' | 'duplicate' | 'full' | 'auth_required'
+export type AddResult = 'added' | 'duplicate' | 'full'
 
-export function addToCompare(urn: string, isAuthed = false): AddResult {
+export function addToCompare(urn: string): AddResult {
   const list = getCompareList()
   if (list.includes(urn)) return 'duplicate'
-  if (!isAuthed && list.length >= FREE_COMPARE_LIMIT) return 'auth_required'
   if (list.length >= MAX_COMPARE) return 'full'
   localStorage.setItem(STORAGE_KEY, JSON.stringify([...list, urn]))
   window.dispatchEvent(new Event('compare-updated'))

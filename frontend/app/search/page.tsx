@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { smartSearchNurseries, Nursery, SearchResult, AreaSummary, getAreaSummary, postcodeDistrict, getTravelTime, TravelMode, getSearchSuggestions, SearchSuggestion } from '@/lib/api'
+import { smartSearchNurseries, Nursery, SearchResult, AreaSummary, getAreaSummary, postcodeDistrict, getTravelTime, TravelMode, getSearchSuggestions, SearchSuggestion, API_URL } from '@/lib/api'
 import PostcodeAutocomplete from '@/components/PostcodeAutocomplete'
 import NurseryCard from '@/components/NurseryCard'
 import NurseryModal from '@/components/NurseryModal'
@@ -20,6 +20,8 @@ import {
 } from '@/lib/preferences'
 import dynamic from 'next/dynamic'
 
+import SortSelect, { SortOption } from '@/components/SortSelect'
+import PromotionCard from '@/components/PromotionCard'
 import SaveSearchButton from '@/components/SaveSearchButton'
 import SearchJsonLd from '@/components/SearchJsonLd'
 import RecentlyViewed from '@/components/RecentlyViewed'
@@ -51,6 +53,8 @@ function SearchContent() {
   const [travelMode, setTravelMode] = useState<TravelMode>('walk')
   const [travelFrom, setTravelFrom] = useState('')
   const [travelTimes, setTravelTimes] = useState<Map<string, number>>(new Map())
+  const [promotions, setPromotions] = useState<any[]>([])
+  const [sortBy, setSortBy] = useState<SortOption>('relevance')
 
   // Autocomplete state
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([])
@@ -202,8 +206,34 @@ function SearchContent() {
         return s != null && s <= travelMaxMin * 60
       })
     }
+    // Apply user-selected sort (only when not using preference-based ranking)
+    if (sortBy !== 'relevance' && !prefsActive) {
+      list = [...list].sort((a, b) => {
+        const na = a.nursery
+        const nb = b.nursery
+        switch (sortBy) {
+          case 'distance':
+            return (na.distance_km ?? 999) - (nb.distance_km ?? 999)
+          case 'score': {
+            const scoreA = [na.quality_score, na.cost_score, na.availability_score, na.staff_score, na.sentiment_score].filter((s): s is number => s != null)
+            const scoreB = [nb.quality_score, nb.cost_score, nb.availability_score, nb.staff_score, nb.sentiment_score].filter((s): s is number => s != null)
+            const avgA = scoreA.length > 0 ? scoreA.reduce((x, y) => x + y, 0) / scoreA.length : 0
+            const avgB = scoreB.length > 0 ? scoreB.reduce((x, y) => x + y, 0) / scoreB.length : 0
+            return avgB - avgA
+          }
+          case 'cost_low':
+            return (na.fee_avg_monthly ?? 9999) - (nb.fee_avg_monthly ?? 9999)
+          case 'cost_high':
+            return (nb.fee_avg_monthly ?? 0) - (na.fee_avg_monthly ?? 0)
+          case 'rating':
+            return (nb.google_rating ?? 0) - (na.google_rating ?? 0)
+          default:
+            return 0
+        }
+      })
+    }
     return list
-  }, [scoredResults, prefsActive, showExcluded, travelEnabled, travelFrom, travelMaxMin, travelTimes])
+  }, [scoredResults, prefsActive, showExcluded, travelEnabled, travelFrom, travelMaxMin, travelTimes, sortBy])
 
   const excludedCount = useMemo(
     () => scoredResults.filter(r => r.match?.excluded).length,
@@ -227,9 +257,17 @@ function SearchContent() {
         has_funded_3yr: advancedFilters.has_funded_3yr || funded3yr,
       })
       setResults(data)
+      // Fetch nearby promotions based on search center
+      if (data?.meta?.search_lat && data?.meta?.search_lng) {
+        fetch(`${API_URL}/api/v1/promotions/nearby?lat=${data.meta.search_lat}&lng=${data.meta.search_lng}`)
+          .then(r => r.json())
+          .then(p => setPromotions(p.data || []))
+          .catch(() => setPromotions([]))
+      }
     } catch (err: any) {
       setError(err.message || 'Search failed')
       setResults(null)
+      setPromotions([])
     }
     setLoading(false)
   }
@@ -439,33 +477,45 @@ function SearchContent() {
           )}
 
           {results && (
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm text-gray-500">
-                {prefsActive
-                  ? `${visibleResults.length} of ${results.meta.total} match your priorities`
-                  : results.meta.mode === 'place'
-                    ? `${results.meta.total} nurseries found near ${(results.meta as any).place_name || query}`
-                    : `${results.meta.total} nurseries found${results.meta.mode === 'postcode' ? ` within ${radiusKm}km` : ''}`}
-              </p>
-              {prefsActive && excludedCount > 0 && (
-                <button
-                  onClick={() => setShowExcluded(s => !s)}
-                  className="text-xs text-indigo-700 hover:underline font-medium"
-                >
-                  {showExcluded ? 'Hide' : 'Show'} {excludedCount} excluded
-                </button>
+            <div className="mb-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">
+                  {prefsActive
+                    ? `${visibleResults.length} of ${results.meta.total} match your priorities`
+                    : results.meta.mode === 'place'
+                      ? `${results.meta.total} nurseries found near ${(results.meta as any).place_name || query}`
+                      : `${results.meta.total} nurseries found${results.meta.mode === 'postcode' ? ` within ${radiusKm}km` : ''}`}
+                </p>
+                {prefsActive && excludedCount > 0 && (
+                  <button
+                    onClick={() => setShowExcluded(s => !s)}
+                    className="text-xs text-indigo-700 hover:underline font-medium"
+                  >
+                    {showExcluded ? 'Hide' : 'Show'} {excludedCount} excluded
+                  </button>
+                )}
+              </div>
+              {!prefsActive && (
+                <SortSelect value={sortBy} onChange={setSortBy} />
               )}
             </div>
           )}
 
           <div className="space-y-3">
-            {visibleResults.map(({ nursery, match }) => (
-              <NurseryCard
-                key={nursery.urn}
-                nursery={nursery}
-                onClick={() => setSelectedUrn(nursery.urn)}
-                match={match}
-              />
+            {visibleResults.map(({ nursery, match }, idx) => (
+              <div key={nursery.urn}>
+                <NurseryCard
+                  nursery={nursery}
+                  onClick={() => setSelectedUrn(nursery.urn)}
+                  match={match}
+                />
+                {/* Interleave a promotion card after every 5 results */}
+                {promotions.length > 0 && (idx + 1) % 5 === 0 && promotions[Math.floor(idx / 5)] && (
+                  <div className="mt-3">
+                    <PromotionCard promotion={promotions[Math.floor(idx / 5)]} />
+                  </div>
+                )}
+              </div>
             ))}
           </div>
 

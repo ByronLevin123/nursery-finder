@@ -53,7 +53,7 @@ export default function ForProvidersPage() {
             Make sure they find yours.
           </p>
           <Link
-            href="/claim"
+            href="/provider/register"
             className="inline-block px-8 py-4 bg-white text-blue-700 font-bold text-lg rounded-xl shadow-lg hover:shadow-xl hover:bg-blue-50 transition"
           >
             Claim your free listing
@@ -230,7 +230,7 @@ export default function ForProvidersPage() {
             Find and claim your nursery now. It takes less than two minutes.
           </p>
           <Link
-            href="/claim"
+            href="/provider/register"
             className="inline-block px-8 py-4 bg-white text-blue-700 font-bold text-lg rounded-xl shadow-lg hover:shadow-xl hover:bg-blue-50 transition"
           >
             Find and claim your nursery
@@ -326,7 +326,7 @@ function PricingCard({
         ))}
       </ul>
       <Link
-        href="/claim"
+        href="/provider/register"
         className={`block text-center py-2.5 rounded-lg font-semibold text-sm transition ${
           highlighted
             ? 'bg-blue-600 text-white hover:bg-blue-700'

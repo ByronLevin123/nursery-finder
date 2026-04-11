@@ -6,9 +6,10 @@ import { useSession } from '@/components/SessionProvider'
 
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/provider' },
+  { label: 'Nursery Editor', href: '/provider/onboarding' },
   { label: 'Enquiries', href: '/provider/enquiries' },
-  { label: 'Analytics', href: '/provider/analytics' },
-  { label: 'Onboarding', href: '/provider/onboarding' },
+  { label: 'Reports', href: '/provider/reports' },
+  { label: 'Billing', href: '/provider/billing' },
 ]
 
 export default function ProviderLayout({ children }: { children: React.ReactNode }) {

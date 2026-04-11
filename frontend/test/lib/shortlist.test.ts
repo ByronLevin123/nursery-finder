@@ -5,7 +5,6 @@ import {
   removeFromShortlist,
   isInShortlist,
   getShortlistCount,
-  FREE_SHORTLIST_LIMIT,
 } from '@/lib/shortlist'
 
 describe('shortlist', () => {
@@ -43,27 +42,20 @@ describe('shortlist', () => {
       expect(getShortlist()).toHaveLength(1)
     })
 
-    it('returns "auth_required" when free limit reached and not authed', () => {
-      for (let i = 0; i < FREE_SHORTLIST_LIMIT; i++) {
+    it('allows adding up to 10 nurseries without auth (free for all)', () => {
+      for (let i = 0; i < 9; i++) {
         addToShortlist(`urn-${i}`)
       }
-      const result = addToShortlist('urn-extra', false)
-      expect(result).toBe('auth_required')
-    })
-
-    it('allows more than free limit when authed', () => {
-      for (let i = 0; i < FREE_SHORTLIST_LIMIT; i++) {
-        addToShortlist(`urn-${i}`, true)
-      }
-      const result = addToShortlist('urn-extra', true)
+      const result = addToShortlist('urn-extra')
       expect(result).toBe('added')
+      expect(getShortlist()).toHaveLength(10)
     })
 
     it('returns "full" at max 10 items', () => {
       for (let i = 0; i < 10; i++) {
-        addToShortlist(`urn-${i}`, true)
+        addToShortlist(`urn-${i}`)
       }
-      const result = addToShortlist('urn-11', true)
+      const result = addToShortlist('urn-11')
       expect(result).toBe('full')
     })
 

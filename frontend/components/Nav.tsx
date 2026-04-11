@@ -22,6 +22,10 @@ export default function Nav() {
   const [accountOpen, setAccountOpen] = useState(false)
   const { user, role, signOut } = useSession()
 
+  const isParent = !role || role === 'customer'
+  const isProvider = role === 'provider'
+  const isAdmin = role === 'admin'
+
   useEffect(() => {
     setShortlistCount(getShortlistCount())
     setCompareCount(getCompareCount())
@@ -44,44 +48,57 @@ export default function Nav() {
 
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-6">
-          <Link href="/search" className="text-sm text-gray-600 hover:text-gray-900">
-            Search
-          </Link>
-          <Link href="/find-an-area" className="text-sm text-gray-600 hover:text-gray-900">
-            Find an Area
-          </Link>
-          <Link href="/pricing" className="text-sm text-gray-600 hover:text-gray-900">
-            Pricing
-          </Link>
-          {user && (
-            <Link href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900">
-              Dashboard
+          {/* Parent/guest nav links */}
+          {isParent && (
+            <>
+              <Link href="/search" className="text-sm text-gray-600 hover:text-gray-900">
+                Search
+              </Link>
+              <Link href="/find-an-area" className="text-sm text-gray-600 hover:text-gray-900">
+                Find an Area
+              </Link>
+              <Link href="/shortlist" className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1">
+                Shortlist
+                {shortlistCount > 0 && (
+                  <span className="bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {shortlistCount}
+                  </span>
+                )}
+              </Link>
+              <Link
+                href={compareCount >= 2 ? `/compare?urns=${getCompareList().join(',')}` : '/compare'}
+                className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
+              >
+                Compare
+                {compareCount > 0 && (
+                  <span className="bg-purple-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {compareCount}
+                  </span>
+                )}
+              </Link>
+              <Link href="/quiz" className="text-sm text-gray-600 hover:text-gray-900">
+                Quiz
+              </Link>
+              <Link href="/guides" className="text-sm text-gray-600 hover:text-gray-900">
+                Guides
+              </Link>
+            </>
+          )}
+
+          {/* Provider nav links */}
+          {isProvider && (
+            <Link href="/provider" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
+              Provider Dashboard
             </Link>
           )}
-          {user && (
-            <Link href="/applications" className="text-sm text-gray-600 hover:text-gray-900">
-              Applications
+
+          {/* Admin nav links */}
+          {isAdmin && (
+            <Link href="/admin/claims" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
+              Admin Dashboard
             </Link>
           )}
-          <Link href="/shortlist" className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1">
-            Shortlist
-            {shortlistCount > 0 && (
-              <span className="bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {shortlistCount}
-              </span>
-            )}
-          </Link>
-          <Link
-            href={compareCount >= 2 ? `/compare?urns=${getCompareList().join(',')}` : '/compare'}
-            className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
-          >
-            Compare
-            {compareCount > 0 && (
-              <span className="bg-purple-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {compareCount}
-              </span>
-            )}
-          </Link>
+
           {user ? (
             <div className="flex items-center gap-3">
               <NotificationBell />
@@ -98,57 +115,102 @@ export default function Nav() {
                   <div className="px-3 py-2 text-xs text-gray-500 truncate border-b border-gray-100">
                     {user.email}
                   </div>
-                  <Link
-                    href="/account"
-                    className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    onClick={() => setAccountOpen(false)}
-                  >
-                    Account
-                  </Link>
-                  <div className="px-3 py-1 text-[10px] uppercase tracking-wide text-gray-400">
-                    Role: {role}
-                  </div>
-                  {(role === 'provider' || role === 'admin') && (
+
+                  {/* Parent dropdown items */}
+                  {isParent && (
                     <>
                       <Link
-                        href="/provider"
+                        href="/dashboard"
                         className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         onClick={() => setAccountOpen(false)}
                       >
-                        Provider dashboard
+                        Dashboard
                       </Link>
                       <Link
-                        href="/provider/onboarding"
+                        href="/account"
                         className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         onClick={() => setAccountOpen(false)}
                       >
-                        Onboarding
+                        Account
                       </Link>
+                    </>
+                  )}
+
+                  {/* Provider dropdown items */}
+                  {isProvider && (
+                    <>
                       <Link
                         href="/provider/enquiries"
                         className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         onClick={() => setAccountOpen(false)}
                       >
-                        Enquiry inbox
+                        Enquiries
                       </Link>
                       <Link
-                        href="/provider/analytics"
+                        href="/provider/reports"
                         className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         onClick={() => setAccountOpen(false)}
                       >
                         Analytics
                       </Link>
+                      <Link
+                        href="/provider/billing"
+                        className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => setAccountOpen(false)}
+                      >
+                        Billing
+                      </Link>
+                      <Link
+                        href="/account"
+                        className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => setAccountOpen(false)}
+                      >
+                        Account
+                      </Link>
                     </>
                   )}
-                  {role === 'admin' && (
-                    <Link
-                      href="/admin/claims"
-                      className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      onClick={() => setAccountOpen(false)}
-                    >
-                      Admin
-                    </Link>
+
+                  {/* Admin dropdown items */}
+                  {isAdmin && (
+                    <>
+                      <Link
+                        href="/admin/users"
+                        className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => setAccountOpen(false)}
+                      >
+                        Users
+                      </Link>
+                      <Link
+                        href="/admin/claims"
+                        className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => setAccountOpen(false)}
+                      >
+                        Claims
+                      </Link>
+                      <Link
+                        href="/admin/reports"
+                        className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => setAccountOpen(false)}
+                      >
+                        Reports
+                      </Link>
+                      <Link
+                        href="/admin/promotions"
+                        className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => setAccountOpen(false)}
+                      >
+                        Promotions
+                      </Link>
+                      <Link
+                        href="/account"
+                        className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => setAccountOpen(false)}
+                      >
+                        Account
+                      </Link>
+                    </>
                   )}
+
                   <button
                     onClick={async () => {
                       setAccountOpen(false)
@@ -187,17 +249,23 @@ export default function Nav() {
       {/* Mobile menu */}
       {menuOpen && (
         <div className="md:hidden border-t border-gray-200 bg-white px-4 py-3 space-y-3">
-          <Link href="/search" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Search</Link>
-          <Link href="/find-an-area" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Find an Area</Link>
-          {user && (
-            <Link href="/dashboard" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Dashboard</Link>
+          {isParent && (
+            <>
+              <Link href="/search" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Search</Link>
+              <Link href="/find-an-area" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Find an Area</Link>
+              <Link href="/shortlist" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>
+                Shortlist {shortlistCount > 0 && `(${shortlistCount})`}
+              </Link>
+              <Link href="/quiz" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Quiz</Link>
+              <Link href="/guides" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Guides</Link>
+            </>
           )}
-          {user && (
-            <Link href="/applications" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Applications</Link>
+          {isProvider && (
+            <Link href="/provider" className="block text-sm text-gray-600 font-medium" onClick={() => setMenuOpen(false)}>Provider Dashboard</Link>
           )}
-          <Link href="/shortlist" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>
-            Shortlist {shortlistCount > 0 && `(${shortlistCount})`}
-          </Link>
+          {isAdmin && (
+            <Link href="/admin/claims" className="block text-sm text-gray-600 font-medium" onClick={() => setMenuOpen(false)}>Admin Dashboard</Link>
+          )}
           {user ? (
             <>
               <Link href="/account" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Account</Link>

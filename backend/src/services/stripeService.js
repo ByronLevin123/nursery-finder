@@ -14,34 +14,34 @@ function getStripe() {
 const PRICES = {
   provider_pro: process.env.STRIPE_PRICE_PROVIDER_PRO,
   provider_premium: process.env.STRIPE_PRICE_PROVIDER_PREMIUM,
-  parent_premium: process.env.STRIPE_PRICE_PARENT_PREMIUM,
 }
 
 export async function createCheckoutSession({ userId, email, tier, type, successUrl, cancelUrl }) {
-  // type = 'provider' or 'parent'
-  // tier = 'pro', 'premium', or 'premium' (parent)
+  // Only provider subscriptions are supported — parents use everything free
+  if (type !== 'provider') {
+    throw new Error('Only provider subscriptions are supported')
+  }
+
   const s = getStripe()
   if (!s) throw new Error('Stripe not configured')
 
-  const priceKey = type === 'provider' ? `provider_${tier}` : `parent_${tier}`
+  const priceKey = `provider_${tier}`
   const priceId = PRICES[priceKey]
   if (!priceId) throw new Error(`No price configured for ${priceKey}`)
 
   // Find or create Stripe customer
-  const table = type === 'provider' ? 'provider_subscriptions' : 'parent_subscriptions'
   const { data: existing } = await db
-    .from(table)
+    .from('provider_subscriptions')
     .select('stripe_customer_id')
     .eq('user_id', userId)
     .maybeSingle()
 
   let customerId = existing?.stripe_customer_id
   if (!customerId) {
-    const customer = await s.customers.create({ email, metadata: { user_id: userId, type } })
+    const customer = await s.customers.create({ email, metadata: { user_id: userId, type: 'provider' } })
     customerId = customer.id
-    // Upsert subscription row
     await db
-      .from(table)
+      .from('provider_subscriptions')
       .upsert(
         { user_id: userId, stripe_customer_id: customerId, tier: 'free' },
         { onConflict: 'user_id' }
@@ -54,19 +54,18 @@ export async function createCheckoutSession({ userId, email, tier, type, success
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: successUrl || `${process.env.FRONTEND_URL}/account?upgraded=1`,
     cancel_url: cancelUrl || `${process.env.FRONTEND_URL}/pricing`,
-    metadata: { user_id: userId, type, tier },
+    metadata: { user_id: userId, type: 'provider', tier },
   })
 
   return { url: session.url, sessionId: session.id }
 }
 
-export async function createPortalSession({ userId, type }) {
+export async function createPortalSession({ userId }) {
   const s = getStripe()
   if (!s) throw new Error('Stripe not configured')
 
-  const table = type === 'provider' ? 'provider_subscriptions' : 'parent_subscriptions'
   const { data } = await db
-    .from(table)
+    .from('provider_subscriptions')
     .select('stripe_customer_id')
     .eq('user_id', userId)
     .maybeSingle()
@@ -92,12 +91,11 @@ export async function handleWebhook(rawBody, signature) {
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object
-      const { user_id, type, tier } = session.metadata
+      const { user_id, tier } = session.metadata
       if (!user_id) break
 
       // Get subscription details
       const subscription = await s.subscriptions.retrieve(session.subscription)
-      const table = type === 'provider' ? 'provider_subscriptions' : 'parent_subscriptions'
 
       const tierLimits = { free: 5, pro: 50, premium: -1 }
       const updateData = {
@@ -106,17 +104,15 @@ export async function handleWebhook(rawBody, signature) {
         stripe_subscription_id: subscription.id,
         current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
         current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+        enquiry_credits: tierLimits[tier] || 5,
+        enquiry_credits_used: 0,
         updated_at: new Date().toISOString(),
       }
-      if (type === 'provider') {
-        updateData.enquiry_credits = tierLimits[tier] || 5
-        updateData.enquiry_credits_used = 0
-      }
 
-      await db.from(table).update(updateData).eq('user_id', user_id)
+      await db.from('provider_subscriptions').update(updateData).eq('user_id', user_id)
 
-      // Update nursery featured status for providers
-      if (type === 'provider' && (tier === 'pro' || tier === 'premium')) {
+      // Update nursery featured status
+      if (tier === 'pro' || tier === 'premium') {
         const { data: claims } = await db
           .from('nursery_claims')
           .select('urn')
@@ -128,7 +124,7 @@ export async function handleWebhook(rawBody, signature) {
         }
       }
 
-      logger.info({ user_id, type, tier }, 'stripe: subscription activated')
+      logger.info({ user_id, tier }, 'stripe: subscription activated')
       break
     }
 
@@ -136,33 +132,22 @@ export async function handleWebhook(rawBody, signature) {
       const subscription = event.data.object
       const customerId = subscription.customer
 
-      // Try provider first, then parent
-      for (const table of ['provider_subscriptions', 'parent_subscriptions']) {
-        const { data } = await db
-          .from(table)
-          .select('user_id')
-          .eq('stripe_customer_id', customerId)
-          .maybeSingle()
-        if (data) {
-          await db
-            .from(table)
-            .update({
-              status: subscription.cancel_at_period_end
-                ? 'cancelled'
-                : subscription.status === 'active'
-                  ? 'active'
-                  : 'past_due',
-              cancel_at_period_end: subscription.cancel_at_period_end,
-              current_period_start: new Date(
-                subscription.current_period_start * 1000
-              ).toISOString(),
-              current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-              updated_at: new Date().toISOString(),
-            })
-            .eq('stripe_customer_id', customerId)
-          break
-        }
-      }
+      await db
+        .from('provider_subscriptions')
+        .update({
+          status: subscription.cancel_at_period_end
+            ? 'cancelled'
+            : subscription.status === 'active'
+              ? 'active'
+              : 'past_due',
+          cancel_at_period_end: subscription.cancel_at_period_end,
+          current_period_start: new Date(
+            subscription.current_period_start * 1000
+          ).toISOString(),
+          current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('stripe_customer_id', customerId)
       break
     }
 
@@ -170,45 +155,41 @@ export async function handleWebhook(rawBody, signature) {
       const subscription = event.data.object
       const customerId = subscription.customer
 
-      for (const table of ['provider_subscriptions', 'parent_subscriptions']) {
-        const { data } = await db
-          .from(table)
-          .select('user_id')
+      const { data } = await db
+        .from('provider_subscriptions')
+        .select('user_id')
+        .eq('stripe_customer_id', customerId)
+        .maybeSingle()
+
+      if (data) {
+        await db
+          .from('provider_subscriptions')
+          .update({
+            tier: 'free',
+            status: 'cancelled',
+            stripe_subscription_id: null,
+            cancel_at_period_end: false,
+            updated_at: new Date().toISOString(),
+          })
           .eq('stripe_customer_id', customerId)
-          .maybeSingle()
-        if (data) {
+
+        // Remove featured status
+        const { data: claims } = await db
+          .from('nursery_claims')
+          .select('urn')
+          .eq('user_id', data.user_id)
+          .eq('status', 'approved')
+        if (claims?.length) {
           await db
-            .from(table)
-            .update({
-              tier: 'free',
-              status: 'cancelled',
-              stripe_subscription_id: null,
-              cancel_at_period_end: false,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('stripe_customer_id', customerId)
-
-          // Remove featured status if provider
-          if (table === 'provider_subscriptions') {
-            const { data: claims } = await db
-              .from('nursery_claims')
-              .select('urn')
-              .eq('user_id', data.user_id)
-              .eq('status', 'approved')
-            if (claims?.length) {
-              await db
-                .from('nurseries')
-                .update({ featured: false, provider_tier: 'free' })
-                .in(
-                  'urn',
-                  claims.map((c) => c.urn)
-                )
-            }
-          }
-
-          logger.info({ user_id: data.user_id, table }, 'stripe: subscription cancelled')
-          break
+            .from('nurseries')
+            .update({ featured: false, provider_tier: 'free' })
+            .in(
+              'urn',
+              claims.map((c) => c.urn)
+            )
         }
+
+        logger.info({ user_id: data.user_id }, 'stripe: subscription cancelled')
       }
       break
     }
@@ -216,12 +197,10 @@ export async function handleWebhook(rawBody, signature) {
     case 'invoice.payment_failed': {
       const invoice = event.data.object
       const customerId = invoice.customer
-      for (const table of ['provider_subscriptions', 'parent_subscriptions']) {
-        await db
-          .from(table)
-          .update({ status: 'past_due', updated_at: new Date().toISOString() })
-          .eq('stripe_customer_id', customerId)
-      }
+      await db
+        .from('provider_subscriptions')
+        .update({ status: 'past_due', updated_at: new Date().toISOString() })
+        .eq('stripe_customer_id', customerId)
       break
     }
   }
@@ -236,15 +215,6 @@ export async function getProviderSubscription(userId) {
     .eq('user_id', userId)
     .maybeSingle()
   return data || { tier: 'free', status: 'active', enquiry_credits: 5, enquiry_credits_used: 0 }
-}
-
-export async function getParentSubscription(userId) {
-  const { data } = await db
-    .from('parent_subscriptions')
-    .select('*')
-    .eq('user_id', userId)
-    .maybeSingle()
-  return data || { tier: 'free', status: 'active' }
 }
 
 export async function useEnquiryCredit(userId) {

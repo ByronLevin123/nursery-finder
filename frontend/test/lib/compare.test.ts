@@ -6,7 +6,6 @@ import {
   isInCompare,
   getCompareCount,
   clearCompare,
-  FREE_COMPARE_LIMIT,
 } from '@/lib/compare'
 
 describe('compare', () => {
@@ -41,14 +40,15 @@ describe('compare', () => {
       expect(addToCompare('urn-1')).toBe('duplicate')
     })
 
-    it('returns "auth_required" past free limit when not authed', () => {
-      for (let i = 0; i < FREE_COMPARE_LIMIT; i++) addToCompare(`urn-${i}`)
-      expect(addToCompare('extra')).toBe('auth_required')
+    it('allows adding up to 5 nurseries without auth (free for all)', () => {
+      for (let i = 0; i < 4; i++) addToCompare(`urn-${i}`)
+      expect(addToCompare('urn-4')).toBe('added')
+      expect(getCompareList()).toHaveLength(5)
     })
 
-    it('returns "full" at max 5 items when authed', () => {
-      for (let i = 0; i < 5; i++) addToCompare(`urn-${i}`, true)
-      expect(addToCompare('urn-6', true)).toBe('full')
+    it('returns "full" at max 5 items', () => {
+      for (let i = 0; i < 5; i++) addToCompare(`urn-${i}`)
+      expect(addToCompare('urn-6')).toBe('full')
     })
 
     it('dispatches event', () => {

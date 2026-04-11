@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useSession } from '@/components/SessionProvider'
 import Link from 'next/link'
 import GradeBadge from '@/components/GradeBadge'
+import NearbyPromotions from '@/components/NearbyPromotions'
 import { API_URL } from '@/lib/api'
 
 interface DimensionBreakdown {
@@ -60,6 +61,7 @@ export default function DashboardPage() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [geoCoords, setGeoCoords] = useState<{ lat: number; lng: number } | null>(null)
 
   useEffect(() => {
     if (sessionLoading) return
@@ -87,6 +89,19 @@ export default function DashboardPage() {
         if (!rRes.ok) throw new Error('Failed to load recommendations')
         const rData = await rRes.json()
         setRecommendations(rData.data || [])
+
+        // Geocode postcode for nearby promotions
+        const pc = qData?.commute_postcode as string | null
+        if (pc) {
+          fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(pc)}`)
+            .then(r => r.json())
+            .then(d => {
+              if (d.result?.latitude && d.result?.longitude) {
+                setGeoCoords({ lat: d.result.latitude, lng: d.result.longitude })
+              }
+            })
+            .catch(() => {})
+        }
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Something went wrong')
       } finally {
@@ -227,6 +242,13 @@ export default function DashboardPage() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Activities near you */}
+      {geoCoords && (
+        <div className="mt-8">
+          <NearbyPromotions lat={geoCoords.lat} lng={geoCoords.lng} title="Activities near you" />
         </div>
       )}
     </div>

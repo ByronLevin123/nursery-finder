@@ -22,7 +22,7 @@ function shell({ title, bodyHtml }) {
       <td align="center">
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;">
           <tr>
-            <td style="padding:20px 24px;background:#4f46e5;color:#ffffff;font-size:18px;font-weight:700;">
+            <td style="padding:20px 24px;background:#2563eb;color:#ffffff;font-size:18px;font-weight:700;">
               CompareTheNursery
             </td>
           </tr>
@@ -34,7 +34,7 @@ function shell({ title, bodyHtml }) {
           <tr>
             <td style="padding:16px 24px;border-top:1px solid #e5e7eb;font-size:12px;color:#6b7280;">
               You are receiving this because you used CompareTheNursery.
-              <a href="${UNSUBSCRIBE_URL}" style="color:#4f46e5;">Manage email preferences</a>.
+              <a href="${UNSUBSCRIBE_URL}" style="color:#2563eb;">Manage email preferences</a>.
             </td>
           </tr>
         </table>
@@ -46,7 +46,7 @@ function shell({ title, bodyHtml }) {
 }
 
 function ctaButton(href, label) {
-  return `<a href="${escapeHtml(href)}" style="display:inline-block;padding:12px 24px;background:#4f46e5;color:#ffffff;border-radius:8px;text-decoration:none;font-weight:600;">${escapeHtml(label)}</a>`
+  return `<a href="${escapeHtml(href)}" style="display:inline-block;padding:12px 24px;background:#2563eb;color:#ffffff;border-radius:8px;text-decoration:none;font-weight:600;">${escapeHtml(label)}</a>`
 }
 
 // ---------- 1. Welcome email ----------
@@ -64,19 +64,19 @@ export function renderWelcomeEmail({ userName } = {}) {
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
           <td style="padding:12px 0;border-bottom:1px solid #f1f5f9;">
-            <div style="font-weight:600;color:#4f46e5;">1. Take the nursery quiz</div>
+            <div style="font-weight:600;color:#2563eb;">1. Take the nursery quiz</div>
             <div style="font-size:13px;color:#4b5563;">Answer a few questions and we will match you with nurseries that fit your family.</div>
           </td>
         </tr>
         <tr>
           <td style="padding:12px 0;border-bottom:1px solid #f1f5f9;">
-            <div style="font-weight:600;color:#4f46e5;">2. Search nurseries</div>
+            <div style="font-weight:600;color:#2563eb;">2. Search nurseries</div>
             <div style="font-size:13px;color:#4b5563;">Enter your postcode and explore nurseries on the map with Ofsted ratings, fees and reviews.</div>
           </td>
         </tr>
         <tr>
           <td style="padding:12px 0;">
-            <div style="font-weight:600;color:#4f46e5;">3. Save your shortlist</div>
+            <div style="font-weight:600;color:#2563eb;">3. Save your shortlist</div>
             <div style="font-size:13px;color:#4b5563;">Heart any nursery to save it. We will keep you updated when anything changes.</div>
           </td>
         </tr>
@@ -161,7 +161,7 @@ export function renderWelcomeDay7Email({ userName } = {}) {
         ${ctaButton(`${FRONTEND_URL}/find-an-area`, 'Explore areas')}
       </p>
       <p style="margin:12px 0 0 0;">
-        Or try our <a href="${FRONTEND_URL}/assistant" style="color:#4f46e5;font-weight:600;">AI Family Move Assistant</a> — tell it what matters to you and it will recommend the best areas.
+        Or try our <a href="${FRONTEND_URL}/assistant" style="color:#2563eb;font-weight:600;">AI Family Move Assistant</a> — tell it what matters to you and it will recommend the best areas.
       </p>
     `,
   })
@@ -272,7 +272,7 @@ export function renderReengagementEmail({ userName, postcode, newCount = 0 } = {
       </p>
       <p style="margin:0;font-size:13px;color:#6b7280;">
         If you no longer want to hear from us, you can
-        <a href="${UNSUBSCRIBE_URL}" style="color:#4f46e5;">update your email preferences</a>.
+        <a href="${UNSUBSCRIBE_URL}" style="color:#2563eb;">update your email preferences</a>.
       </p>
     `,
   })
@@ -564,7 +564,7 @@ export function renderEnhancedWeeklyDigestEmail({
             <div style="font-size:13px;color:#4b5563;">
               <span style="text-decoration:line-through;color:#9ca3af;">${prev}</span>
               <span style="margin:0 6px;color:#9ca3af;">&rarr;</span>
-              <span style="font-weight:600;color:#4f46e5;">${next}</span>
+              <span style="font-weight:600;color:#2563eb;">${next}</span>
             </div>
           </td>
         </tr>`
@@ -670,6 +670,174 @@ export function renderEnhancedWeeklyDigestEmail({
   return { subject, html, text: textLines.join('\n') }
 }
 
+// ---------- 11. Provider welcome (after claim approval) ----------
+
+export function renderProviderWelcomeEmail({ providerName, nurseryName } = {}) {
+  const greeting = providerName ? `Hi ${escapeHtml(providerName)},` : 'Hi,'
+  const safeName = escapeHtml(nurseryName || 'your nursery')
+  const subject = `Your nursery claim has been approved!`
+
+  const html = shell({
+    title: subject,
+    bodyHtml: `
+      <p style="margin:0 0 12px 0;">${greeting}</p>
+      <p style="margin:0 0 16px 0;">
+        Great news — your claim for <strong>${safeName}</strong> has been approved.
+        You now have full control of your nursery profile on CompareTheNursery.
+      </p>
+      <p style="margin:0 0 8px 0;font-weight:600;">What you can do now:</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="padding:12px 0;border-bottom:1px solid #f1f5f9;">
+            <div style="font-weight:600;color:#2563eb;">1. Complete your profile</div>
+            <div style="font-size:13px;color:#4b5563;">Add photos, opening hours, fees and a description to stand out.</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0;border-bottom:1px solid #f1f5f9;">
+            <div style="font-weight:600;color:#2563eb;">2. Respond to enquiries</div>
+            <div style="font-size:13px;color:#4b5563;">Parents can send you enquiries directly. Quick responses lead to more bookings.</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0;">
+            <div style="font-weight:600;color:#2563eb;">3. Track your performance</div>
+            <div style="font-size:13px;color:#4b5563;">See how many parents view, shortlist and compare your nursery in your reports dashboard.</div>
+          </td>
+        </tr>
+      </table>
+      <p style="margin:20px 0 0 0;">
+        ${ctaButton(`${FRONTEND_URL}/provider`, 'Go to your dashboard')}
+      </p>
+    `,
+  })
+
+  const text = [
+    greeting,
+    '',
+    `Your claim for ${nurseryName || 'your nursery'} has been approved!`,
+    '',
+    'What you can do now:',
+    '1. Complete your profile — add photos, opening hours, fees and a description.',
+    '2. Respond to enquiries — parents can send you enquiries directly.',
+    '3. Track your performance — see views, shortlists and comparisons.',
+    '',
+    `Go to your dashboard: ${FRONTEND_URL}/provider`,
+    '',
+    `Manage preferences: ${UNSUBSCRIBE_URL}`,
+  ].join('\n')
+
+  return { subject, html, text }
+}
+
+// ---------- 12. Provider payment confirmation ----------
+
+export function renderProviderPaymentConfirmationEmail({ providerName, tier, amount, nextBillingDate } = {}) {
+  const greeting = providerName ? `Hi ${escapeHtml(providerName)},` : 'Hi,'
+  const safeTier = escapeHtml(tier || 'Pro')
+  const safeAmount = escapeHtml(amount || '£0')
+  const safeDate = escapeHtml(nextBillingDate || 'next month')
+  const subject = `Payment confirmed — ${safeTier} plan active`
+
+  const html = shell({
+    title: subject,
+    bodyHtml: `
+      <p style="margin:0 0 12px 0;">${greeting}</p>
+      <p style="margin:0 0 16px 0;">
+        Your payment of <strong>${safeAmount}</strong> has been received and your
+        <strong>${safeTier}</strong> plan is now active.
+      </p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px 0;">
+        <tr>
+          <td style="padding:16px;background:#eff6ff;border-radius:8px;border:1px solid #bfdbfe;">
+            <div style="font-size:13px;color:#1e40af;margin-bottom:4px;">Plan: <strong>${safeTier}</strong></div>
+            <div style="font-size:13px;color:#1e40af;margin-bottom:4px;">Amount: <strong>${safeAmount}</strong></div>
+            <div style="font-size:13px;color:#1e40af;">Next billing date: <strong>${safeDate}</strong></div>
+          </td>
+        </tr>
+      </table>
+      <p style="margin:0 0 20px 0;">
+        ${ctaButton(`${FRONTEND_URL}/provider/billing`, 'Manage billing')}
+      </p>
+      <p style="margin:0;font-size:13px;color:#6b7280;">
+        You can manage your subscription or download invoices from your billing page.
+      </p>
+    `,
+  })
+
+  const text = [
+    greeting,
+    '',
+    `Your payment of ${amount || '£0'} has been received.`,
+    `Plan: ${tier || 'Pro'}`,
+    `Next billing date: ${nextBillingDate || 'next month'}`,
+    '',
+    `Manage billing: ${FRONTEND_URL}/provider/billing`,
+    '',
+    `Manage preferences: ${UNSUBSCRIBE_URL}`,
+  ].join('\n')
+
+  return { subject, html, text }
+}
+
+// ---------- 13. Provider enquiry notification (instant) ----------
+
+export function renderProviderEnquiryNotificationEmail({
+  providerName,
+  nurseryName,
+  parentName,
+  childAge,
+  message,
+  enquiryUrl,
+} = {}) {
+  const greeting = providerName ? `Hi ${escapeHtml(providerName)},` : 'Hi,'
+  const safeName = escapeHtml(nurseryName || 'your nursery')
+  const safeParent = escapeHtml(parentName || 'A parent')
+  const safeAge = childAge ? escapeHtml(childAge) : null
+  const safeMessage = message ? escapeHtml(message).slice(0, 300) : null
+  const subject = `New enquiry for ${nurseryName || 'your nursery'}`
+  const safeUrl = escapeHtml(enquiryUrl || `${FRONTEND_URL}/provider`)
+
+  const html = shell({
+    title: subject,
+    bodyHtml: `
+      <p style="margin:0 0 12px 0;">${greeting}</p>
+      <p style="margin:0 0 16px 0;">
+        <strong>${safeParent}</strong> has sent an enquiry about <strong>${safeName}</strong>.
+      </p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px 0;">
+        <tr>
+          <td style="padding:16px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
+            ${safeAge ? `<div style="font-size:13px;color:#374151;margin-bottom:8px;"><strong>Child age:</strong> ${safeAge}</div>` : ''}
+            ${safeMessage ? `<div style="font-size:13px;color:#374151;"><strong>Message:</strong> ${safeMessage}${(message || '').length > 300 ? '...' : ''}</div>` : ''}
+          </td>
+        </tr>
+      </table>
+      <p style="margin:0 0 20px 0;">
+        ${ctaButton(safeUrl, 'View and respond')}
+      </p>
+      <p style="margin:0;font-size:13px;color:#6b7280;">
+        Quick responses lead to more bookings — aim to reply within 24 hours.
+      </p>
+    `,
+  })
+
+  const text = [
+    greeting,
+    '',
+    `${parentName || 'A parent'} has sent an enquiry about ${nurseryName || 'your nursery'}.`,
+    '',
+    ...(childAge ? [`Child age: ${childAge}`] : []),
+    ...(message ? [`Message: ${message.slice(0, 300)}`] : []),
+    '',
+    `View and respond: ${enquiryUrl || `${FRONTEND_URL}/provider`}`,
+    '',
+    `Manage preferences: ${UNSUBSCRIBE_URL}`,
+  ].join('\n')
+
+  return { subject, html, text }
+}
+
 export default {
   renderWelcomeEmail,
   renderWelcomeDay3Email,
@@ -681,4 +849,7 @@ export default {
   renderOfstedChangeEmail,
   renderProviderInviteEmail,
   renderProviderEnquiryDigestEmail,
+  renderProviderWelcomeEmail,
+  renderProviderPaymentConfirmationEmail,
+  renderProviderEnquiryNotificationEmail,
 }

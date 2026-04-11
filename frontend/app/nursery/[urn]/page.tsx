@@ -13,9 +13,11 @@ import EnforcementBanner from '@/components/EnforcementBanner'
 import FeeModal from '@/components/FeeModal'
 import ShortlistButton from '@/components/ShortlistButton'
 import OglAttribution from '@/components/OglAttribution'
+import NearbyPromotions from '@/components/NearbyPromotions'
 import ReviewSection from '@/components/ReviewSection'
 import AiNurserySummary from '@/components/AiNurserySummary'
 import AiReviewSynthesis from '@/components/AiReviewSynthesis'
+import NurseryInsightPanel from '@/components/NurseryInsightPanel'
 import dynamic from 'next/dynamic'
 
 const SingleNurseryMap = dynamic(() => import('@/components/SingleNurseryMap'), { ssr: false })
@@ -23,6 +25,8 @@ const TravelTimePanel = dynamic(() => import('@/components/TravelTimePanel'), { 
 const NurseryPricingTab = dynamic(() => import('@/components/NurseryPricingTab'), { ssr: false })
 const NurseryAvailabilityTab = dynamic(() => import('@/components/NurseryAvailabilityTab'), { ssr: false })
 const BookVisitButton = dynamic(() => import('@/components/BookVisitButton'), { ssr: false })
+const TrueCostCalculator = dynamic(() => import('@/components/TrueCostCalculator'), { ssr: false })
+const EnquiryModalTrigger = dynamic(() => import('@/components/EnquiryModalTrigger'), { ssr: false })
 const ViewTracker = dynamic(() => import('@/components/ViewTracker'), { ssr: false })
 const SimilarNurseries = dynamic(() => import('@/components/SimilarNurseries'), { ssr: false })
 const NearbySchools = dynamic(() => import('@/components/NearbySchools'), { ssr: false })
@@ -153,6 +157,15 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
 
       <AiNurserySummary urn={nursery.urn} />
 
+      {/* Insight scores */}
+      <NurseryInsightPanel
+        qualityScore={nursery.quality_score}
+        costScore={nursery.cost_score}
+        availabilityScore={nursery.availability_score}
+        staffScore={nursery.staff_score}
+        sentimentScore={nursery.sentiment_score}
+      />
+
       {/* Details grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         {nursery.address_line1 && (
@@ -217,6 +230,15 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         <FeeModal nurseryId={nursery.id} />
       </div>
 
+      {/* True Cost Calculator */}
+      <TrueCostCalculator
+        feeAvgMonthly={nursery.fee_avg_monthly}
+        feeReportCount={nursery.fee_report_count}
+        placesFunded2yr={nursery.places_funded_2yr}
+        placesFunded3_4yr={nursery.places_funded_3_4yr}
+        nurseryName={nursery.name}
+      />
+
       {/* Pricing + Availability */}
       <NurseryPricingTab urn={nursery.urn} nurseryId={nursery.id} />
       <NurseryAvailabilityTab urn={nursery.urn} />
@@ -257,9 +279,10 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         </div>
       )}
 
-      {/* Book a visit + Claim CTA */}
-      <div className="flex items-center gap-3 mb-4">
+      {/* Action CTAs — Book a visit, Send enquiry */}
+      <div className="flex items-center gap-3 mb-4 flex-wrap">
         <BookVisitButton urn={nursery.urn} nurseryId={nursery.id} />
+        <EnquiryModalTrigger urn={nursery.urn} nurseryName={nursery.name} nurseryId={nursery.id} />
       </div>
       <ClaimNurseryButton
         urn={nursery.urn}
@@ -373,6 +396,11 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         <div className="mb-6">
           <NurseryPlaceholder name={nursery.name} lat={nursery.lat} lng={nursery.lng} ofstedGrade={nursery.ofsted_overall_grade} />
         </div>
+      )}
+
+      {/* Nearby activities */}
+      {nursery.lat && nursery.lng && (
+        <NearbyPromotions lat={nursery.lat} lng={nursery.lng} />
       )}
 
       {/* Similar nurseries */}

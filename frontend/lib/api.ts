@@ -44,6 +44,12 @@ export interface Nursery {
   provider_updated_at?: string | null
   spots_available?: number | null
   has_waitlist?: boolean
+  quality_score?: number | null
+  cost_score?: number | null
+  availability_score?: number | null
+  staff_score?: number | null
+  sentiment_score?: number | null
+  dimension_scores_updated_at?: string | null
 }
 
 export interface SearchResult {

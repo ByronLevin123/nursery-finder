@@ -60,6 +60,15 @@ import adminRouter from './routes/admin.js'
 // Provider acquisition — invite outreach
 import providerInvitesRouter from './routes/providerInvites.js'
 
+// Provider registration + combined claim
+import providerAuthRouter from './routes/providerAuth.js'
+
+// Promotions — admin CRUD + public nearby matching
+import promotionsRouter, { adminPromotionsRouter } from './routes/promotions.js'
+
+// Provider reports
+import providerReportsRouter from './routes/providerReports.js'
+
 // Blog / guides content
 import blogRouter from './routes/blog.js'
 
@@ -228,6 +237,10 @@ app.use('/api/v1/notifications', notificationsRouter)
 app.use('/api/v1/billing', billingRouter)
 app.use('/api/v1/admin', adminRouter)
 app.use('/api/v1/admin/provider-invites', providerInvitesRouter)
+app.use('/api/v1/admin/promotions', adminPromotionsRouter)
+app.use('/api/v1/provider-auth', providerAuthRouter)
+app.use('/api/v1/promotions', promotionsRouter)
+app.use('/api/v1/provider', providerReportsRouter)
 app.use('/api/v1/blog', blogRouter)
 app.use('/api/v1/schools', schoolsRouter)
 

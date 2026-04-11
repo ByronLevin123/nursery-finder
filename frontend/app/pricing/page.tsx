@@ -14,39 +14,6 @@ import OglAttribution from '@/components/OglAttribution'
 
 // ---------- tier data (static, matches backend seed) ----------
 
-const PARENT_TIERS = [
-  {
-    tier: 'free',
-    name: 'Free',
-    monthlyPrice: 0,
-    features: [
-      { text: '3 shortlist slots', included: true },
-      { text: '3 side-by-side compares', included: true },
-      { text: 'Basic search', included: true },
-      { text: 'Area data', included: true },
-      { text: 'Unlimited shortlist & compare', included: false },
-      { text: 'Advanced filters', included: false },
-      { text: 'Priority support', included: false },
-      { text: 'AI recommendations', included: false },
-    ],
-  },
-  {
-    tier: 'premium',
-    name: 'Premium',
-    monthlyPrice: 4.99,
-    features: [
-      { text: '3 shortlist slots', included: true },
-      { text: '3 side-by-side compares', included: true },
-      { text: 'Basic search', included: true },
-      { text: 'Area data', included: true },
-      { text: 'Unlimited shortlist & compare', included: true },
-      { text: 'Advanced filters', included: true },
-      { text: 'Priority support', included: true },
-      { text: 'AI recommendations', included: true },
-    ],
-  },
-]
-
 const PROVIDER_TIERS = [
   {
     tier: 'free',
@@ -140,7 +107,6 @@ export default function PricingPage() {
   }, [session])
 
   const currentProviderTier = sub?.provider?.tier || 'free'
-  const currentParentTier = sub?.parent?.tier || 'free'
 
   async function handleUpgrade(tier: string, type: 'provider' | 'parent') {
     if (!session) {
@@ -165,7 +131,7 @@ export default function PricingPage() {
 
   function isCurrentTier(tier: string, type: 'provider' | 'parent') {
     if (type === 'provider') return currentProviderTier === tier
-    return currentParentTier === tier
+    return false
   }
 
   function ctaLabel(tier: string, type: 'provider' | 'parent') {
@@ -217,63 +183,30 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* ---- For Parents ---- */}
+      {/* ---- Free for Parents banner ---- */}
       <section className="px-4 pb-16">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 text-center mb-8">For Parents</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {PARENT_TIERS.map((t) => {
-              const isCurrent = isCurrentTier(t.tier, 'parent')
-              return (
-                <div
-                  key={t.tier}
-                  className={`relative bg-white rounded-2xl border p-8 shadow-sm hover:shadow-md transition ${
-                    t.tier === 'premium' ? 'border-indigo-300 ring-2 ring-indigo-100' : 'border-gray-200'
-                  }`}
-                >
-                  {t.tier === 'premium' && (
-                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-indigo-600 text-white text-xs font-semibold rounded-full">
-                      Recommended
-                    </span>
-                  )}
-                  <h3 className="text-xl font-bold text-gray-900 mb-1">{t.name}</h3>
-                  <div className="mb-6">
-                    <span className="text-4xl font-bold text-gray-900">
-                      {t.monthlyPrice === 0 ? 'Free' : `\u00A3${formatPrice(t.monthlyPrice)}`}
-                    </span>
-                    {t.monthlyPrice > 0 && (
-                      <span className="text-gray-500 text-sm ml-1">/ month</span>
-                    )}
-                    {annual && t.monthlyPrice > 0 && (
-                      <p className="text-xs text-gray-400 mt-1">
-                        Billed as {'\u00A3'}{annualPrice(t.monthlyPrice).toFixed(2)} / year
-                      </p>
-                    )}
-                  </div>
-                  <ul className="space-y-3 mb-8">
-                    {t.features.map((f, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm">
-                        {f.included ? <Check /> : <Cross />}
-                        <span className={f.included ? 'text-gray-700' : 'text-gray-400'}>{f.text}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <button
-                    onClick={() => !isCurrent && t.tier !== 'free' && handleUpgrade(t.tier, 'parent')}
-                    disabled={isCurrent || loading === `parent-${t.tier}`}
-                    className={`w-full py-3 rounded-xl font-semibold text-sm transition ${
-                      isCurrent
-                        ? 'bg-gray-100 text-gray-500 cursor-default'
-                        : t.tier === 'premium'
-                        ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {loading === `parent-${t.tier}` ? 'Redirecting...' : ctaLabel(t.tier, 'parent')}
-                  </button>
-                </div>
-              )
-            })}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-8 text-center">
+            <div className="text-4xl mb-3">&#127968;</div>
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">Free for Parents</h2>
+            <p className="text-gray-600 max-w-lg mx-auto mb-4">
+              Search nurseries, shortlist, compare side-by-side, take our quiz, explore areas and access guides
+              &mdash; all completely free, no subscription needed.
+            </p>
+            <div className="flex flex-wrap justify-center gap-3 mb-6">
+              {['Unlimited search', 'Shortlist up to 10', 'Side-by-side compare', 'Nursery quiz', 'Area intelligence', 'AI recommendations'].map((f) => (
+                <span key={f} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-100 rounded-full text-sm text-gray-700">
+                  <Check />
+                  {f}
+                </span>
+              ))}
+            </div>
+            <a
+              href="/search"
+              className="inline-block px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition"
+            >
+              Start searching
+            </a>
           </div>
         </div>
       </section>

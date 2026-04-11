@@ -469,41 +469,12 @@ export default function AccountPage() {
       <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Subscription</h2>
 
-        {/* Parent subscription */}
-        <div className="mb-4">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">Parent plan</h3>
-          {subscription?.parent && subscription.parent.tier !== 'free' ? (
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="inline-block px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full mr-2">
-                  {subscription.parent.tier.charAt(0).toUpperCase() + subscription.parent.tier.slice(1)}
-                </span>
-                <span className="text-sm text-gray-500">
-                  {subscription.parent.cancel_at_period_end
-                    ? 'Cancels'
-                    : 'Renews'}{' '}
-                  {subscription.parent.current_period_end
-                    ? new Date(subscription.parent.current_period_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-                    : ''}
-                </span>
-              </div>
-              <button
-                onClick={() => openPortal('parent')}
-                disabled={portalLoading}
-                className="text-sm text-indigo-600 font-medium hover:underline disabled:opacity-50"
-              >
-                Manage
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500">Free plan</span>
-              <Link href="/pricing" className="text-sm text-indigo-600 font-medium hover:underline">
-                Upgrade
-              </Link>
-            </div>
-          )}
-        </div>
+        {/* Parent — free for all */}
+        {role === 'customer' && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+            <p className="text-sm text-blue-800 font-medium">All parent features are free — no subscription needed.</p>
+          </div>
+        )}
 
         {/* Provider subscription — only visible to providers and admins */}
         {(role === 'provider' || role === 'admin') && <div>
