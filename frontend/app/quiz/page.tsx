@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useSession } from '@/components/SessionProvider'
 import PostcodeAutocomplete from '@/components/PostcodeAutocomplete'
 import Link from 'next/link'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+import { API_URL } from '@/lib/api'
 
 type Urgency = 'asap' | '3_months' | '6_months' | 'exploring'
 type CommuteFrom = 'home' | 'work' | 'both'

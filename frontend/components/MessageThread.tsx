@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSession } from '@/components/SessionProvider'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+import { API_URL } from '@/lib/api'
 
 interface Message {
   id: string
@@ -78,7 +77,7 @@ export default function MessageThread({ enquiryId, currentUserRole }: MessageThr
       fetch(`${API_URL}/api/v1/enquiries/${enquiryId}/messages/read`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {})
+      }).catch((err) => { console.error('Failed to mark messages read:', err) })
     }
   }, [token, enquiryId, messages, currentUserRole])
 

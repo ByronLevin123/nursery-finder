@@ -7,8 +7,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSession } from '@/components/SessionProvider'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+import { API_URL } from '@/lib/api'
 
 interface Notification {
   id: string
@@ -67,7 +66,7 @@ export default function NotificationBell() {
       .then((data) => {
         if (!cancelled) setNotifications(data.data || [])
       })
-      .catch(() => {})
+      .catch((err) => { console.error('Failed to load notifications:', err) })
       .finally(() => {
         if (!cancelled) setLoadingList(false)
       })
@@ -108,7 +107,7 @@ export default function NotificationBell() {
       fetch(`${API_URL}/api/v1/notifications/${n.id}/read`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {})
+      }).catch((err) => { console.error('Failed to mark notification read:', err) })
       setUnreadCount((c) => Math.max(0, c - 1))
       setNotifications((prev) =>
         prev.map((x) => (x.id === n.id ? { ...x, read_at: new Date().toISOString() } : x))

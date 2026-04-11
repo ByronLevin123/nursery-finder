@@ -164,57 +164,56 @@ export async function recomputeAllDimensionScores() {
 
     if (!nurseries || nurseries.length === 0) break
 
+    // Batch-fetch related data (eliminates N+1 queries: 3 queries instead of 3×N)
+    const ids = nurseries.map((n) => n.id)
+    const districts = [
+      ...new Set(
+        nurseries
+          .filter((n) => n.fee_avg_monthly && n.postcode)
+          .map((n) => n.postcode.split(' ')[0])
+          .filter(Boolean)
+      ),
+    ]
+
+    const [areaResult, avResult, staffResult] = await Promise.all([
+      districts.length > 0
+        ? db.from('postcode_areas').select('postcode_district, avg_sale_price_all').in('postcode_district', districts)
+        : { data: [] },
+      db.from('nursery_availability').select('*').in('nursery_id', ids),
+      db.from('nursery_staff').select('*').in('nursery_id', ids),
+    ])
+
+    // Build lookup maps
+    const areaMap = new Map((areaResult.data || []).map((a) => [a.postcode_district, a]))
+    const avMap = new Map()
+    for (const row of avResult.data || []) {
+      if (!avMap.has(row.nursery_id)) avMap.set(row.nursery_id, [])
+      avMap.get(row.nursery_id).push(row)
+    }
+    const staffMap = new Map((staffResult.data || []).map((s) => [s.nursery_id, s]))
+
     for (const nursery of nurseries) {
       const quality_score = computeQualityScore(nursery)
       const sentiment_score = computeSentimentScore(nursery)
 
-      // Cost score — try to get local average from postcode_areas
+      // Cost score — use batch-fetched area data
       let cost_score = null
       if (nursery.fee_avg_monthly && nursery.postcode) {
         const district = nursery.postcode.split(' ')[0]
-        if (district) {
-          try {
-            const { data: area } = await db
-              .from('postcode_areas')
-              .select('avg_sale_price_all')
-              .eq('postcode_district', district)
-              .maybeSingle()
-            // Use avg_sale_price as a proxy for local cost level
-            // Approximate monthly nursery cost relative to area wealth
-            const localProxy = area?.avg_sale_price_all
-              ? Math.round(area.avg_sale_price_all / 300) // rough monthly proxy
-              : null
-            cost_score = computeCostScore(nursery, localProxy)
-          } catch {
-            cost_score = computeCostScore(nursery, null)
-          }
-        }
+        const area = district ? areaMap.get(district) : null
+        const localProxy = area?.avg_sale_price_all
+          ? Math.round(area.avg_sale_price_all / 300)
+          : null
+        cost_score = computeCostScore(nursery, localProxy)
       }
 
-      // Availability score
-      let availability_score = null
-      try {
-        const { data: avRows } = await db
-          .from('nursery_availability')
-          .select('*')
-          .eq('nursery_id', nursery.id)
-        availability_score = computeAvailabilityScore(avRows)
-      } catch {
-        // skip
-      }
+      // Availability score — use batch-fetched data
+      const avRows = avMap.get(nursery.id) || null
+      const availability_score = computeAvailabilityScore(avRows)
 
-      // Staff score
-      let staff_score = null
-      try {
-        const { data: staffRow } = await db
-          .from('nursery_staff')
-          .select('*')
-          .eq('nursery_id', nursery.id)
-          .maybeSingle()
-        staff_score = computeStaffScore(staffRow)
-      } catch {
-        // skip
-      }
+      // Staff score — use batch-fetched data
+      const staffRow = staffMap.get(nursery.id) || null
+      const staff_score = computeStaffScore(staffRow)
 
       const update = {
         quality_score,

@@ -2,13 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { getShortlist, removeFromShortlist } from '@/lib/shortlist'
-import { getNursery, Nursery } from '@/lib/api'
+import { getNursery, Nursery, API_URL } from '@/lib/api'
 import NurseryCard from '@/components/NurseryCard'
 import OglAttribution from '@/components/OglAttribution'
+import PromptModal from '@/components/PromptModal'
 import Link from 'next/link'
 import { useSession } from '@/components/SessionProvider'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
 export default function ShortlistPage() {
   const [nurseries, setNurseries] = useState<Nursery[]>([])
@@ -46,11 +45,11 @@ export default function ShortlistPage() {
     setNurseries(prev => prev.filter(n => n.urn !== urn))
   }
 
-  async function handleEmail() {
+  const [showEmailPrompt, setShowEmailPrompt] = useState(false)
+
+  async function doEmail(to: string) {
     if (!session) return
-    const defaultEmail = user?.email || ''
-    const to = window.prompt('Send shortlist to which email?', defaultEmail)
-    if (!to) return
+    setShowEmailPrompt(false)
     setEmailing(true)
     setEmailToast(null)
     try {
@@ -64,15 +63,19 @@ export default function ShortlistPage() {
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        throw new Error(err.error || 'Failed to send email')
+        throw new Error((err as Record<string, string>).error || 'Failed to send email')
       }
       setEmailToast('Email sent!')
-    } catch (err: any) {
-      setEmailToast(err.message || 'Failed to send')
+    } catch (err: unknown) {
+      setEmailToast(err instanceof Error ? err.message : 'Failed to send')
     } finally {
       setEmailing(false)
       setTimeout(() => setEmailToast(null), 4000)
     }
+  }
+
+  function handleEmail() {
+    setShowEmailPrompt(true)
   }
 
   function handleShare() {
@@ -156,6 +159,17 @@ export default function ShortlistPage() {
         ))}
       </div>
       <OglAttribution />
+      <PromptModal
+        open={showEmailPrompt}
+        title="Email your shortlist"
+        message="We'll send a summary of your shortlisted nurseries to this address."
+        placeholder="you@example.com"
+        defaultValue={user?.email || ''}
+        submitLabel="Send"
+        validate={(v) => v.includes('@') ? null : 'Please enter a valid email'}
+        onSubmit={doEmail}
+        onCancel={() => setShowEmailPrompt(false)}
+      />
     </div>
   )
 }

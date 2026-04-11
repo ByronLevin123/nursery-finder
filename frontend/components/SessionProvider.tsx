@@ -62,7 +62,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setSession(data.session)
       setLoading(false)
       if (data.session) {
-        syncPreferencesWithProfile(data.session).catch(() => {})
+        syncPreferencesWithProfile(data.session).catch((err) => { console.error('Preference sync failed:', err) })
         loadRole(data.session)
       }
     })
@@ -70,7 +70,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession)
       if (newSession) {
-        syncPreferencesWithProfile(newSession).catch(() => {})
+        syncPreferencesWithProfile(newSession).catch((err) => { console.error('Preference sync failed:', err) })
         loadRole(newSession)
       } else {
         setRole('customer')

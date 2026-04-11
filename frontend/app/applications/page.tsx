@@ -6,8 +6,7 @@ import { useSession } from '@/components/SessionProvider'
 import VisitSurveyModal from '@/components/VisitSurveyModal'
 import MessageThread from '@/components/MessageThread'
 import Link from 'next/link'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+import { API_URL } from '@/lib/api'
 
 interface Enquiry {
   id: string

@@ -66,7 +66,7 @@ export default function AreaSummaryCard({ district, variant = 'compact' }: Props
         if (cancelled || !j) return
         setSchools(Array.isArray(j.data) ? j.data.slice(0, 5) : [])
       })
-      .catch(() => {})
+      .catch((err) => { console.error('Failed to load nearby schools:', err) })
     return () => {
       cancelled = true
     }

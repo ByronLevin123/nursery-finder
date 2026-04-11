@@ -6,10 +6,10 @@ import MobileNav from '@/components/MobileNav'
 import Nav from '@/components/Nav'
 import { SessionProvider } from '@/components/SessionProvider'
 import { organizationSchema, websiteSchema, jsonLdScript } from '@/lib/schema'
+import { API_URL } from '@/lib/api'
 import './globals.css'
 
 const SITE_URL = 'https://comparethenursery.com'
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nursery-finder-6u7r.onrender.com'
 
 export const viewport: Viewport = {
   themeColor: '#4f46e5',

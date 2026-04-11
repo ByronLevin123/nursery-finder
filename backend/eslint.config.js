@@ -27,6 +27,7 @@ export default [
         URLSearchParams: 'readonly',
         fetch: 'readonly',
         AbortController: 'readonly',
+        AbortSignal: 'readonly',
       },
     },
     rules: {

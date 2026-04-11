@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useSession } from '@/components/SessionProvider'
-import { getAuthToken, adminFetch } from '@/lib/api'
+import { getAuthToken, adminFetch, API_URL } from '@/lib/api'
+import ConfirmModal from '@/components/ConfirmModal'
 
 interface InviteStats {
   total_invited: number
@@ -65,7 +66,7 @@ export default function AdminInvitesPage() {
       if (localAuthority.trim()) body.local_authority = localAuthority.trim()
 
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/v1/admin/provider-invites/preview`,
+        `${API_URL}/api/v1/admin/provider-invites/preview`,
         {
           method: 'POST',
           headers: {
@@ -86,13 +87,15 @@ export default function AdminInvitesPage() {
     }
   }
 
+  const [showSendConfirm, setShowSendConfirm] = useState(false)
+
   async function handleSend() {
     if (selected.size === 0) return
-    const confirmed = window.confirm(
-      `Are you sure you want to send invite emails to ${selected.size} nurseries? This cannot be undone.`
-    )
-    if (!confirmed) return
+    setShowSendConfirm(true)
+  }
 
+  async function doSend() {
+    setShowSendConfirm(false)
     setSending(true)
     setError('')
     setSendResult(null)
@@ -100,7 +103,7 @@ export default function AdminInvitesPage() {
       const token = await getAuthToken()
       if (!token) throw new Error('No auth token')
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/v1/admin/provider-invites/send`,
+        `${API_URL}/api/v1/admin/provider-invites/send`,
         {
           method: 'POST',
           headers: {
@@ -280,6 +283,16 @@ export default function AdminInvitesPage() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={showSendConfirm}
+        title="Send invite emails?"
+        message={`Are you sure you want to send invite emails to ${selected.size} nurseries? This cannot be undone.`}
+        confirmLabel="Send invites"
+        variant="danger"
+        onConfirm={doSend}
+        onCancel={() => setShowSendConfirm(false)}
+      />
     </div>
   )
 }

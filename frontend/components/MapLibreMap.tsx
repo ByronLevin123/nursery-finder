@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-import maplibregl, { Map as MlMap, Popup as MlPopup } from 'maplibre-gl'
-import 'maplibre-gl/dist/maplibre-gl.css'
+import { useEffect, useRef, useCallback } from 'react'
+import { loadGoogleMapsScript, getGoogleMapsApiKey } from '@/lib/googleMaps'
+
+/* ── Public interfaces (unchanged — all consumers depend on these) ── */
 
 export interface MarkerDef {
   id?: string | number
@@ -24,110 +25,134 @@ export interface PolygonDef {
 }
 
 interface Props {
-  center: [number, number] // [lng, lat] — MapLibre convention
+  center: [number, number] // [lng, lat] — kept for backward compat
   zoom?: number
   markers?: MarkerDef[]
   polygons?: PolygonDef[]
-  style?: string
+  style?: string // ignored — kept for API compat
   scrollZoom?: boolean
   className?: string
   heightClassName?: string
-  radiusKm?: number // optional search radius circle
+  radiusKm?: number
 }
 
-const DEFAULT_STYLE =
-  process.env.NEXT_PUBLIC_MAP_STYLE ||
-  'https://tiles.openfreemap.org/styles/liberty'
+/* ── Helpers ── */
 
-// Build a pseudo-circle polygon (for the search radius overlay).
-function circlePolygon(lat: number, lng: number, radiusKm: number, steps = 64): [number, number][] {
-  const coords: [number, number][] = []
-  const latR = radiusKm / 111
-  const lngR = radiusKm / (111 * Math.cos((lat * Math.PI) / 180))
-  for (let i = 0; i <= steps; i++) {
-    const t = (i / steps) * 2 * Math.PI
-    coords.push([lng + lngR * Math.cos(t), lat + latR * Math.sin(t)])
-  }
-  return coords
+/** Convert GeoJSON [lng, lat] ring to google.maps.LatLng array */
+function ringToLatLngs(ring: [number, number][]): any[] {
+  const google = window.google
+  return ring.map(([lng, lat]) => new google.maps.LatLng(lat, lng))
 }
 
-export default function MapLibreMap({
+/* ── Component ── */
+
+export default function GoogleMap({
   center,
   zoom = 13,
   markers = [],
   polygons = [],
-  style = DEFAULT_STYLE,
   scrollZoom = true,
   className = '',
   heightClassName = 'h-full w-full',
   radiusKm,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null)
-  const mapRef = useRef<MlMap | null>(null)
-  const markerObjectsRef = useRef<maplibregl.Marker[]>([])
-  const popupRef = useRef<MlPopup | null>(null)
+  const mapRef = useRef<any>(null)
+  const markerObjectsRef = useRef<any[]>([])
+  const infoWindowRef = useRef<any>(null)
+  const polygonObjectsRef = useRef<any[]>([])
+  const circleRef = useRef<any>(null)
+  const readyRef = useRef(false)
 
-  // Create map once
-  useEffect(() => {
+  // Initialize map once
+  const initMap = useCallback(async () => {
     if (!containerRef.current || mapRef.current) return
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style,
-      center,
+    if (!getGoogleMapsApiKey()) return
+
+    await loadGoogleMapsScript()
+
+    const google = window.google
+    if (!google?.maps || !containerRef.current) return
+
+    const map = new google.maps.Map(containerRef.current, {
+      center: { lat: center[1], lng: center[0] },
       zoom,
-      attributionControl: { compact: true },
+      gestureHandling: scrollZoom ? 'auto' : 'cooperative',
+      zoomControl: true,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false,
+      styles: [
+        // Subtle, clean style
+        { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+      ],
     })
-    if (!scrollZoom) map.scrollZoom.disable()
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
+
     mapRef.current = map
-    return () => {
-      markerObjectsRef.current.forEach((m) => m.remove())
-      markerObjectsRef.current = []
-      map.remove()
-      mapRef.current = null
-    }
+    infoWindowRef.current = new google.maps.InfoWindow()
+    readyRef.current = true
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Update center/zoom when they change
+  useEffect(() => {
+    initMap()
+    return () => {
+      // Cleanup
+      markerObjectsRef.current.forEach((m) => m.setMap(null))
+      markerObjectsRef.current = []
+      polygonObjectsRef.current.forEach((p) => p.setMap(null))
+      polygonObjectsRef.current = []
+      if (circleRef.current) circleRef.current.setMap(null)
+      if (infoWindowRef.current) infoWindowRef.current.close()
+      mapRef.current = null
+      readyRef.current = false
+    }
+  }, [initMap])
+
+  // Update center/zoom
   useEffect(() => {
     const map = mapRef.current
-    if (!map) return
-    map.jumpTo({ center, zoom })
+    if (!map || !readyRef.current) return
+    map.setCenter({ lat: center[1], lng: center[0] })
+    map.setZoom(zoom)
   }, [center[0], center[1], zoom])
 
   // Render markers
   useEffect(() => {
     const map = mapRef.current
-    if (!map) return
+    if (!map || !readyRef.current || !window.google) return
 
-    markerObjectsRef.current.forEach((m) => m.remove())
+    const google = window.google
+
+    // Clear old markers
+    markerObjectsRef.current.forEach((m) => m.setMap(null))
     markerObjectsRef.current = []
 
     for (const m of markers) {
-      const el = document.createElement('div')
-      const r = m.radius ?? 9
       const color = m.color ?? '#3b82f6'
-      el.style.width = `${r * 2}px`
-      el.style.height = `${r * 2}px`
-      el.style.borderRadius = '50%'
-      el.style.background = color
-      el.style.border = '2px solid white'
-      el.style.boxShadow = '0 0 0 1px rgba(0,0,0,0.2)'
-      el.style.cursor = m.onClick || m.popupHtml ? 'pointer' : 'default'
+      const r = m.radius ?? 9
+      const scale = r / 9 // normalize against default 9px
 
-      const marker = new maplibregl.Marker({ element: el }).setLngLat([m.lng, m.lat]).addTo(map)
+      const marker = new google.maps.Marker({
+        position: { lat: m.lat, lng: m.lng },
+        map,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          fillColor: color,
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 2,
+          scale: r,
+        },
+        clickable: !!(m.popupHtml || m.onClick),
+      })
 
       if (m.popupHtml || m.onClick) {
-        el.addEventListener('click', (ev) => {
-          ev.stopPropagation()
+        marker.addListener('click', () => {
           if (m.onClick) m.onClick()
-          if (m.popupHtml) {
-            if (popupRef.current) popupRef.current.remove()
-            popupRef.current = new maplibregl.Popup({ offset: 14, closeButton: true })
-              .setLngLat([m.lng, m.lat])
-              .setHTML(m.popupHtml)
-              .addTo(map)
+          if (m.popupHtml && infoWindowRef.current) {
+            infoWindowRef.current.setContent(m.popupHtml)
+            infoWindowRef.current.open(map, marker)
           }
         })
       }
@@ -136,90 +161,53 @@ export default function MapLibreMap({
     }
   }, [markers])
 
-  // Render polygons + radius
+  // Render polygons + radius circle
   useEffect(() => {
     const map = mapRef.current
-    if (!map) return
-    const applyLayers = () => {
-      // Wipe previous polygon/radius layers under our known prefix
-      const style = map.getStyle()
-      if (style?.layers) {
-        for (const l of style.layers) {
-          if (l.id.startsWith('mlm-poly-') || l.id.startsWith('mlm-radius-')) {
-            if (map.getLayer(l.id)) map.removeLayer(l.id)
-          }
-        }
-      }
-      if (style?.sources) {
-        for (const sid of Object.keys(style.sources)) {
-          if (sid.startsWith('mlm-poly-') || sid.startsWith('mlm-radius-')) {
-            if (map.getSource(sid)) map.removeSource(sid)
-          }
-        }
-      }
+    if (!map || !readyRef.current || !window.google) return
 
-      // Radius circle
-      if (radiusKm && radiusKm > 0) {
-        const ring = circlePolygon(center[1], center[0], radiusKm)
-        const sid = 'mlm-radius-src'
-        map.addSource(sid, {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            properties: {},
-            geometry: { type: 'Polygon', coordinates: [ring] },
-          },
-        })
-        map.addLayer({
-          id: 'mlm-radius-fill',
-          type: 'fill',
-          source: sid,
-          paint: { 'fill-color': '#3b82f6', 'fill-opacity': 0.05 },
-        })
-        map.addLayer({
-          id: 'mlm-radius-line',
-          type: 'line',
-          source: sid,
-          paint: { 'line-color': '#3b82f6', 'line-width': 1 },
-        })
-      }
+    const google = window.google
 
-      // User polygons
-      polygons.forEach((p, idx) => {
-        const sid = `mlm-poly-src-${p.id}-${idx}`
-        map.addSource(sid, {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            properties: {},
-            geometry: { type: 'Polygon', coordinates: p.coordinates },
-          },
-        })
-        map.addLayer({
-          id: `mlm-poly-fill-${p.id}-${idx}`,
-          type: 'fill',
-          source: sid,
-          paint: {
-            'fill-color': p.fillColor ?? '#3b82f6',
-            'fill-opacity': p.fillOpacity ?? 0.2,
-          },
-        })
-        map.addLayer({
-          id: `mlm-poly-line-${p.id}-${idx}`,
-          type: 'line',
-          source: sid,
-          paint: {
-            'line-color': p.lineColor ?? p.fillColor ?? '#1d4ed8',
-            'line-width': p.lineWidth ?? 1.5,
-          },
-        })
+    // Clear old polygons
+    polygonObjectsRef.current.forEach((p) => p.setMap(null))
+    polygonObjectsRef.current = []
+
+    // Clear old radius circle
+    if (circleRef.current) {
+      circleRef.current.setMap(null)
+      circleRef.current = null
+    }
+
+    // Radius circle
+    if (radiusKm && radiusKm > 0) {
+      circleRef.current = new google.maps.Circle({
+        map,
+        center: { lat: center[1], lng: center[0] },
+        radius: radiusKm * 1000, // meters
+        fillColor: '#3b82f6',
+        fillOpacity: 0.05,
+        strokeColor: '#3b82f6',
+        strokeWeight: 1,
+        clickable: false,
       })
     }
 
-    if (map.isStyleLoaded()) {
-      applyLayers()
-    } else {
-      map.once('load', applyLayers)
+    // User polygons
+    for (const p of polygons) {
+      // GeoJSON: coordinates[0] is outer ring, rest are holes
+      const paths = p.coordinates.map((ring) => ringToLatLngs(ring))
+
+      const poly = new google.maps.Polygon({
+        paths,
+        map,
+        fillColor: p.fillColor ?? '#3b82f6',
+        fillOpacity: p.fillOpacity ?? 0.2,
+        strokeColor: p.lineColor ?? p.fillColor ?? '#1d4ed8',
+        strokeWeight: p.lineWidth ?? 1.5,
+        clickable: false,
+      })
+
+      polygonObjectsRef.current.push(poly)
     }
   }, [polygons, radiusKm, center[0], center[1]])
 

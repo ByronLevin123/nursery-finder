@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useSession } from '@/components/SessionProvider'
 import Link from 'next/link'
 import GradeBadge from '@/components/GradeBadge'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+import { API_URL } from '@/lib/api'
 
 interface DimensionBreakdown {
   [dim: string]: { score: number | null; weight: number }

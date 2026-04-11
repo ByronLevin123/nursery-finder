@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { loadGoogleMapsScript, getGoogleMapsApiKey } from '@/lib/googleMaps'
 
 interface Props {
   lat: number
@@ -9,44 +10,8 @@ interface Props {
   height?: string
 }
 
-declare global {
-  interface Window {
-    google?: any
-    __googleMapsCallback?: () => void
-  }
-}
-
-const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''
-
-let scriptLoaded = false
-let scriptLoading = false
-const loadCallbacks: (() => void)[] = []
-
-function loadGoogleMapsScript(): Promise<void> {
-  if (scriptLoaded && window.google?.maps) return Promise.resolve()
-
-  return new Promise((resolve) => {
-    loadCallbacks.push(resolve)
-
-    if (scriptLoading) return
-
-    scriptLoading = true
-    window.__googleMapsCallback = () => {
-      scriptLoaded = true
-      scriptLoading = false
-      loadCallbacks.forEach((cb) => cb())
-      loadCallbacks.length = 0
-    }
-
-    const script = document.createElement('script')
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=__googleMapsCallback`
-    script.async = true
-    script.defer = true
-    document.head.appendChild(script)
-  })
-}
-
 export default function StreetViewPanorama({ lat, lng, name, height = 'h-72 sm:h-96' }: Props) {
+  const API_KEY = getGoogleMapsApiKey()
   const containerRef = useRef<HTMLDivElement>(null)
   const panoramaRef = useRef<any>(null)
   const [status, setStatus] = useState<'loading' | 'ready' | 'no-coverage' | 'error'>('loading')
@@ -180,43 +145,34 @@ export default function StreetViewPanorama({ lat, lng, name, height = 'h-72 sm:h
   )
 }
 
-/** Simple static map when user toggles away from Street View */
+/** Interactive Google Map when user toggles away from Street View */
 function StaticMapFallback({ lat, lng, name }: { lat: number; lng: number; name: string }) {
-  // Use OSM tile as a basic map view with a pin indicator
-  const zoom = 16
-  const n = Math.pow(2, zoom)
-  const x = Math.floor(((lng + 180) / 360) * n)
-  const latRad = (lat * Math.PI) / 180
-  const y = Math.floor(((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const mapInstanceRef = useRef<any>(null)
 
-  return (
-    <div className="relative w-full h-full bg-gray-100">
-      {/* 3x3 tile grid centered on nursery */}
-      <div className="absolute inset-0 grid grid-cols-3 grid-rows-3">
-        {[-1, 0, 1].map((dy) =>
-          [-1, 0, 1].map((dx) => (
-            <img
-              key={`${dx}-${dy}`}
-              src={`https://tile.openstreetmap.org/${zoom}/${x + dx}/${y + dy}.png`}
-              alt=""
-              className="w-full h-full object-cover"
-              draggable={false}
-            />
-          ))
-        )}
-      </div>
-      {/* Center pin */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="relative -mt-4">
-          <svg className="w-8 h-8 text-red-500 drop-shadow-lg" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-          </svg>
-        </div>
-      </div>
-      {/* Attribution */}
-      <div className="absolute bottom-0 right-0 bg-white/80 px-1.5 py-0.5 text-[9px] text-gray-500">
-        &copy; OpenStreetMap
-      </div>
-    </div>
-  )
+  useEffect(() => {
+    let cancelled = false
+    async function init() {
+      await loadGoogleMapsScript()
+      if (cancelled || !containerRef.current || !window.google?.maps) return
+
+      const google = window.google
+      const center = { lat, lng }
+      const map = new google.maps.Map(containerRef.current, {
+        center,
+        zoom: 16,
+        gestureHandling: 'cooperative',
+        zoomControl: true,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+      })
+      new google.maps.Marker({ position: center, map, title: name })
+      mapInstanceRef.current = map
+    }
+    init()
+    return () => { cancelled = true }
+  }, [lat, lng, name])
+
+  return <div ref={containerRef} className="w-full h-full" />
 }

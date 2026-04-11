@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useSession } from '@/components/SessionProvider'
+import ConfirmModal from '@/components/ConfirmModal'
 import { getProfile, updateProfile, getSubscription, createPortalSession, getAuthToken, exportMyData, deleteMyAccount, getNotificationPreferences, updateNotificationPreferences, type Profile, type ProfileChild, type SubscriptionInfo, type NotificationPreferences } from '@/lib/api'
 import { loadPreferences, savePreferences, hasActivePreferences, DEFAULT_PREFERENCES, type Preferences } from '@/lib/preferences'
 
@@ -35,6 +36,7 @@ export default function AccountPage() {
   const [notifPrefs, setNotifPrefs] = useState<NotificationPreferences | null>(null)
   const [notifLoading, setNotifLoading] = useState(true)
   const [notifSaving, setNotifSaving] = useState(false)
+  const [deleteStep, setDeleteStep] = useState<0 | 1 | 2>(0) // 0=hidden, 1=first confirm, 2=second confirm
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Form state mirrors profile
@@ -668,28 +670,39 @@ export default function AccountPage() {
             Download my data
           </button>
           <button
-            onClick={async () => {
-              if (!session) return
-              const confirmed = window.confirm(
-                'Are you sure you want to permanently delete your account and all associated data? This cannot be undone.'
-              )
-              if (!confirmed) return
-              const doubleConfirm = window.confirm(
-                'This will delete your profile, reviews, claims, messages, saved searches, and all other data. Proceed?'
-              )
-              if (!doubleConfirm) return
-              try {
-                await deleteMyAccount(session.access_token)
-                await signOut()
-                router.push('/?deleted=1')
-              } catch (err: any) {
-                setError(err?.message || 'Deletion failed')
-              }
-            }}
+            onClick={() => setDeleteStep(1)}
             className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 border border-red-200"
           >
             Delete my account
           </button>
+          <ConfirmModal
+            open={deleteStep === 1}
+            title="Delete your account?"
+            message="Are you sure you want to permanently delete your account and all associated data? This cannot be undone."
+            confirmLabel="Continue"
+            variant="danger"
+            onConfirm={() => setDeleteStep(2)}
+            onCancel={() => setDeleteStep(0)}
+          />
+          <ConfirmModal
+            open={deleteStep === 2}
+            title="Final confirmation"
+            message="This will delete your profile, reviews, claims, messages, saved searches, and all other data. Proceed?"
+            confirmLabel="Delete permanently"
+            variant="danger"
+            onConfirm={async () => {
+              setDeleteStep(0)
+              if (!session) return
+              try {
+                await deleteMyAccount(session.access_token)
+                await signOut()
+                router.push('/?deleted=1')
+              } catch (err: unknown) {
+                setError(err instanceof Error ? err.message : 'Deletion failed')
+              }
+            }}
+            onCancel={() => setDeleteStep(0)}
+          />
         </div>
       </div>
 

@@ -131,7 +131,7 @@ const allowedOrigins = [
   'https://comparethenursery.com',
   'https://www.comparethenursery.com',
   'https://nursery-finder.vercel.app',
-  'http://localhost:3000',
+  ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:3000'] : []),
 ].filter(Boolean)
 
 app.use(

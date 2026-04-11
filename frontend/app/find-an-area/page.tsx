@@ -5,11 +5,9 @@ import dynamic from 'next/dynamic'
 import AreaCard from '@/components/AreaCard'
 import SaveSearchButton from '@/components/SaveSearchButton'
 import PostcodeAutocomplete from '@/components/PostcodeAutocomplete'
-import { getIsochrone, IsochroneResponse, TravelMode } from '@/lib/api'
+import { API_URL, getIsochrone, IsochroneResponse, TravelMode } from '@/lib/api'
 
 const MapLibreMap = dynamic(() => import('@/components/MapLibreMap'), { ssr: false })
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
 interface AreaResult {
   postcode_district: string

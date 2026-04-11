@@ -1,15 +1,14 @@
 'use client'
 
 import { useEffect } from 'react'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+import { API_URL } from '@/lib/api'
 
 export default function ViewTracker({ urn }: { urn: string }) {
   useEffect(() => {
     // Fire and forget — don't block rendering
     fetch(`${API_URL}/api/v1/nurseries/${encodeURIComponent(urn)}/view`, {
       method: 'POST',
-    }).catch(() => {})
+    }).catch((err) => { console.error('View tracking failed:', err) })
   }, [urn])
 
   return null

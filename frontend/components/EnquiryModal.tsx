@@ -3,8 +3,7 @@
 import { useState } from 'react'
 import { useSession } from '@/components/SessionProvider'
 import Link from 'next/link'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+import { API_URL } from '@/lib/api'
 
 interface NurseryItem {
   id: string

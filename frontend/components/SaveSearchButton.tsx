@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useSession } from '@/components/SessionProvider'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+import { API_URL } from '@/lib/api'
+import PromptModal from '@/components/PromptModal'
 
 interface Props {
   criteria: Record<string, unknown>
@@ -16,6 +16,7 @@ export default function SaveSearchButton({ criteria, defaultName, className }: P
   const { session } = useSession()
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
+  const [showPrompt, setShowPrompt] = useState(false)
 
   if (!session) {
     return (
@@ -31,9 +32,9 @@ export default function SaveSearchButton({ criteria, defaultName, className }: P
     )
   }
 
-  async function handleSave() {
+  async function doSave(name: string) {
     if (!session) return
-    const name = window.prompt('Name this saved search', defaultName || '') || defaultName || ''
+    setShowPrompt(false)
     setSaving(true)
     setToast(null)
     try {
@@ -47,11 +48,11 @@ export default function SaveSearchButton({ criteria, defaultName, className }: P
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        throw new Error(err.error || 'Failed to save')
+        throw new Error((err as Record<string, string>).error || 'Failed to save')
       }
       setToast('Saved!')
-    } catch (err: any) {
-      setToast(err.message || 'Failed to save')
+    } catch (err: unknown) {
+      setToast(err instanceof Error ? err.message : 'Failed to save')
     } finally {
       setSaving(false)
       setTimeout(() => setToast(null), 3000)
@@ -59,15 +60,26 @@ export default function SaveSearchButton({ criteria, defaultName, className }: P
   }
 
   return (
-    <button
-      onClick={handleSave}
-      disabled={saving}
-      className={
-        className ||
-        'inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-blue-300 text-blue-700 rounded-md hover:bg-blue-50 disabled:opacity-50'
-      }
-    >
-      {saving ? 'Saving…' : toast || 'Save this search'}
-    </button>
+    <>
+      <button
+        onClick={() => setShowPrompt(true)}
+        disabled={saving}
+        className={
+          className ||
+          'inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-blue-300 text-blue-700 rounded-md hover:bg-blue-50 disabled:opacity-50'
+        }
+      >
+        {saving ? 'Saving…' : toast || 'Save this search'}
+      </button>
+      <PromptModal
+        open={showPrompt}
+        title="Name this saved search"
+        placeholder="e.g. Near work, SW London"
+        defaultValue={defaultName || ''}
+        submitLabel="Save"
+        onSubmit={doSave}
+        onCancel={() => setShowPrompt(false)}
+      />
+    </>
   )
 }

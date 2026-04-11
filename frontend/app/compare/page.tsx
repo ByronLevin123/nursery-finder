@@ -2,16 +2,15 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { compareNurseries, Nursery } from '@/lib/api'
+import { compareNurseries, Nursery, API_URL } from '@/lib/api'
 import { getCompareList, removeFromCompare, clearCompare } from '@/lib/compare'
 import ComparisonTable from '@/components/ComparisonTable'
 import ComparisonPrintView from '@/components/ComparisonPrintView'
 import RadarChart from '@/components/RadarChart'
 import EnquiryModal from '@/components/EnquiryModal'
+import PromptModal from '@/components/PromptModal'
 import Link from 'next/link'
 import { useSession } from '@/components/SessionProvider'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
 function CompareContent() {
   const searchParams = useSearchParams()
@@ -24,6 +23,7 @@ function CompareContent() {
   const [emailToast, setEmailToast] = useState<string | null>(null)
   const [tradeoff, setTradeoff] = useState<string | null>(null)
   const [showEnquiry, setShowEnquiry] = useState(false)
+  const [showEmailPrompt, setShowEmailPrompt] = useState(false)
   const { session, user } = useSession()
 
   useEffect(() => {
@@ -83,11 +83,13 @@ function CompareContent() {
     router.replace('/compare')
   }
 
-  async function handleEmail() {
+  function handleEmail() {
+    setShowEmailPrompt(true)
+  }
+
+  async function doEmail(to: string) {
     if (!session) return
-    const defaultEmail = user?.email || ''
-    const to = window.prompt('Send comparison to which email?', defaultEmail)
-    if (!to) return
+    setShowEmailPrompt(false)
     setEmailing(true)
     setEmailToast(null)
     try {
@@ -101,7 +103,7 @@ function CompareContent() {
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        throw new Error(err.error || 'Failed to send email')
+        throw new Error((err as Record<string, string>).error || 'Failed to send email')
       }
       setEmailToast('Email sent!')
     } catch (err: any) {
@@ -387,6 +389,18 @@ function CompareContent() {
           Inspection over 4 years old
         </span>
       </div>
+
+      <PromptModal
+        open={showEmailPrompt}
+        title="Email your comparison"
+        message="We'll send a side-by-side comparison to this address."
+        placeholder="you@example.com"
+        defaultValue={user?.email || ''}
+        submitLabel="Send"
+        validate={(v) => v.includes('@') ? null : 'Please enter a valid email'}
+        onSubmit={doEmail}
+        onCancel={() => setShowEmailPrompt(false)}
+      />
     </div>
   )
 }
