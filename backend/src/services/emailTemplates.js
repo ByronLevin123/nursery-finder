@@ -520,11 +520,162 @@ export function renderProviderEnquiryDigestEmail({
   return { subject, html, text }
 }
 
+// ---------- 10. Enhanced weekly digest (notification preferences) ----------
+
+export function renderEnhancedWeeklyDigestEmail({
+  userName,
+  postcode,
+  newNurseries = [],
+  ofstedChanges = [],
+  newAnswers = [],
+  newReviewCount = 0,
+} = {}) {
+  const greeting = userName ? `Hi ${escapeHtml(userName)},` : 'Hi,'
+  const subject = 'Your weekly nursery digest'
+  const safePostcode = escapeHtml(postcode || 'your area')
+
+  // Build sections
+  const sections = []
+
+  // New nurseries near saved searches
+  if (newNurseries.length > 0) {
+    const rows = newNurseries.slice(0, 5).map(nurseryRowHtml).join('')
+    sections.push(`
+      <div style="margin:0 0 20px 0;">
+        <div style="font-weight:600;color:#111827;margin-bottom:6px;font-size:15px;">New nurseries near ${safePostcode}</div>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          ${rows}
+        </table>
+      </div>`)
+  }
+
+  // Ofsted changes on shortlisted nurseries
+  if (ofstedChanges.length > 0) {
+    const changeRows = ofstedChanges.slice(0, 5).map((c) => {
+      const name = escapeHtml(c.name || 'Nursery')
+      const prev = escapeHtml(c.previous_grade || '?')
+      const next = escapeHtml(c.new_grade || '?')
+      const urn = c.urn ? escapeHtml(c.urn) : ''
+      const link = urn ? `${FRONTEND_URL}/nursery/${urn}` : '#'
+      return `
+        <tr>
+          <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;">
+            <a href="${link}" style="font-weight:600;color:#111827;text-decoration:none;">${name}</a>
+            <div style="font-size:13px;color:#4b5563;">
+              <span style="text-decoration:line-through;color:#9ca3af;">${prev}</span>
+              <span style="margin:0 6px;color:#9ca3af;">&rarr;</span>
+              <span style="font-weight:600;color:#4f46e5;">${next}</span>
+            </div>
+          </td>
+        </tr>`
+    }).join('')
+
+    sections.push(`
+      <div style="margin:0 0 20px 0;">
+        <div style="font-weight:600;color:#111827;margin-bottom:6px;font-size:15px;">Ofsted rating changes</div>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          ${changeRows}
+        </table>
+      </div>`)
+  }
+
+  // New answers to questions
+  if (newAnswers.length > 0) {
+    const answerRows = newAnswers.slice(0, 5).map((a) => {
+      const nurseryName = escapeHtml(a.nursery_name || 'Nursery')
+      const question = escapeHtml(a.question || '')
+      const urn = a.urn ? escapeHtml(a.urn) : ''
+      const link = urn ? `${FRONTEND_URL}/nursery/${urn}#qa` : '#'
+      return `
+        <tr>
+          <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;">
+            <a href="${link}" style="font-weight:600;color:#111827;text-decoration:none;">${nurseryName}</a>
+            <div style="font-size:13px;color:#4b5563;">New answer to: "${question.slice(0, 80)}${question.length > 80 ? '...' : ''}"</div>
+          </td>
+        </tr>`
+    }).join('')
+
+    sections.push(`
+      <div style="margin:0 0 20px 0;">
+        <div style="font-weight:600;color:#111827;margin-bottom:6px;font-size:15px;">New answers to your questions</div>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          ${answerRows}
+        </table>
+      </div>`)
+  }
+
+  // New reviews on shortlisted nurseries
+  if (newReviewCount > 0) {
+    sections.push(`
+      <div style="margin:0 0 20px 0;">
+        <div style="font-weight:600;color:#111827;margin-bottom:6px;font-size:15px;">New reviews</div>
+        <p style="margin:0;font-size:14px;color:#374151;">
+          ${newReviewCount} new ${newReviewCount === 1 ? 'review has' : 'reviews have'} been posted on your shortlisted nurseries this week.
+        </p>
+      </div>`)
+  }
+
+  const hasContent = sections.length > 0
+  const bodyContent = hasContent
+    ? sections.join('')
+    : `<p style="color:#6b7280;">No updates this week near ${safePostcode}. We will keep looking!</p>`
+
+  const html = shell({
+    title: subject,
+    bodyHtml: `
+      <p style="margin:0 0 12px 0;">${greeting}</p>
+      <p style="margin:0 0 16px 0;">Here is your weekly digest of nursery updates.</p>
+      ${bodyContent}
+      <p style="margin:20px 0 0 0;">
+        ${ctaButton(`${FRONTEND_URL}/search?postcode=${encodeURIComponent(postcode || '')}`, 'Search nurseries')}
+      </p>
+    `,
+  })
+
+  // Plain text version
+  const textLines = [greeting, '', 'Your weekly nursery digest', '']
+
+  if (newNurseries.length > 0) {
+    textLines.push(`## New nurseries near ${postcode || 'you'}`)
+    newNurseries.slice(0, 5).forEach((n) => textLines.push(nurseryRowText(n)))
+    textLines.push('')
+  }
+  if (ofstedChanges.length > 0) {
+    textLines.push('## Ofsted rating changes')
+    ofstedChanges.slice(0, 5).forEach((c) => {
+      textLines.push(`- ${c.name || 'Nursery'}: ${c.previous_grade || '?'} -> ${c.new_grade || '?'}`)
+    })
+    textLines.push('')
+  }
+  if (newAnswers.length > 0) {
+    textLines.push('## New answers to your questions')
+    newAnswers.slice(0, 5).forEach((a) => {
+      textLines.push(`- ${a.nursery_name || 'Nursery'}: "${(a.question || '').slice(0, 80)}"`)
+    })
+    textLines.push('')
+  }
+  if (newReviewCount > 0) {
+    textLines.push(`## ${newReviewCount} new review${newReviewCount === 1 ? '' : 's'} on shortlisted nurseries`)
+    textLines.push('')
+  }
+  if (!hasContent) {
+    textLines.push('No updates this week. We will keep looking!')
+    textLines.push('')
+  }
+
+  textLines.push(`Search nurseries: ${FRONTEND_URL}/search?postcode=${encodeURIComponent(postcode || '')}`)
+  textLines.push('')
+  textLines.push(`Manage preferences: ${UNSUBSCRIBE_URL}`)
+
+  return { subject, html, text: textLines.join('\n') }
+}
+
 export default {
   renderWelcomeEmail,
   renderWelcomeDay3Email,
   renderWelcomeDay7Email,
   renderWeeklyDigestEmail,
+  renderEnhancedWeeklyDigestEmail,
   renderReengagementEmail,
   renderSavedSearchAlertEmail,
   renderOfstedChangeEmail,

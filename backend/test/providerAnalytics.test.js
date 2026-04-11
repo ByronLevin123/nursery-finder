@@ -57,6 +57,14 @@ function makeQueryBuilder(table) {
       return builder._resolve(false).then(onF, onR)
     },
     async _resolve(single) {
+      // Handle user_profiles lookups for requireRole middleware
+      if (table === 'user_profiles') {
+        const idFilter = state.filters.find(([c]) => c === 'id')
+        const userId = idFilter ? idFilter[2] : null
+        const role = userId === OWNER.id ? 'provider' : 'customer'
+        const row = { id: userId, role }
+        return { data: row, error: null }
+      }
       const rows = applyFilters([...getMap().values()])
       if (single) return { data: rows[0] ?? null, error: null }
       return { data: rows, error: null }

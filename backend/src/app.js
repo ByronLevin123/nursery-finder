@@ -33,6 +33,7 @@ import overlaysRouter from './routes/overlays.js'
 import claimsRouter from './routes/claims.js'
 import providerRouter from './routes/provider.js'
 import travelRouter from './routes/travel.js'
+import qaRouter from './routes/qa.js'
 import { optionalAuth } from './middleware/supabaseAuth.js'
 
 // Decision engine routes
@@ -199,6 +200,7 @@ app.use((req, _res, next) => {
 // Routes
 app.use('/api/v1/health', healthRouter)
 app.use('/api/v1/profile', profileRouter)
+app.use('/api/v1/nurseries', qaRouter)
 app.use('/api/v1/nurseries', nurseriesRouter)
 app.use('/api/v1/nurseries', reviewsRouter)
 app.use('/api/v1/ingest', ingestRouter)

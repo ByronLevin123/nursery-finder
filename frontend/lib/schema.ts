@@ -138,6 +138,21 @@ export function faqSchema(items: { question: string; answer: string }[]): AnyObj
   }
 }
 
+export function searchResultsSchema(nurseries: AnyObj[], query: string): AnyObj {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: `Nurseries near ${query}`,
+    numberOfItems: nurseries.length,
+    itemListElement: nurseries.slice(0, 30).map((n, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: n.name,
+      url: `${SITE_URL}/nursery/${n.urn}`,
+    })),
+  }
+}
+
 export function jsonLdScript(obj: AnyObj | AnyObj[]): string {
   return JSON.stringify(obj)
 }

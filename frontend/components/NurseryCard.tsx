@@ -6,6 +6,8 @@ import ShortlistButton from './ShortlistButton'
 import CompareButton from './CompareButton'
 import MatchBadge from './MatchBadge'
 import MatchRationale from './MatchRationale'
+import AvailabilityBadge from './AvailabilityBadge'
+import NurseryCardThumbnail from './NurseryCardThumbnail'
 import type { MatchResult } from '@/lib/preferences'
 
 interface Props {
@@ -17,7 +19,14 @@ interface Props {
 
 export default function NurseryCard({ nursery, showDistance = true, onClick, match }: Props) {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+      <NurseryCardThumbnail
+        name={nursery.name}
+        photos={(nursery as any).photos}
+        lat={nursery.lat}
+        lng={nursery.lng}
+      />
+      <div className="p-4">
       <div className="flex justify-between items-start gap-2 mb-2">
         {onClick ? (
           <button
@@ -44,6 +53,7 @@ export default function NurseryCard({ nursery, showDistance = true, onClick, mat
         <GradeBadge grade={nursery.ofsted_overall_grade} size="sm" />
         {nursery.featured && <FeaturedBadge />}
         {match && <MatchBadge score={match.excluded ? null : match.score} excluded={match.excluded} />}
+        <AvailabilityBadge nursery={nursery} />
         {nursery.inspection_date_warning && (
           <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
             ⚠️ Old inspection
@@ -80,6 +90,7 @@ export default function NurseryCard({ nursery, showDistance = true, onClick, mat
       )}
 
       {match && <MatchRationale match={match} />}
+      </div>
     </div>
   )
 }

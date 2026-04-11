@@ -2,6 +2,7 @@ import express from 'express'
 import crypto from 'crypto'
 import db from '../db.js'
 import { extractCategoryScores } from '../services/reviewNlp.js'
+import { requireAuth } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
 
 const router = express.Router()
@@ -36,7 +37,7 @@ function isIsoDate(s) {
 }
 
 // POST /api/v1/nurseries/:urn/reviews
-router.post('/:urn/reviews', async (req, res, next) => {
+router.post('/:urn/reviews', requireAuth, async (req, res, next) => {
   try {
     const { urn } = req.params
     const {
@@ -85,12 +86,12 @@ router.post('/:urn/reviews', async (req, res, next) => {
 
     const ip_hash = hashIp(req.ip || '0.0.0.0')
 
-    // Duplicate check — same ip + same urn
+    // Duplicate check — same user + same urn (primary), or same ip + same urn (secondary)
     const { data: existing, error: existingErr } = await db
       .from('nursery_reviews')
       .select('id')
-      .eq('ip_hash', ip_hash)
       .eq('urn', urn)
+      .or(`user_id.eq.${req.user.id},ip_hash.eq.${ip_hash}`)
       .limit(1)
     if (existingErr) throw existingErr
     if (existing && existing.length > 0) {
@@ -126,6 +127,7 @@ router.post('/:urn/reviews', async (req, res, next) => {
       attended_from: attended_from ?? null,
       attended_to: attended_to ?? null,
       author_display_name: author_display_name ?? null,
+      user_id: req.user.id,
       ip_hash,
       status,
     }

@@ -6,14 +6,14 @@ import { ingestLandRegistryYear, refreshPropertyStats } from '../services/landRe
 import { refreshCrimeForDistricts } from '../services/policeApi.js'
 import { refreshImdForDistricts } from '../services/imdApi.js'
 import { refreshAllDistricts as refreshPropertyDataDistricts } from '../services/propertyData.js'
-import { adminAuth } from '../middleware/auth.js'
+import { requireRole } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
 import db from '../db.js'
 
 const router = express.Router()
 
 // All ingest routes require admin auth
-router.use(adminAuth)
+router.use(requireRole('admin'))
 
 // POST /api/v1/ingest/ofsted
 router.post('/ofsted', async (req, res, next) => {

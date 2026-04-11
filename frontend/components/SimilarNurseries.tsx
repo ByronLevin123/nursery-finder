@@ -24,7 +24,7 @@ export default function SimilarNurseries({ urn }: { urn: string }) {
   if (loading) {
     return (
       <section className="mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">Similar nurseries nearby</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-3">Similar Nurseries Nearby</h2>
         <div className="flex gap-3 overflow-x-auto pb-2">
           {[1, 2, 3].map((i) => (
             <div key={i} className="min-w-[220px] h-28 bg-gray-100 rounded-lg animate-pulse" />
@@ -38,7 +38,7 @@ export default function SimilarNurseries({ urn }: { urn: string }) {
 
   return (
     <section className="mb-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-3">Similar nurseries nearby</h2>
+      <h2 className="text-lg font-semibold text-gray-900 mb-3">Similar Nurseries Nearby</h2>
       <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
         {nurseries.map((n) => (
           <Link

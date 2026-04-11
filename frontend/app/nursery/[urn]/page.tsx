@@ -29,6 +29,8 @@ const NearbySchools = dynamic(() => import('@/components/NearbySchools'), { ssr:
 const NurseryPlaceholder = dynamic(() => import('@/components/NurseryPlaceholder'), { ssr: false })
 const RecentlyViewedTracker = dynamic(() => import('@/components/RecentlyViewedTracker'), { ssr: false })
 const ProviderPhotoGallery = dynamic(() => import('@/components/ProviderPhotoGallery'), { ssr: false })
+const NurseryQA = dynamic(() => import('@/components/NurseryQA'), { ssr: false })
+const VisitChecklistSection = dynamic(() => import('@/components/VisitChecklistSection'), { ssr: false })
 
 export async function generateMetadata({ params }: { params: { urn: string } }): Promise<Metadata> {
   try {
@@ -269,6 +271,9 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         }
       />
 
+      {/* Visit checklist */}
+      <VisitChecklistSection nurseryName={nursery.name} nurseryUrn={nursery.urn} />
+
       {/* Map */}
       {nursery.lat && nursery.lng && (
         <div className="mb-6 rounded-lg overflow-hidden border border-gray-200 h-48">
@@ -360,10 +365,12 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
       <AiReviewSynthesis urn={nursery.urn} />
       <ReviewSection urn={nursery.urn} />
 
+      <NurseryQA urn={nursery.urn} isProvider={!!currentUserId && nursery.claimed_by_user_id === currentUserId} />
+
       {/* Photo placeholder when no provider photos */}
       {(!nursery.photos || nursery.photos.length === 0) && (
         <div className="mb-6">
-          <NurseryPlaceholder name={nursery.name} />
+          <NurseryPlaceholder name={nursery.name} lat={nursery.lat} lng={nursery.lng} ofstedGrade={nursery.ofsted_overall_grade} />
         </div>
       )}
 

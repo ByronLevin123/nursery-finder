@@ -42,6 +42,8 @@ export interface Nursery {
   contact_email?: string | null
   contact_phone?: string | null
   provider_updated_at?: string | null
+  spots_available?: number | null
+  has_waitlist?: boolean
 }
 
 export interface SearchResult {
@@ -86,6 +88,11 @@ export async function smartSearchNurseries(params: {
   grade?: string | null
   funded_2yr?: boolean
   funded_3yr?: boolean
+  has_availability?: boolean
+  min_rating?: number | null
+  provider_type?: string | null
+  has_funded_2yr?: boolean
+  has_funded_3yr?: boolean
 }): Promise<SearchResult> {
   const res = await fetch(`${API_URL}/api/v1/nurseries/smart-search`, {
     method: 'POST',
@@ -395,6 +402,51 @@ export async function updateProfile(
   return res.json()
 }
 
+// Notification Preferences ---------------------------------------------------
+
+export interface NotificationPreferences {
+  id: string
+  user_id: string
+  email_new_review: boolean
+  email_qa_answer: boolean
+  email_saved_search_alert: boolean
+  email_ofsted_change: boolean
+  email_weekly_digest: boolean
+  email_marketing: boolean
+  created_at: string
+  updated_at: string
+}
+
+export async function getNotificationPreferences(
+  token: string
+): Promise<NotificationPreferences> {
+  const res = await fetch(`${API_URL}/api/v1/profile/notification-preferences`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(`Failed to load notification preferences: ${res.status}`)
+  return res.json()
+}
+
+export async function updateNotificationPreferences(
+  token: string,
+  prefs: Partial<Omit<NotificationPreferences, 'id' | 'user_id' | 'created_at' | 'updated_at'>>
+): Promise<NotificationPreferences> {
+  const res = await fetch(`${API_URL}/api/v1/profile/notification-preferences`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(prefs),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `Failed to update notification preferences: ${res.status}`)
+  }
+  return res.json()
+}
+
 // GDPR data export
 export async function exportMyData(token: string): Promise<Record<string, unknown>> {
   const res = await fetch(`${API_URL}/api/v1/profile/export`, {
@@ -587,6 +639,88 @@ export async function getNurseriesInDistrict(district: string) {
     nurseries: Nursery[]
     stats: { total: number; outstanding: number; good: number }
   }>
+}
+
+// Q&A (parent questions & answers on nursery profiles) ----------------------
+
+export interface NurseryAnswer {
+  id: string
+  question_id: string
+  user_id: string
+  is_provider: boolean
+  answer: string
+  status: string
+  created_at: string
+  updated_at: string
+}
+
+export interface NurseryQuestion {
+  id: string
+  nursery_urn: string
+  user_id: string
+  question: string
+  status: string
+  created_at: string
+  updated_at: string
+  answers: NurseryAnswer[]
+}
+
+export async function getNurseryQuestions(
+  urn: string
+): Promise<{ questions: NurseryQuestion[] }> {
+  const res = await fetch(
+    `${API_URL}/api/v1/nurseries/${encodeURIComponent(urn)}/questions`,
+    { cache: 'no-store' }
+  )
+  if (!res.ok) throw new Error(`Failed to load questions: ${res.status}`)
+  return res.json()
+}
+
+export async function postNurseryQuestion(
+  urn: string,
+  question: string,
+  token: string
+): Promise<NurseryQuestion> {
+  const res = await fetch(
+    `${API_URL}/api/v1/nurseries/${encodeURIComponent(urn)}/questions`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ question }),
+    }
+  )
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `Failed to post question: ${res.status}`)
+  }
+  return res.json()
+}
+
+export async function postNurseryAnswer(
+  urn: string,
+  questionId: string,
+  answer: string,
+  token: string
+): Promise<NurseryAnswer> {
+  const res = await fetch(
+    `${API_URL}/api/v1/nurseries/${encodeURIComponent(urn)}/questions/${encodeURIComponent(questionId)}/answers`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ answer }),
+    }
+  )
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `Failed to post answer: ${res.status}`)
+  }
+  return res.json()
 }
 
 // Schools (nearby primary schools overlay) ----------------------------------
@@ -1016,7 +1150,115 @@ export async function deleteNurseryFee(
   }
 }
 
+// Availability / Waitlist -------------------------------------------------------
+
+export interface NurseryAvailability {
+  id: string
+  nursery_urn: string
+  age_group: string
+  spots_available: number
+  waitlist_length: number
+  next_available_date: string | null
+  updated_at: string
+}
+
+export async function getNurseryAvailability(urn: string): Promise<NurseryAvailability[]> {
+  try {
+    const res = await fetch(
+      `${API_URL}/api/v1/provider/nurseries/${encodeURIComponent(urn)}/availability`,
+      { cache: 'no-store' }
+    )
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.data || []
+  } catch {
+    return []
+  }
+}
+
+export async function updateNurseryAvailability(
+  token: string,
+  urn: string,
+  availability: Array<{
+    age_group: string
+    spots_available: number
+    waitlist_length: number
+    next_available_date: string | null
+  }>
+): Promise<NurseryAvailability[]> {
+  const res = await fetch(
+    `${API_URL}/api/v1/provider/nurseries/${encodeURIComponent(urn)}/availability`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(availability),
+    }
+  )
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `Update availability failed: ${res.status}`)
+  }
+  const data = await res.json()
+  return data.data || []
+}
+
 // Admin API helpers ------------------------------------------------------------
+
+// Admin analytics helpers -----------------------------------------------------
+
+export interface AdminGrowthStats {
+  nurseries: { this_week: number; this_month: number }
+  users: { this_week: number; this_month: number }
+  reviews: { this_week: number; this_month: number }
+  claims: { this_week: number; this_month: number }
+}
+
+export interface AdminDataQuality {
+  nurseries_no_location: number
+  nurseries_no_grade: number
+  nurseries_stale_inspection: number
+  reviews_pending_moderation: number
+}
+
+export interface AdminActivityItem {
+  type: 'review' | 'claim' | 'signup'
+  date: string
+  description: string
+  status: string | null
+  link: string
+  meta: Record<string, unknown>
+}
+
+export async function getAdminGrowthStats(token: string): Promise<AdminGrowthStats> {
+  const res = await fetch(`${API_URL}/api/v1/admin/stats/growth`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(`Admin API error: ${res.status}`)
+  return res.json()
+}
+
+export async function getAdminDataQuality(token: string): Promise<AdminDataQuality> {
+  const res = await fetch(`${API_URL}/api/v1/admin/stats/data-quality`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(`Admin API error: ${res.status}`)
+  return res.json()
+}
+
+export async function getAdminActivity(token: string, limit = 50): Promise<AdminActivityItem[]> {
+  const res = await fetch(`${API_URL}/api/v1/admin/activity?limit=${limit}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(`Admin API error: ${res.status}`)
+  const json = await res.json()
+  return json.data || []
+}
 
 export async function adminFetch(path: string, token: string, options?: RequestInit) {
   const res = await fetch(`${API_URL}/api/v1/admin${path}`, {

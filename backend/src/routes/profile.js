@@ -140,7 +140,7 @@ router.get('/export', requireAuth, async (req, res, next) => {
     const userId = req.user.id
 
     // Gather all user data in parallel
-    const [profileRes, claimsRes, reviewsRes, searchesRes, enquiriesRes, visitsRes, messagesRes, notificationsRes] =
+    const [profileRes, claimsRes, reviewsRes, searchesRes, enquiriesRes, visitsRes, messagesRes, notificationsRes, notifPrefsRes] =
       await Promise.all([
         db.from('user_profiles').select('*').eq('id', userId).maybeSingle(),
         db.from('nursery_claims').select('*').eq('user_id', userId),
@@ -150,6 +150,7 @@ router.get('/export', requireAuth, async (req, res, next) => {
         db.from('visit_bookings').select('*').eq('user_id', userId),
         db.from('messages').select('*').eq('sender_id', userId),
         db.from('notifications').select('*').eq('user_id', userId),
+        db.from('notification_preferences').select('*').eq('user_id', userId).maybeSingle(),
       ])
 
     const exportData = {
@@ -162,6 +163,7 @@ router.get('/export', requireAuth, async (req, res, next) => {
       visit_bookings: visitsRes.data || [],
       messages: messagesRes.data || [],
       notifications: notificationsRes.data || [],
+      notification_preferences: notifPrefsRes.data || null,
     }
 
     logger.info({ userId }, 'GDPR data export requested')
@@ -187,6 +189,7 @@ router.delete('/', requireAuth, async (req, res, next) => {
       { table: 'saved_searches', column: 'user_id' },
       { table: 'nursery_reviews', column: 'user_id' },
       { table: 'nursery_claims', column: 'user_id' },
+      { table: 'notification_preferences', column: 'user_id' },
       { table: 'drip_queue', column: 'user_id' },
       { table: 'user_profiles', column: 'id' },
     ]
@@ -206,6 +209,108 @@ router.delete('/', requireAuth, async (req, res, next) => {
 
     logger.info({ userId }, 'GDPR account deletion completed')
     return res.json({ message: 'Account and all associated data deleted' })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// ---------- Notification Preferences ----------
+
+const NOTIF_PREF_FIELDS = [
+  'email_new_review',
+  'email_qa_answer',
+  'email_saved_search_alert',
+  'email_ofsted_change',
+  'email_weekly_digest',
+  'email_marketing',
+]
+
+// GET /api/v1/profile/notification-preferences
+router.get('/notification-preferences', requireAuth, async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+    const userId = req.user.id
+
+    const { data, error } = await db
+      .from('notification_preferences')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    if (error) throw error
+
+    if (data) return res.json(data)
+
+    // Create default row if none exists
+    const { data: created, error: insErr } = await db
+      .from('notification_preferences')
+      .insert({ user_id: userId })
+      .select()
+      .single()
+
+    if (insErr) throw insErr
+
+    logger.info({ userId }, 'notification preferences created with defaults')
+    return res.json(created)
+  } catch (err) {
+    next(err)
+  }
+})
+
+// PATCH /api/v1/profile/notification-preferences
+router.patch('/notification-preferences', requireAuth, async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+    const userId = req.user.id
+
+    if (!req.body || typeof req.body !== 'object') {
+      return res.status(400).json({ error: 'Invalid body' })
+    }
+
+    // Validate only known boolean fields
+    const update = {}
+    for (const key of Object.keys(req.body)) {
+      if (!NOTIF_PREF_FIELDS.includes(key)) {
+        return res.status(400).json({ error: `Unknown field: ${key}` })
+      }
+      if (typeof req.body[key] !== 'boolean') {
+        return res.status(400).json({ error: `${key} must be a boolean` })
+      }
+      update[key] = req.body[key]
+    }
+
+    if (Object.keys(update).length === 0) {
+      return res.status(400).json({ error: 'No fields to update' })
+    }
+
+    update.updated_at = new Date().toISOString()
+
+    // Ensure row exists (upsert pattern)
+    const { data: existing } = await db
+      .from('notification_preferences')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    if (!existing) {
+      // Create with defaults then apply updates
+      const { error: insErr } = await db
+        .from('notification_preferences')
+        .insert({ user_id: userId })
+      if (insErr) throw insErr
+    }
+
+    const { data, error } = await db
+      .from('notification_preferences')
+      .update(update)
+      .eq('user_id', userId)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    logger.info({ userId, fields: Object.keys(update) }, 'notification preferences updated')
+    return res.json(data)
   } catch (err) {
     next(err)
   }

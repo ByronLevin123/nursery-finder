@@ -22,6 +22,9 @@ export default function Footer() {
                 <Link href="/nurseries-in-town" className="text-gray-500 hover:text-gray-700">
                   Browse by Town
                 </Link>
+                <Link href="/guides/visit-checklist" className="text-gray-500 hover:text-gray-700">
+                  Visit Checklist
+                </Link>
                 <Link href="/pricing" className="text-gray-500 hover:text-gray-700">
                   Pricing
                 </Link>

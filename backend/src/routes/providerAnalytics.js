@@ -3,7 +3,7 @@
 import express from 'express'
 import rateLimit from 'express-rate-limit'
 import db from '../db.js'
-import { requireAuth } from '../middleware/supabaseAuth.js'
+import { requireAuth, requireRole } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
 
 const router = express.Router()
@@ -61,7 +61,7 @@ router.post('/nurseries/:urn/view', viewLimiter, async (req, res, next) => {
 })
 
 // GET /api/v1/provider/analytics — aggregate stats for claimed nurseries
-router.get('/analytics', requireAuth, async (req, res, next) => {
+router.get('/analytics', requireRole('provider', 'admin'), async (req, res, next) => {
   try {
     if (!db) return res.status(503).json({ error: 'Database not configured' })
 

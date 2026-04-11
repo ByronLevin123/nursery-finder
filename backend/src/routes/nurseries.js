@@ -2,7 +2,7 @@ import express from 'express'
 import db from '../db.js'
 import { geocodePostcode } from '../services/geocoding.js'
 import { searchCache, searchCacheKey } from '../services/cache.js'
-import { autocompleteCache } from '../services/cache.js'
+import { autocompleteCache, similarCache } from '../services/cache.js'
 import { smartSearch } from '../services/smartSearch.js'
 import { logger } from '../logger.js'
 
@@ -86,7 +86,18 @@ router.post('/search', async (req, res, next) => {
 // POST /api/v1/nurseries/smart-search — auto postcode vs text
 router.post('/smart-search', async (req, res, next) => {
   try {
-    const { query, radius_km = 5, grade = null, funded_2yr = false, funded_3yr = false } = req.body
+    const {
+      query,
+      radius_km = 5,
+      grade = null,
+      funded_2yr = false,
+      funded_3yr = false,
+      has_availability = false,
+      min_rating = null,
+      provider_type = null,
+      has_funded_2yr = false,
+      has_funded_3yr = false,
+    } = req.body
     if (!query || !query.trim()) {
       return res.status(400).json({ error: 'query is required' })
     }
@@ -97,11 +108,27 @@ router.post('/smart-search', async (req, res, next) => {
       grade,
       funded2yr: funded_2yr,
       funded3yr: funded_3yr,
+      hasAvailability: has_availability,
+      minRating: min_rating,
+      providerType: provider_type,
+      hasFunded2yr: has_funded_2yr,
+      hasFunded3yr: has_funded_3yr,
     })
     const cached = searchCache.get(cacheKey)
     if (cached) return res.json({ ...cached, cached: true })
 
-    const result = await smartSearch({ query, radius_km, grade, funded_2yr, funded_3yr })
+    const result = await smartSearch({
+      query,
+      radius_km,
+      grade,
+      funded_2yr,
+      funded_3yr,
+      has_availability,
+      min_rating,
+      provider_type,
+      has_funded_2yr,
+      has_funded_3yr,
+    })
     searchCache.set(cacheKey, result)
     logger.info(
       { query, mode: result.meta.mode, results: result.meta.total },
@@ -312,11 +339,20 @@ router.get('/by-town/:town', async (req, res, next) => {
 // GET /api/v1/nurseries/:urn/similar
 router.get('/:urn/similar', async (req, res, next) => {
   try {
+    const urn = req.params.urn
+
+    // Check cache first (1 hour TTL)
+    const cacheKey = `similar:${urn}`
+    const cached = similarCache.get(cacheKey)
+    if (cached) {
+      return res.json({ data: cached, cached: true })
+    }
+
     // First fetch the target nursery to get its location and grade
     const { data: nursery, error: nurseryErr } = await db
       .from('nurseries')
       .select('urn, lat, lng, ofsted_overall_grade, location')
-      .eq('urn', req.params.urn)
+      .eq('urn', urn)
       .single()
 
     if (nurseryErr || !nursery) {
@@ -327,19 +363,10 @@ router.get('/:urn/similar', async (req, res, next) => {
       return res.json({ data: [] })
     }
 
-    // Build adjacent grade list
-    const gradeAdjacency = {
-      Outstanding: ['Outstanding', 'Good'],
-      Good: ['Outstanding', 'Good', 'Requires Improvement'],
-      'Requires Improvement': ['Good', 'Requires Improvement', 'Inadequate'],
-      Inadequate: ['Requires Improvement', 'Inadequate'],
-    }
-    const allowedGrades = nursery.ofsted_overall_grade
-      ? gradeAdjacency[nursery.ofsted_overall_grade] || null
-      : null
+    const targetGrade = nursery.ofsted_overall_grade
 
-    // Use RPC to run a raw PostGIS query for nearby nurseries
-    const radiusKm = 5
+    // Search within 3km radius
+    const radiusKm = 3
     const { data, error } = await db.rpc('search_nurseries_near', {
       search_lat: nursery.lat,
       search_lng: nursery.lng,
@@ -351,17 +378,36 @@ router.get('/:urn/similar', async (req, res, next) => {
 
     if (error) throw error
 
-    // Filter: exclude self, match grade adjacency, limit to 6
+    // Exclude self, sort by same grade first then distance, limit to 6
     const similar = (data || [])
       .filter((n) => n.urn !== nursery.urn)
-      .filter((n) => {
-        if (!allowedGrades) return true
-        return allowedGrades.includes(n.ofsted_overall_grade)
+      .sort((a, b) => {
+        const aMatch = a.ofsted_overall_grade === targetGrade ? 0 : 1
+        const bMatch = b.ofsted_overall_grade === targetGrade ? 0 : 1
+        if (aMatch !== bMatch) return aMatch - bMatch
+        return (a.distance_km || 999) - (b.distance_km || 999)
       })
       .slice(0, 6)
 
-    logger.info({ urn: req.params.urn, results: similar.length }, 'similar nurseries lookup')
+    similarCache.set(cacheKey, similar)
+    logger.info({ urn, results: similar.length }, 'similar nurseries lookup')
     res.json({ data: similar })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// GET /api/v1/nurseries/:urn/availability — public availability data
+router.get('/:urn/availability', async (req, res, next) => {
+  try {
+    const { urn } = req.params
+    const { data, error } = await db
+      .from('nursery_availability')
+      .select('*')
+      .eq('nursery_urn', urn)
+      .order('age_group', { ascending: true })
+    if (error) throw error
+    return res.json({ data: data || [] })
   } catch (err) {
     next(err)
   }

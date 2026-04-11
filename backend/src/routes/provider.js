@@ -380,6 +380,108 @@ router.patch('/nurseries/:urn/photos/reorder', requirePaidProvider, async (req, 
   }
 })
 
+// ─── Availability / Waitlist Endpoints ───────────────────────────────────────
+
+const VALID_AGE_GROUPS = ['Under 2', '2-3 years', '3-4 years', '4+ years']
+
+// GET /api/v1/provider/nurseries/:urn/availability — public, no auth
+router.get('/nurseries/:urn/availability', async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+    const { urn } = req.params
+    const { data, error } = await db
+      .from('nursery_availability')
+      .select('*')
+      .eq('nursery_urn', urn)
+      .order('age_group', { ascending: true })
+    if (error) throw error
+    return res.json({ data: data || [] })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// PUT /api/v1/provider/nurseries/:urn/availability — provider-only, upserts availability rows
+router.put('/nurseries/:urn/availability', requireAuth, async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+
+    const { urn } = req.params
+    const rows = req.body
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return res.status(400).json({ error: 'Body must be a non-empty array of availability rows' })
+    }
+    if (rows.length > VALID_AGE_GROUPS.length) {
+      return res.status(400).json({ error: `Maximum ${VALID_AGE_GROUPS.length} age groups` })
+    }
+
+    // Validate each row
+    for (const row of rows) {
+      if (!row.age_group || !VALID_AGE_GROUPS.includes(row.age_group)) {
+        return res.status(400).json({ error: `Invalid age_group: ${row.age_group}. Must be one of: ${VALID_AGE_GROUPS.join(', ')}` })
+      }
+      if (row.spots_available == null || typeof row.spots_available !== 'number' || row.spots_available < 0) {
+        return res.status(400).json({ error: 'spots_available must be a non-negative number' })
+      }
+      if (row.waitlist_length != null && (typeof row.waitlist_length !== 'number' || row.waitlist_length < 0)) {
+        return res.status(400).json({ error: 'waitlist_length must be a non-negative number' })
+      }
+    }
+
+    // Verify ownership
+    const { data: nursery, error: nErr } = await db
+      .from('nurseries')
+      .select('urn, claimed_by_user_id')
+      .eq('urn', urn)
+      .maybeSingle()
+    if (nErr) throw nErr
+    if (!nursery) return res.status(404).json({ error: 'Nursery not found' })
+    if (nursery.claimed_by_user_id !== req.user.id) {
+      return res.status(403).json({ error: 'You do not own this nursery' })
+    }
+
+    // Upsert each row
+    const now = new Date().toISOString()
+    const upsertRows = rows.map((row) => ({
+      nursery_urn: urn,
+      age_group: row.age_group,
+      spots_available: row.spots_available,
+      waitlist_length: row.waitlist_length ?? 0,
+      next_available_date: row.next_available_date || null,
+      updated_at: now,
+    }))
+
+    const { data, error } = await db
+      .from('nursery_availability')
+      .upsert(upsertRows, { onConflict: 'nursery_urn,age_group' })
+      .select()
+    if (error) throw error
+
+    // Update denormalised fields on nurseries table
+    const totalSpots = rows.reduce((sum, r) => sum + (r.spots_available || 0), 0)
+    const hasWaitlist = rows.some((r) => (r.waitlist_length || 0) > 0)
+    const { error: updateErr } = await db
+      .from('nurseries')
+      .update({
+        spots_available: totalSpots,
+        has_waitlist: hasWaitlist,
+      })
+      .eq('urn', urn)
+    if (updateErr) {
+      logger.warn({ err: updateErr.message, urn }, 'Failed to update denormalised availability fields')
+    }
+
+    logger.info(
+      { userId: req.user.id, urn, rowCount: rows.length, totalSpots, hasWaitlist },
+      'provider updated nursery availability'
+    )
+    return res.json({ data: data || [] })
+  } catch (err) {
+    next(err)
+  }
+})
+
 // ─── Fee Management Endpoints ────────────────────────────────────────────────
 
 // GET /api/v1/provider/nurseries/:urn/fees — public, no auth

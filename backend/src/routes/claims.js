@@ -4,7 +4,7 @@
 import express from 'express'
 import db from '../db.js'
 import { requireAuth } from '../middleware/supabaseAuth.js'
-import { adminAuth } from '../middleware/auth.js'
+import { requireRole } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
 import { isEmailAvailable, sendEmail, renderClaimApprovedEmail } from '../services/emailService.js'
 
@@ -101,7 +101,7 @@ router.get('/mine', requireAuth, async (req, res, next) => {
 })
 
 // GET /api/v1/claims — admin list of all claims (optional ?status=)
-router.get('/', adminAuth, async (req, res, next) => {
+router.get('/', requireRole('admin'), async (req, res, next) => {
   try {
     if (!db) return res.status(503).json({ error: 'Database not configured' })
     let q = db
@@ -138,7 +138,7 @@ router.get('/', adminAuth, async (req, res, next) => {
 })
 
 // POST /api/v1/claims/:id/approve — admin approves
-router.post('/:id/approve', adminAuth, async (req, res, next) => {
+router.post('/:id/approve', requireRole('admin'), async (req, res, next) => {
   try {
     if (!db) return res.status(503).json({ error: 'Database not configured' })
     const { id } = req.params
@@ -206,7 +206,7 @@ router.post('/:id/approve', adminAuth, async (req, res, next) => {
 })
 
 // POST /api/v1/claims/:id/reject — admin rejects
-router.post('/:id/reject', adminAuth, async (req, res, next) => {
+router.post('/:id/reject', requireRole('admin'), async (req, res, next) => {
   try {
     if (!db) return res.status(503).json({ error: 'Database not configured' })
     const { id } = req.params

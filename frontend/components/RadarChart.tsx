@@ -52,7 +52,7 @@ export default function RadarChart({ axes, nurseryNames, colors = DEFAULT_COLORS
 
   return (
     <div>
-      <svg viewBox={`0 0 ${size} ${size}`} className="w-full max-w-xs mx-auto">
+      <svg viewBox={`0 0 ${size} ${size}`} className="w-full max-w-[220px] sm:max-w-xs mx-auto">
         {/* Grid rings */}
         {rings.map((ringVal) => {
           const points = Array.from({ length: numAxes }, (_, i) => getPoint(i, ringVal).join(',')).join(' ')
@@ -74,7 +74,7 @@ export default function RadarChart({ axes, nurseryNames, colors = DEFAULT_COLORS
         })}
 
         {/* Data polygons */}
-        {nurseryNames.map((_, nIdx) => {
+        {nurseryNames.map((name, nIdx) => {
           const points = axes
             .map((axis, aIdx) => {
               const val = axis.values[nIdx] ?? 0
@@ -89,6 +89,24 @@ export default function RadarChart({ axes, nurseryNames, colors = DEFAULT_COLORS
                 stroke={colors[nIdx % colors.length]}
                 strokeWidth={2}
               />
+              {/* Data point dots with tooltips */}
+              {axes.map((axis, aIdx) => {
+                const val = axis.values[nIdx] ?? 0
+                const [px, py] = getPoint(aIdx, val)
+                return (
+                  <circle
+                    key={aIdx}
+                    cx={px}
+                    cy={py}
+                    r={3}
+                    fill={colors[nIdx % colors.length]}
+                    stroke="white"
+                    strokeWidth={1}
+                  >
+                    <title>{`${name} — ${axis.label}: ${Math.round(val)}/100`}</title>
+                  </circle>
+                )
+              })}
             </g>
           )
         })}

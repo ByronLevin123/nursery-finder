@@ -14,8 +14,10 @@ import {
   addNurseryFee,
   updateNurseryFee,
   deleteNurseryFee,
+  getNurseryAvailability,
+  updateNurseryAvailability,
 } from '@/lib/api'
-import type { ProviderFeatures, NurseryPhoto, NurseryFee } from '@/lib/api'
+import type { ProviderFeatures, NurseryPhoto, NurseryFee, NurseryAvailability } from '@/lib/api'
 
 interface DayHours {
   open: string
@@ -49,6 +51,14 @@ const DAYS: { key: string; label: string }[] = [
 
 const AGE_GROUPS = ['Under 2', '2 years', '3-4 years', '5+ years']
 const SESSION_TYPES = ['Full day', 'Half day (AM)', 'Half day (PM)', 'Hourly', 'Weekly', 'Monthly']
+const AVAILABILITY_AGE_GROUPS = ['Under 2', '2-3 years', '3-4 years', '4+ years']
+
+interface AvailabilityFormRow {
+  age_group: string
+  spots_available: number
+  waitlist_length: number
+  next_available_date: string
+}
 
 function defaultHours(): HoursMap {
   const out: HoursMap = {}
@@ -147,6 +157,17 @@ export default function ProviderEditPage({ params }: { params: { urn: string } }
   const [newFee, setNewFee] = useState({ age_group: AGE_GROUPS[0], session_type: SESSION_TYPES[0], price_gbp: '', notes: '' })
   const [addingFee, setAddingFee] = useState(false)
 
+  // Availability management
+  const [availability, setAvailability] = useState<AvailabilityFormRow[]>(
+    AVAILABILITY_AGE_GROUPS.map((g) => ({
+      age_group: g,
+      spots_available: 0,
+      waitlist_length: 0,
+      next_available_date: '',
+    }))
+  )
+  const [savingAvailability, setSavingAvailability] = useState(false)
+
   useEffect(() => {
     async function load() {
       const {
@@ -157,14 +178,15 @@ export default function ProviderEditPage({ params }: { params: { urn: string } }
         return
       }
       try {
-        // Load nursery data, features, photos, and fees in parallel
-        const [nurseryRes, feat, photos, feeList] = await Promise.all([
+        // Load nursery data, features, photos, fees, and availability in parallel
+        const [nurseryRes, feat, photos, feeList, availList] = await Promise.all([
           fetch(`${API_URL}/api/v1/provider/nurseries`, {
             headers: { Authorization: `Bearer ${session.access_token}` },
           }),
           getProviderFeatures(session.access_token),
           getNurseryPhotos(params.urn),
           getNurseryFees(params.urn),
+          getNurseryAvailability(params.urn),
         ])
 
         if (!nurseryRes.ok) throw new Error('failed')
@@ -185,6 +207,21 @@ export default function ProviderEditPage({ params }: { params: { urn: string } }
         setContactPhone(found.contact_phone || '')
         setGalleryPhotos(photos)
         setFees(feeList)
+
+        // Merge loaded availability into the default rows
+        if (availList.length > 0) {
+          setAvailability(
+            AVAILABILITY_AGE_GROUPS.map((g) => {
+              const existing = availList.find((a: NurseryAvailability) => a.age_group === g)
+              return {
+                age_group: g,
+                spots_available: existing?.spots_available ?? 0,
+                waitlist_length: existing?.waitlist_length ?? 0,
+                next_available_date: existing?.next_available_date ?? '',
+              }
+            })
+          )
+        }
       } catch {
         setError('Failed to load')
       }
@@ -278,6 +315,38 @@ export default function ProviderEditPage({ params }: { params: { urn: string } }
     } catch (err: any) {
       setError(err.message || 'Failed to delete fee')
     }
+  }
+
+  function updateAvailabilityRow(idx: number, patch: Partial<AvailabilityFormRow>) {
+    setAvailability((prev) =>
+      prev.map((row, i) => (i === idx ? { ...row, ...patch } : row))
+    )
+  }
+
+  async function handleSaveAvailability() {
+    setSavingAvailability(true)
+    setError('')
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!session) return
+
+      // Only send rows that have some data set (spots > 0 or waitlist > 0)
+      const rowsToSend = availability.map((row) => ({
+        age_group: row.age_group,
+        spots_available: row.spots_available,
+        waitlist_length: row.waitlist_length,
+        next_available_date: row.next_available_date || null,
+      }))
+
+      await updateNurseryAvailability(session.access_token, params.urn, rowsToSend)
+      setToast('Availability saved')
+      setTimeout(() => setToast(''), 3000)
+    } catch (err: any) {
+      setError(err.message || 'Failed to save availability')
+    }
+    setSavingAvailability(false)
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -627,6 +696,77 @@ export default function ProviderEditPage({ params }: { params: { urn: string } }
           ) : (
             <UpgradeBanner feature="manage your fee schedule" />
           )}
+        </div>
+
+        {/* Availability / Waitlist — always available */}
+        <div>
+          <label className="text-sm font-medium text-gray-700 block mb-2">Availability / Waitlist</label>
+          <p className="text-xs text-gray-500 mb-3">
+            Let parents know how many spots you have and whether you run a waitlist.
+          </p>
+          <div className="border border-gray-200 rounded-lg overflow-hidden mb-3">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="text-left px-3 py-2 font-medium text-gray-600">Age group</th>
+                  <th className="text-left px-3 py-2 font-medium text-gray-600">Spots available</th>
+                  <th className="text-left px-3 py-2 font-medium text-gray-600">Waitlist length</th>
+                  <th className="text-left px-3 py-2 font-medium text-gray-600">Next available</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {availability.map((row, idx) => (
+                  <tr key={row.age_group}>
+                    <td className="px-3 py-2 text-gray-700">{row.age_group}</td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        min="0"
+                        value={row.spots_available}
+                        onChange={(e) =>
+                          updateAvailabilityRow(idx, {
+                            spots_available: Math.max(0, parseInt(e.target.value, 10) || 0),
+                          })
+                        }
+                        className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        min="0"
+                        value={row.waitlist_length}
+                        onChange={(e) =>
+                          updateAvailabilityRow(idx, {
+                            waitlist_length: Math.max(0, parseInt(e.target.value, 10) || 0),
+                          })
+                        }
+                        className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="date"
+                        value={row.next_available_date}
+                        onChange={(e) =>
+                          updateAvailabilityRow(idx, { next_available_date: e.target.value })
+                        }
+                        className="px-2 py-1 border border-gray-300 rounded text-sm"
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <button
+            type="button"
+            onClick={handleSaveAvailability}
+            disabled={savingAvailability}
+            className="px-4 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:opacity-50"
+          >
+            {savingAvailability ? 'Saving...' : 'Save availability'}
+          </button>
         </div>
 
         {/* Contact info — always available */}

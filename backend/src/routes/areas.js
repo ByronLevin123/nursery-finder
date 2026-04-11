@@ -2,7 +2,7 @@ import express from 'express'
 import db from '../db.js'
 import { geocodePostcode } from '../services/geocoding.js'
 import { refreshDistrictPropertyData } from '../services/propertyData.js'
-import { adminAuth } from '../middleware/auth.js'
+import { requireRole } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
 
 const router = express.Router()
@@ -118,7 +118,7 @@ router.get('/:district/nurseries', async (req, res, next) => {
 })
 
 // POST /api/v1/areas/:district/refresh-property-data — admin-only manual refresh
-router.post('/:district/refresh-property-data', adminAuth, async (req, res, next) => {
+router.post('/:district/refresh-property-data', requireRole('admin'), async (req, res, next) => {
   try {
     const district = req.params.district.toUpperCase()
     logger.info({ district }, 'areas: manual propertydata refresh')

@@ -1,8 +1,11 @@
 import { Metadata } from 'next'
+import dynamic from 'next/dynamic'
 import HomeSearch from '@/components/HomeSearch'
 import AreaSummaryCard from '@/components/AreaSummaryCard'
 import OglAttribution from '@/components/OglAttribution'
 import PriorityWizardButton from '@/components/PriorityWizardButton'
+
+const RecentlyViewed = dynamic(() => import('@/components/RecentlyViewed'), { ssr: false })
 
 export const metadata: Metadata = {
   title: 'CompareTheNursery — Compare UK Nurseries by Ofsted Grade',
@@ -98,6 +101,13 @@ export default function HomePage() {
               Updated daily
             </span>
           </div>
+        </div>
+      </section>
+
+      {/* Recently viewed nurseries (client-only, shows if user has history) */}
+      <section className="px-4 py-6">
+        <div className="max-w-5xl mx-auto">
+          <RecentlyViewed />
         </div>
       </section>
 

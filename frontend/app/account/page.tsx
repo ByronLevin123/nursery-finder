@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useSession } from '@/components/SessionProvider'
-import { getProfile, updateProfile, getSubscription, createPortalSession, getAuthToken, exportMyData, deleteMyAccount, type Profile, type ProfileChild, type SubscriptionInfo } from '@/lib/api'
+import { getProfile, updateProfile, getSubscription, createPortalSession, getAuthToken, exportMyData, deleteMyAccount, getNotificationPreferences, updateNotificationPreferences, type Profile, type ProfileChild, type SubscriptionInfo, type NotificationPreferences } from '@/lib/api'
 import { loadPreferences, savePreferences, hasActivePreferences, DEFAULT_PREFERENCES, type Preferences } from '@/lib/preferences'
 
 interface SavedSearch {
@@ -21,7 +21,7 @@ interface SavedSearch {
 
 export default function AccountPage() {
   const router = useRouter()
-  const { session, user, loading: sessionLoading, signOut } = useSession()
+  const { session, user, role, loading: sessionLoading, signOut } = useSession()
 
   const [profile, setProfile] = useState<Profile | null>(null)
   const [searches, setSearches] = useState<SavedSearch[]>([])
@@ -32,6 +32,10 @@ export default function AccountPage() {
   const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFERENCES)
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null)
   const [portalLoading, setPortalLoading] = useState(false)
+  const [notifPrefs, setNotifPrefs] = useState<NotificationPreferences | null>(null)
+  const [notifLoading, setNotifLoading] = useState(true)
+  const [notifSaving, setNotifSaving] = useState(false)
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Form state mirrors profile
   const [displayName, setDisplayName] = useState('')
@@ -71,6 +75,14 @@ export default function AccountPage() {
         .order('created_at', { ascending: false })
       setSearches(data || [])
       setPrefs(loadPreferences())
+      // Load notification preferences
+      try {
+        const np = await getNotificationPreferences(token)
+        setNotifPrefs(np)
+      } catch {
+        // Non-critical — table may not exist yet
+      }
+      setNotifLoading(false)
     } catch (err: any) {
       setError(err?.message || 'Failed to load profile')
     } finally {
@@ -145,6 +157,28 @@ export default function AccountPage() {
   async function toggleAlert(id: string, current: boolean) {
     await supabase.from('saved_searches').update({ alert_on_new: !current }).eq('id', id)
     setSearches((prev) => prev.map((s) => (s.id === id ? { ...s, alert_on_new: !current } : s)))
+  }
+
+  function handleNotifToggle(field: keyof NotificationPreferences, value: boolean) {
+    if (!session || !notifPrefs) return
+    const updated = { ...notifPrefs, [field]: value }
+    setNotifPrefs(updated)
+
+    // Debounced save
+    if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    debounceTimer.current = setTimeout(async () => {
+      setNotifSaving(true)
+      try {
+        const result = await updateNotificationPreferences(session.access_token, { [field]: value })
+        setNotifPrefs(result)
+      } catch (err: any) {
+        setError(err?.message || 'Failed to save notification preference')
+        // Revert optimistic update
+        setNotifPrefs((prev) => prev ? { ...prev, [field]: !value } : prev)
+      } finally {
+        setNotifSaving(false)
+      }
+    }, 500)
   }
 
   async function openPortal(type: 'provider' | 'parent') {
@@ -360,6 +394,75 @@ export default function AccountPage() {
         <p className="mt-4 text-xs text-gray-400">Changes are saved when you click &quot;Save profile&quot; above.</p>
       </div>
 
+      {/* Notification Preferences */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Notification Preferences</h2>
+          {notifSaving && (
+            <span className="text-xs text-gray-400">Saving...</span>
+          )}
+        </div>
+        <p className="text-sm text-gray-500 mb-4">
+          Fine-tune which email notifications you receive. Changes save automatically.
+        </p>
+        {notifLoading ? (
+          <div className="py-4 text-center text-gray-400 text-sm">Loading preferences...</div>
+        ) : notifPrefs ? (
+          <div className="space-y-4">
+            {([
+              {
+                field: 'email_new_review' as const,
+                label: 'New reviews',
+                description: 'Get notified when someone posts a review on a nursery you have reviewed or shortlisted.',
+              },
+              {
+                field: 'email_qa_answer' as const,
+                label: 'Q&A answers',
+                description: 'Get notified when someone answers a question you asked on a nursery profile.',
+              },
+              {
+                field: 'email_saved_search_alert' as const,
+                label: 'Saved search alerts',
+                description: 'Get notified when new nurseries match one of your saved searches.',
+              },
+              {
+                field: 'email_ofsted_change' as const,
+                label: 'Ofsted rating changes',
+                description: 'Get notified when a nursery you follow has its Ofsted rating updated.',
+              },
+              {
+                field: 'email_weekly_digest' as const,
+                label: 'Weekly digest',
+                description: 'A Monday morning summary of new nurseries, Ofsted changes, Q&A answers and reviews.',
+              },
+              {
+                field: 'email_marketing' as const,
+                label: 'Tips and product updates',
+                description: 'Occasional emails with nursery-finding tips, new features and helpful guides.',
+              },
+            ]).map(({ field, label, description }) => (
+              <label key={field} className="flex items-start gap-3 cursor-pointer">
+                <div className="relative mt-0.5">
+                  <input
+                    type="checkbox"
+                    checked={!!notifPrefs[field]}
+                    onChange={(e) => handleNotifToggle(field, e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600" />
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-900">{label}</span>
+                  <p className="text-xs text-gray-500">{description}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400">Unable to load notification preferences.</p>
+        )}
+      </div>
+
       {/* Subscription */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Subscription</h2>
@@ -400,8 +503,8 @@ export default function AccountPage() {
           )}
         </div>
 
-        {/* Provider subscription */}
-        <div>
+        {/* Provider subscription — only visible to providers and admins */}
+        {(role === 'provider' || role === 'admin') && <div>
           <h3 className="text-sm font-medium text-gray-700 mb-2">Provider plan</h3>
           {subscription?.provider && subscription.provider.tier !== 'free' ? (
             <div>
@@ -458,7 +561,7 @@ export default function AccountPage() {
               </Link>
             </div>
           )}
-        </div>
+        </div>}
       </div>
 
       {/* Preferences sync */}

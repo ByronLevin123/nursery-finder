@@ -1,7 +1,7 @@
 import express from 'express'
 import db from '../db.js'
 import { refreshDistrictListings } from '../services/propertyDataListings.js'
-import { adminAuth } from '../middleware/auth.js'
+import { requireRole } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
 
 const router = express.Router()
@@ -150,7 +150,7 @@ router.get('/districts', async (req, res, next) => {
 })
 
 // POST /api/v1/properties/:district/refresh — admin force refresh
-router.post('/:district/refresh', adminAuth, async (req, res, next) => {
+router.post('/:district/refresh', requireRole('admin'), async (req, res, next) => {
   try {
     const district = req.params.district.toUpperCase()
     logger.info({ district }, 'properties: manual refresh')

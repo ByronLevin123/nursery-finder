@@ -1,6 +1,6 @@
 import express from 'express'
 import db from '../db.js'
-import { adminAuth } from '../middleware/auth.js'
+import { requireRole } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
 import { refreshAllFloodRisk, refreshFloodRiskForDistrict } from '../services/floodRisk.js'
 import { refreshAllParks, refreshParksForDistrict } from '../services/parksData.js'
@@ -10,7 +10,7 @@ import { geocodePostcode } from '../services/geocoding.js'
 const router = express.Router()
 
 // --- Flood ---
-router.post('/flood/refresh-all', adminAuth, async (req, res, next) => {
+router.post('/flood/refresh-all', requireRole('admin'), async (req, res, next) => {
   try {
     logger.info('overlays: flood refresh-all start')
     const result = await refreshAllFloodRisk(req.body || {})
@@ -22,7 +22,7 @@ router.post('/flood/refresh-all', adminAuth, async (req, res, next) => {
   }
 })
 
-router.post('/flood/:district/refresh', adminAuth, async (req, res, next) => {
+router.post('/flood/:district/refresh', requireRole('admin'), async (req, res, next) => {
   try {
     const district = req.params.district
     logger.info({ district }, 'overlays: flood district refresh start')
@@ -35,7 +35,7 @@ router.post('/flood/:district/refresh', adminAuth, async (req, res, next) => {
 })
 
 // --- Parks ---
-router.post('/parks/refresh-all', adminAuth, async (req, res, next) => {
+router.post('/parks/refresh-all', requireRole('admin'), async (req, res, next) => {
   try {
     logger.info('overlays: parks refresh-all start')
     const result = await refreshAllParks(req.body || {})
@@ -47,7 +47,7 @@ router.post('/parks/refresh-all', adminAuth, async (req, res, next) => {
   }
 })
 
-router.post('/parks/:district/refresh', adminAuth, async (req, res, next) => {
+router.post('/parks/:district/refresh', requireRole('admin'), async (req, res, next) => {
   try {
     const district = req.params.district
     logger.info({ district }, 'overlays: parks district refresh start')
@@ -60,7 +60,7 @@ router.post('/parks/:district/refresh', adminAuth, async (req, res, next) => {
 })
 
 // --- Schools ---
-router.post('/schools/ingest', adminAuth, async (req, res, next) => {
+router.post('/schools/ingest', requireRole('admin'), async (req, res, next) => {
   try {
     const { csvUrl } = req.body || {}
     logger.info({ csvUrl: csvUrl ? 'provided' : 'default' }, 'overlays: schools ingest start')
@@ -73,7 +73,7 @@ router.post('/schools/ingest', adminAuth, async (req, res, next) => {
   }
 })
 
-router.post('/schools/geocode', adminAuth, async (req, res, next) => {
+router.post('/schools/geocode', requireRole('admin'), async (req, res, next) => {
   try {
     logger.info('overlays: schools geocode start')
     const limit = Number(req.body?.limit) || 500

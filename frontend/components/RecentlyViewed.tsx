@@ -18,31 +18,31 @@ export default function RecentlyViewed() {
   if (items.length === 0) return null
 
   return (
-    <div className="mb-4">
-      <div className="flex items-center justify-between mb-2">
+    <section className="mb-6">
+      <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-gray-700">Recently viewed</h3>
         <button
-          onClick={clearRecentlyViewed}
+          onClick={() => clearRecentlyViewed()}
           className="text-xs text-gray-400 hover:text-gray-600"
         >
-          Clear
+          Clear history
         </button>
       </div>
-      <div className="space-y-1.5">
-        {items.slice(0, 5).map((item) => (
+      <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
+        {items.map((item) => (
           <Link
             key={item.urn}
             href={`/nursery/${item.urn}`}
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 transition"
+            className="min-w-[200px] max-w-[240px] flex-shrink-0 bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition"
           >
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">{item.name}</p>
-              {item.town && <p className="text-xs text-gray-500">{item.town}</p>}
+            <p className="text-sm font-semibold text-gray-900 truncate mb-1">{item.name}</p>
+            <div className="flex items-center gap-1.5 mb-1">
+              {item.grade && <GradeBadge grade={item.grade} size="sm" />}
             </div>
-            {item.grade && <GradeBadge grade={item.grade} size="sm" />}
+            {item.town && <p className="text-xs text-gray-500">{item.town}</p>}
           </Link>
         ))}
       </div>
-    </div>
+    </section>
   )
 }

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 
 const TEST_USER = { id: 'user-claims-1', email: 'claimer@example.com' }
+const ADMIN_USER = { id: 'admin-1', email: 'admin@example.com' }
 
 const store = {
   nurseries: new Map(),
@@ -56,6 +57,14 @@ function makeQueryBuilder(table) {
       return builder._resolve(false, false).then(onF, onR)
     },
     async _resolve(single, maybe) {
+      // Handle user_profiles lookups for requireRole middleware
+      if (table === 'user_profiles') {
+        const idFilter = state.filters.find(([col]) => col === 'id')
+        const userId = idFilter ? idFilter[2] : null
+        const role = userId === ADMIN_USER.id ? 'admin' : 'customer'
+        const row = { id: userId, role }
+        return { data: single || maybe ? row : [row], error: null }
+      }
       const target =
         table === 'nurseries' ? store.nurseries : table === 'nursery_claims' ? store.claims : null
       if (!target) {
@@ -99,11 +108,13 @@ vi.mock('../src/db.js', () => ({
 }))
 
 const validToken = 'valid-token'
+const adminToken = 'admin-token'
 vi.mock('@supabase/supabase-js', async () => ({
   createClient: () => ({
     auth: {
       getUser: async (token) => {
         if (token === validToken) return { data: { user: TEST_USER }, error: null }
+        if (token === adminToken) return { data: { user: ADMIN_USER }, error: null }
         return { data: { user: null }, error: { message: 'invalid' } }
       },
     },
@@ -137,7 +148,7 @@ beforeEach(() => {
   store.nurseries.set('URN1', { urn: 'URN1', name: 'Sunny Nursery', town: 'London' })
 })
 
-const adminHeader = 'Basic ' + Buffer.from('admin:secret').toString('base64')
+const adminHeader = `Bearer ${adminToken}`
 
 describe('POST /api/v1/claims', () => {
   it('rejects unauthenticated requests', async () => {

@@ -9,6 +9,7 @@ import { recomputeAllDimensionScores } from './services/scoringEngine.js'
 import { notifyVisitReminder } from './services/notificationService.js'
 import { processDripQueue } from './services/dripEngine.js'
 import { sendWeeklyDigests } from './services/weeklyDigest.js'
+import { sendEnhancedWeeklyDigests } from './services/enhancedWeeklyDigest.js'
 import { sendReengagementEmails } from './services/reengagement.js'
 import { processSavedSearchAlerts } from './services/savedSearchAlerts.js'
 import { processOfstedChangeNotifications } from './services/ofstedChangeNotifier.js'
@@ -169,7 +170,7 @@ cron.schedule('30 8 * * *', async () => {
   }
 })
 
-// Monday 9am: weekly digest
+// Monday 9am: weekly digest (legacy — user_profiles.email_weekly_digest)
 cron.schedule('0 9 * * 1', async () => {
   logger.info('cron: starting weekly digest')
   try {
@@ -177,6 +178,17 @@ cron.schedule('0 9 * * 1', async () => {
     logger.info(result, 'cron: weekly digest complete')
   } catch (err) {
     logger.error({ err: err.message }, 'cron: weekly digest failed')
+  }
+})
+
+// Monday 9am: enhanced weekly digest (notification_preferences.email_weekly_digest)
+cron.schedule('0 9 * * 1', async () => {
+  logger.info('cron: starting enhanced weekly digest')
+  try {
+    const result = await sendEnhancedWeeklyDigests()
+    logger.info(result, 'cron: enhanced weekly digest complete')
+  } catch (err) {
+    logger.error({ err: err.message }, 'cron: enhanced weekly digest failed')
   }
 })
 

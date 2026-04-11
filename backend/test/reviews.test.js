@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 
+// Set env vars before any module imports (supabaseAuth.js checks these at load time)
+process.env.SUPABASE_URL = 'https://example.supabase.co'
+process.env.SUPABASE_ANON_KEY = 'anon-test-key'
+
 // In-memory store of reviews keyed by ip_hash
 const store = {
   reviews: [],
@@ -11,6 +15,7 @@ function makeQueryBuilder(table) {
     table,
     op: 'select',
     filters: [],
+    orFilters: null,
     orderBy: null,
     rangeFrom: null,
     rangeTo: null,
@@ -20,13 +25,21 @@ function makeQueryBuilder(table) {
   }
 
   function applyFilters(rows) {
-    return rows.filter((r) =>
-      state.filters.every(([col, op, val]) => {
+    return rows.filter((r) => {
+      const andMatch = state.filters.every(([col, op, val]) => {
         if (op === 'eq') return r[col] === val
         if (op === 'gte') return r[col] >= val
         return true
       })
-    )
+      if (!andMatch) return false
+      if (state.orFilters && state.orFilters.length > 0) {
+        return state.orFilters.some(([col, op, val]) => {
+          if (op === 'eq') return String(r[col]) === val
+          return true
+        })
+      }
+      return true
+    })
   }
 
   const builder = {
@@ -58,6 +71,20 @@ function makeQueryBuilder(table) {
       state.rangeTo = to
       return builder
     },
+    update(row) {
+      state.op = 'update'
+      state.updateRow = row
+      return builder
+    },
+    or(filter) {
+      // Parse simple or filters like "user_id.eq.xxx,ip_hash.eq.yyy"
+      const parts = filter.split(',')
+      state.orFilters = parts.map((p) => {
+        const [col, op, val] = p.split('.')
+        return [col, op, val]
+      })
+      return builder
+    },
     limit() {
       return builder
     },
@@ -71,6 +98,10 @@ function makeQueryBuilder(table) {
       return builder._resolve(false, false).then(onFulfilled, onRejected)
     },
     async _resolve(single, maybe) {
+      if (state.op === 'update') {
+        // Just return success for updates (NLP category scores etc.)
+        return { data: null, error: null }
+      }
       if (state.op === 'insert') {
         if (table === 'nursery_reviews') {
           const row = {
@@ -127,6 +158,24 @@ vi.mock('../src/db.js', () => ({
   },
 }))
 
+const TEST_USER = { id: 'user-review-1', email: 'reviewer@example.com' }
+const validToken = 'review-token'
+
+vi.mock('@supabase/supabase-js', async () => ({
+  createClient: () => ({
+    auth: {
+      getUser: async (token) => {
+        if (token === validToken) return { data: { user: TEST_USER }, error: null }
+        return { data: { user: null }, error: { message: 'invalid' } }
+      },
+    },
+  }),
+}))
+
+vi.mock('../src/services/reviewNlp.js', () => ({
+  extractCategoryScores: vi.fn(async () => null),
+}))
+
 vi.mock('../src/services/geocoding.js', () => ({
   geocodePostcode: vi.fn(async () => ({ lat: 51.5, lng: -0.1 })),
   chunkPostcodes: (arr, n) => {
@@ -139,6 +188,8 @@ vi.mock('../src/services/geocoding.js', () => ({
 let app
 let request
 beforeAll(async () => {
+  process.env.SUPABASE_URL = 'https://example.supabase.co'
+  process.env.SUPABASE_ANON_KEY = 'anon-test-key'
   app = (await import('../src/app.js')).default
   request = (await import('supertest')).default
 })
@@ -157,8 +208,13 @@ const validReview = {
 }
 
 describe('POST /api/v1/nurseries/:urn/reviews', () => {
-  it('accepts a valid review and strips ip_hash from the response', async () => {
+  it('rejects unauthenticated requests', async () => {
     const res = await request(app).post('/api/v1/nurseries/EY100/reviews').send(validReview)
+    expect(res.status).toBe(401)
+  })
+
+  it('accepts a valid review and strips ip_hash from the response', async () => {
+    const res = await request(app).post('/api/v1/nurseries/EY100/reviews').set('Authorization', `Bearer ${validToken}`).send(validReview)
     expect(res.status).toBe(201)
     expect(res.body).toMatchObject({
       urn: 'EY100',
@@ -171,11 +227,13 @@ describe('POST /api/v1/nurseries/:urn/reviews', () => {
   it('rejects rating outside 1-5', async () => {
     const res1 = await request(app)
       .post('/api/v1/nurseries/EY101/reviews')
+      .set('Authorization', `Bearer ${validToken}`)
       .send({ ...validReview, rating: 0 })
     expect(res1.status).toBe(400)
 
     const res2 = await request(app)
       .post('/api/v1/nurseries/EY101/reviews')
+      .set('Authorization', `Bearer ${validToken}`)
       .send({ ...validReview, rating: 6 })
     expect(res2.status).toBe(400)
   })
@@ -183,24 +241,25 @@ describe('POST /api/v1/nurseries/:urn/reviews', () => {
   it('rejects too-short body', async () => {
     const res = await request(app)
       .post('/api/v1/nurseries/EY102/reviews')
+      .set('Authorization', `Bearer ${validToken}`)
       .send({ ...validReview, body: 'too short' })
     expect(res.status).toBe(400)
   })
 
   it('rejects a duplicate review for the same nursery from the same ip', async () => {
-    const first = await request(app).post('/api/v1/nurseries/EY103/reviews').send(validReview)
+    const first = await request(app).post('/api/v1/nurseries/EY103/reviews').set('Authorization', `Bearer ${validToken}`).send(validReview)
     expect(first.status).toBe(201)
 
-    const dup = await request(app).post('/api/v1/nurseries/EY103/reviews').send(validReview)
+    const dup = await request(app).post('/api/v1/nurseries/EY103/reviews').set('Authorization', `Bearer ${validToken}`).send(validReview)
     expect(dup.status).toBe(409)
   })
 
   it('rate limits a 4th review from the same ip in 24h', async () => {
     for (let i = 0; i < 3; i++) {
-      const res = await request(app).post(`/api/v1/nurseries/EY20${i}/reviews`).send(validReview)
+      const res = await request(app).post(`/api/v1/nurseries/EY20${i}/reviews`).set('Authorization', `Bearer ${validToken}`).send(validReview)
       expect(res.status).toBe(201)
     }
-    const fourth = await request(app).post('/api/v1/nurseries/EY299/reviews').send(validReview)
+    const fourth = await request(app).post('/api/v1/nurseries/EY299/reviews').set('Authorization', `Bearer ${validToken}`).send(validReview)
     expect(fourth.status).toBe(429)
   })
 })

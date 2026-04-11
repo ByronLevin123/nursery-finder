@@ -660,4 +660,334 @@ router.get('/ofsted-changes', async (req, res, next) => {
   }
 })
 
+// ---------------------------------------------------------------------------
+// GET /stats/growth — growth metrics (week + month)
+// ---------------------------------------------------------------------------
+router.get('/stats/growth', async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+
+    const now = new Date()
+    const oneWeekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const oneMonthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString()
+
+    const [
+      nurseriesWeek,
+      nurseriesMonth,
+      usersWeek,
+      usersMonth,
+      reviewsWeek,
+      reviewsMonth,
+      claimsWeek,
+      claimsMonth,
+    ] = await Promise.all([
+      db.from('nurseries').select('id', { count: 'exact', head: true }).gte('created_at', oneWeekAgo),
+      db.from('nurseries').select('id', { count: 'exact', head: true }).gte('created_at', oneMonthAgo),
+      db.from('user_profiles').select('id', { count: 'exact', head: true }).gte('created_at', oneWeekAgo),
+      db.from('user_profiles').select('id', { count: 'exact', head: true }).gte('created_at', oneMonthAgo),
+      db.from('nursery_reviews').select('id', { count: 'exact', head: true }).gte('created_at', oneWeekAgo),
+      db.from('nursery_reviews').select('id', { count: 'exact', head: true }).gte('created_at', oneMonthAgo),
+      db.from('nursery_claims').select('id', { count: 'exact', head: true }).gte('created_at', oneWeekAgo),
+      db.from('nursery_claims').select('id', { count: 'exact', head: true }).gte('created_at', oneMonthAgo),
+    ])
+
+    const growth = {
+      nurseries: {
+        this_week: nurseriesWeek.count ?? 0,
+        this_month: nurseriesMonth.count ?? 0,
+      },
+      users: {
+        this_week: usersWeek.count ?? 0,
+        this_month: usersMonth.count ?? 0,
+      },
+      reviews: {
+        this_week: reviewsWeek.count ?? 0,
+        this_month: reviewsMonth.count ?? 0,
+      },
+      claims: {
+        this_week: claimsWeek.count ?? 0,
+        this_month: claimsMonth.count ?? 0,
+      },
+    }
+
+    logger.info('admin stats/growth fetched')
+    return res.json(growth)
+  } catch (err) {
+    logger.error({ err: err?.message }, 'admin stats/growth failed')
+    next(err)
+  }
+})
+
+// ---------------------------------------------------------------------------
+// GET /stats/data-quality — data quality warnings
+// ---------------------------------------------------------------------------
+router.get('/stats/data-quality', async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+
+    const [
+      noLocation,
+      noGrade,
+      staleInspection,
+      pendingReviews,
+    ] = await Promise.all([
+      db.from('nurseries').select('id', { count: 'exact', head: true }).is('lat', null),
+      db.from('nurseries').select('id', { count: 'exact', head: true }).is('ofsted_overall_grade', null),
+      db.from('nurseries').select('id', { count: 'exact', head: true }).eq('inspection_date_warning', true),
+      db.from('nursery_reviews').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    ])
+
+    const quality = {
+      nurseries_no_location: noLocation.count ?? 0,
+      nurseries_no_grade: noGrade.count ?? 0,
+      nurseries_stale_inspection: staleInspection.count ?? 0,
+      reviews_pending_moderation: pendingReviews.count ?? 0,
+    }
+
+    logger.info('admin stats/data-quality fetched')
+    return res.json(quality)
+  } catch (err) {
+    logger.error({ err: err?.message }, 'admin stats/data-quality failed')
+    next(err)
+  }
+})
+
+// ---------------------------------------------------------------------------
+// GET /analytics — enhanced analytics dashboard data
+// ---------------------------------------------------------------------------
+router.get('/analytics', async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+
+    const now = new Date()
+    const oneWeekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const oneMonthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString()
+    const fourYearsAgo = new Date(now.getFullYear() - 4, now.getMonth(), now.getDate())
+      .toISOString()
+      .split('T')[0]
+
+    // Run all queries in parallel for speed
+    const [
+      // Overview counts
+      nurseriesTotal,
+      usersTotal,
+      reviewsTotal,
+      claimsTotal,
+      claimsPending,
+      claimsApproved,
+      claimsRejected,
+      providersTotal,
+
+      // Growth — users
+      usersThisWeek,
+      usersThisMonth,
+
+      // Growth — reviews
+      reviewsThisWeek,
+      reviewsThisMonth,
+
+      // Growth — claims
+      claimsThisWeek,
+      claimsThisMonth,
+
+      // Data quality
+      nurseriesNoGeo,
+      nurseriesStale,
+      nurseriesEnforcement,
+
+      // Provider stats
+      providersPaid,
+      providersFree,
+      photosTotal,
+      feesTotal,
+
+      // Email stats
+      emailsThisWeek,
+      emailsThisMonth,
+      emailsByTemplate,
+    ] = await Promise.all([
+      // Overview
+      db.from('nurseries').select('id', { count: 'exact', head: true }),
+      db.from('user_profiles').select('id', { count: 'exact', head: true }),
+      db.from('nursery_reviews').select('id', { count: 'exact', head: true }),
+      db.from('nursery_claims').select('id', { count: 'exact', head: true }),
+      db.from('nursery_claims').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+      db.from('nursery_claims').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
+      db.from('nursery_claims').select('id', { count: 'exact', head: true }).eq('status', 'rejected'),
+      db.from('user_profiles').select('id', { count: 'exact', head: true }).eq('role', 'provider'),
+
+      // Growth — users
+      db.from('user_profiles').select('id', { count: 'exact', head: true }).gte('created_at', oneWeekAgo),
+      db.from('user_profiles').select('id', { count: 'exact', head: true }).gte('created_at', oneMonthAgo),
+
+      // Growth — reviews
+      db.from('nursery_reviews').select('id', { count: 'exact', head: true }).gte('created_at', oneWeekAgo),
+      db.from('nursery_reviews').select('id', { count: 'exact', head: true }).gte('created_at', oneMonthAgo),
+
+      // Growth — claims
+      db.from('nursery_claims').select('id', { count: 'exact', head: true }).gte('created_at', oneWeekAgo),
+      db.from('nursery_claims').select('id', { count: 'exact', head: true }).gte('created_at', oneMonthAgo),
+
+      // Data quality — nurseries without geocoding (lat/lng is null)
+      db.from('nurseries').select('id', { count: 'exact', head: true }).is('lat', null),
+      // Stale inspections (>4 years) — use the boolean flag
+      db.from('nurseries').select('id', { count: 'exact', head: true }).eq('inspection_date_warning', true),
+      // Enforcement notices
+      db.from('nurseries').select('id', { count: 'exact', head: true }).eq('enforcement_notice', true),
+
+      // Provider stats — paid (have active subscription)
+      db.from('provider_subscriptions').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+      // Free providers — providers without active subscription (we count provider role users)
+      db.from('user_profiles').select('id', { count: 'exact', head: true }).eq('role', 'provider'),
+      // Photos uploaded
+      db.from('nursery_photos').select('id', { count: 'exact', head: true }),
+      // Fees published
+      db.from('nursery_fees').select('id', { count: 'exact', head: true }),
+
+      // Email stats
+      db.from('email_log').select('id', { count: 'exact', head: true }).gte('created_at', oneWeekAgo),
+      db.from('email_log').select('id', { count: 'exact', head: true }).gte('created_at', oneMonthAgo),
+      // Top email templates this month
+      db.from('email_log').select('template').gte('created_at', oneMonthAgo).limit(500),
+    ])
+
+    // Count emails by template
+    const templateCounts = {}
+    if (emailsByTemplate.data) {
+      for (const row of emailsByTemplate.data) {
+        templateCounts[row.template] = (templateCounts[row.template] || 0) + 1
+      }
+    }
+
+    const paidProviders = providersPaid.count ?? 0
+    const totalProviders = providersFree.count ?? 0
+    const freeProviders = Math.max(0, totalProviders - paidProviders)
+
+    const analytics = {
+      overview: {
+        total_nurseries: nurseriesTotal.count ?? 0,
+        total_users: usersTotal.count ?? 0,
+        total_reviews: reviewsTotal.count ?? 0,
+        total_claims: claimsTotal.count ?? 0,
+        claims_pending: claimsPending.count ?? 0,
+        claims_approved: claimsApproved.count ?? 0,
+        claims_rejected: claimsRejected.count ?? 0,
+        total_providers: providersTotal.count ?? 0,
+      },
+      growth: {
+        users_this_week: usersThisWeek.count ?? 0,
+        users_this_month: usersThisMonth.count ?? 0,
+        reviews_this_week: reviewsThisWeek.count ?? 0,
+        reviews_this_month: reviewsThisMonth.count ?? 0,
+        claims_this_week: claimsThisWeek.count ?? 0,
+        claims_this_month: claimsThisMonth.count ?? 0,
+      },
+      data_quality: {
+        nurseries_no_geocoding: nurseriesNoGeo.count ?? 0,
+        nurseries_stale_inspection: nurseriesStale.count ?? 0,
+        nurseries_enforcement: nurseriesEnforcement.count ?? 0,
+      },
+      providers: {
+        paid: paidProviders,
+        free: freeProviders,
+        total_photos: photosTotal.count ?? 0,
+        total_fees: feesTotal.count ?? 0,
+      },
+      emails: {
+        sent_this_week: emailsThisWeek.count ?? 0,
+        sent_this_month: emailsThisMonth.count ?? 0,
+        by_template: templateCounts,
+      },
+    }
+
+    logger.info('admin analytics fetched')
+    return res.json(analytics)
+  } catch (err) {
+    logger.error({ err: err?.message }, 'admin analytics failed')
+    next(err)
+  }
+})
+
+// ---------------------------------------------------------------------------
+// GET /activity — recent activity feed (reviews, claims, signups merged)
+// ---------------------------------------------------------------------------
+router.get('/activity', async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+
+    const limitParam = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 20))
+
+    // Fetch recent items from each table in parallel
+    const [recentReviews, recentClaims, recentSignups] = await Promise.all([
+      db
+        .from('nursery_reviews')
+        .select('id, urn, author_display_name, rating, title, status, created_at')
+        .order('created_at', { ascending: false })
+        .limit(limitParam),
+      db
+        .from('nursery_claims')
+        .select('id, urn, claimer_name, claimer_email, status, created_at')
+        .order('created_at', { ascending: false })
+        .limit(limitParam),
+      db
+        .from('user_profiles')
+        .select('id, display_name, role, created_at')
+        .order('created_at', { ascending: false })
+        .limit(limitParam),
+    ])
+
+    // Map each to a unified activity item
+    const activities = []
+
+    if (recentReviews.data) {
+      for (const r of recentReviews.data) {
+        activities.push({
+          type: 'review',
+          date: r.created_at,
+          description: `${r.author_display_name || 'Anonymous'} left a ${r.rating}-star review${r.title ? `: "${r.title}"` : ''}`,
+          status: r.status,
+          link: `/admin/reviews`,
+          meta: { id: r.id, urn: r.urn },
+        })
+      }
+    }
+
+    if (recentClaims.data) {
+      for (const c of recentClaims.data) {
+        activities.push({
+          type: 'claim',
+          date: c.created_at,
+          description: `${c.claimer_name || c.claimer_email || 'Someone'} submitted a claim for nursery ${c.urn}`,
+          status: c.status,
+          link: `/admin/claims`,
+          meta: { id: c.id, urn: c.urn },
+        })
+      }
+    }
+
+    if (recentSignups.data) {
+      for (const u of recentSignups.data) {
+        activities.push({
+          type: 'signup',
+          date: u.created_at,
+          description: `${u.display_name || 'New user'} signed up as ${u.role}`,
+          status: null,
+          link: `/admin/users`,
+          meta: { id: u.id, role: u.role },
+        })
+      }
+    }
+
+    // Sort by date descending, then take the top N
+    activities.sort((a, b) => new Date(b.date) - new Date(a.date))
+    const trimmed = activities.slice(0, limitParam)
+
+    logger.info({ count: trimmed.length }, 'admin activity feed fetched')
+    return res.json({ data: trimmed })
+  } catch (err) {
+    logger.error({ err: err?.message }, 'admin activity feed failed')
+    next(err)
+  }
+})
+
 export default router

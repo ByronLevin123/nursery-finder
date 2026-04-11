@@ -25,6 +25,11 @@ export async function smartSearch({
   grade = null,
   funded_2yr = false,
   funded_3yr = false,
+  has_availability = false,
+  min_rating = null,
+  provider_type = null,
+  has_funded_2yr = false,
+  has_funded_3yr = false,
 }) {
   const cleaned = query.trim()
   if (!cleaned) {
@@ -44,8 +49,16 @@ export async function smartSearch({
     })
     if (error) throw error
 
+    // Post-filter spatial results for advanced filters not handled by the RPC
+    let filtered = data || []
+    if (has_availability) filtered = filtered.filter((n) => n.spots_available > 0)
+    if (min_rating) filtered = filtered.filter((n) => n.google_rating >= Number(min_rating))
+    if (provider_type) filtered = filtered.filter((n) => n.provider_type === provider_type)
+    if (has_funded_2yr) filtered = filtered.filter((n) => n.places_funded_2yr > 0)
+    if (has_funded_3yr) filtered = filtered.filter((n) => n.places_funded_3_4yr > 0)
+
     // Boost featured nurseries to top within same distance band (1km bands)
-    const boosted = (data || []).sort((a, b) => {
+    const boosted = filtered.sort((a, b) => {
       const bandA = Math.floor(a.distance_km || 0)
       const bandB = Math.floor(b.distance_km || 0)
       if (bandA !== bandB) return bandA - bandB
@@ -83,6 +96,11 @@ export async function smartSearch({
   if (grade) q = q.eq('ofsted_overall_grade', grade)
   if (funded_2yr) q = q.gt('places_funded_2yr', 0)
   if (funded_3yr) q = q.gt('places_funded_3_4yr', 0)
+  if (has_availability) q = q.gt('spots_available', 0)
+  if (min_rating) q = q.gte('google_rating', Number(min_rating))
+  if (provider_type) q = q.eq('provider_type', provider_type)
+  if (has_funded_2yr) q = q.gt('places_funded_2yr', 0)
+  if (has_funded_3yr) q = q.gt('places_funded_3_4yr', 0)
 
   const { data, error } = await q
   if (error) throw error
@@ -139,7 +157,7 @@ export async function smartSearch({
 
   let fuzzyResults = fuzzyData || []
 
-  // Apply grade/funded filters client-side
+  // Apply grade/funded/advanced filters client-side
   if (grade) {
     fuzzyResults = fuzzyResults.filter((n) => n.ofsted_overall_grade === grade)
   }
@@ -147,6 +165,21 @@ export async function smartSearch({
     fuzzyResults = fuzzyResults.filter((n) => n.places_funded_2yr > 0)
   }
   if (funded_3yr) {
+    fuzzyResults = fuzzyResults.filter((n) => n.places_funded_3_4yr > 0)
+  }
+  if (has_availability) {
+    fuzzyResults = fuzzyResults.filter((n) => n.spots_available > 0)
+  }
+  if (min_rating) {
+    fuzzyResults = fuzzyResults.filter((n) => n.google_rating >= Number(min_rating))
+  }
+  if (provider_type) {
+    fuzzyResults = fuzzyResults.filter((n) => n.provider_type === provider_type)
+  }
+  if (has_funded_2yr) {
+    fuzzyResults = fuzzyResults.filter((n) => n.places_funded_2yr > 0)
+  }
+  if (has_funded_3yr) {
     fuzzyResults = fuzzyResults.filter((n) => n.places_funded_3_4yr > 0)
   }
 

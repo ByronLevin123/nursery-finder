@@ -5,7 +5,7 @@ import express from 'express'
 import rateLimit from 'express-rate-limit'
 import db from '../db.js'
 import { requireAuth } from '../middleware/supabaseAuth.js'
-import { adminAuth } from '../middleware/auth.js'
+import { requireRole } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
 import {
   sendEmail,
@@ -113,7 +113,7 @@ router.post('/comparison', requireAuth, userEmailLimiter, async (req, res, next)
 })
 
 // POST /api/v1/email/test — admin-only smoke test
-router.post('/test', adminAuth, async (req, res, next) => {
+router.post('/test', requireRole('admin'), async (req, res, next) => {
   try {
     if (!isEmailAvailable()) {
       return res.status(503).json({ error: 'Email service not configured' })

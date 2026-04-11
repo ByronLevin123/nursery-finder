@@ -7,6 +7,7 @@ import PostcodeAutocomplete from '@/components/PostcodeAutocomplete'
 import NurseryCard from '@/components/NurseryCard'
 import NurseryModal from '@/components/NurseryModal'
 import PreferencesPanel from '@/components/PreferencesPanel'
+import SearchFilters, { SearchFilterValues, DEFAULT_FILTERS } from '@/components/SearchFilters'
 import {
   Preferences,
   DEFAULT_PREFERENCES,
@@ -20,6 +21,7 @@ import {
 import dynamic from 'next/dynamic'
 
 import SaveSearchButton from '@/components/SaveSearchButton'
+import SearchJsonLd from '@/components/SearchJsonLd'
 import RecentlyViewed from '@/components/RecentlyViewed'
 import OglAttribution from '@/components/OglAttribution'
 
@@ -35,6 +37,7 @@ function SearchContent() {
   const [grade, setGrade] = useState<string | null>(null)
   const [funded2yr, setFunded2yr] = useState(false)
   const [funded3yr, setFunded3yr] = useState(false)
+  const [advancedFilters, setAdvancedFilters] = useState<SearchFilterValues>(DEFAULT_FILTERS)
   const [results, setResults] = useState<SearchResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -216,9 +219,14 @@ function SearchContent() {
       const data = await smartSearchNurseries({
         query: searchQuery.trim(),
         radius_km: radiusKm,
-        grade,
+        grade: advancedFilters.grade || grade,
         funded_2yr: funded2yr,
         funded_3yr: funded3yr,
+        has_availability: advancedFilters.has_availability,
+        min_rating: advancedFilters.min_rating,
+        provider_type: advancedFilters.provider_type,
+        has_funded_2yr: advancedFilters.has_funded_2yr,
+        has_funded_3yr: advancedFilters.has_funded_3yr,
       })
       setResults(data)
     } catch (err: any) {
@@ -310,33 +318,8 @@ function SearchContent() {
               </div>
             </div>
 
-            {/* Grade filter */}
-            <div>
-              <label className="text-xs text-gray-500 font-medium">Ofsted grade</label>
-              <select
-                value={grade || ''}
-                onChange={e => setGrade(e.target.value || null)}
-                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
-              >
-                <option value="">All grades</option>
-                <option value="Outstanding">Outstanding</option>
-                <option value="Good">Good</option>
-                <option value="Requires Improvement">Requires Improvement</option>
-                <option value="Inadequate">Inadequate</option>
-              </select>
-            </div>
-
-            {/* Funded toggles */}
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 text-sm text-gray-600">
-                <input type="checkbox" checked={funded2yr} onChange={e => setFunded2yr(e.target.checked)} className="rounded" />
-                2yr funded
-              </label>
-              <label className="flex items-center gap-2 text-sm text-gray-600">
-                <input type="checkbox" checked={funded3yr} onChange={e => setFunded3yr(e.target.checked)} className="rounded" />
-                3-4yr funded
-              </label>
-            </div>
+            {/* Advanced filters */}
+            <SearchFilters filters={advancedFilters} onChange={setAdvancedFilters} />
 
             {/* Travel time filter */}
             <div className="border-t border-gray-200 pt-3">
@@ -398,9 +381,14 @@ function SearchContent() {
                   type: 'nurseries',
                   query,
                   radius_km: radiusKm,
-                  grade,
+                  grade: advancedFilters.grade || grade,
                   funded_2yr: funded2yr,
                   funded_3yr: funded3yr,
+                  has_availability: advancedFilters.has_availability,
+                  min_rating: advancedFilters.min_rating,
+                  provider_type: advancedFilters.provider_type,
+                  has_funded_2yr: advancedFilters.has_funded_2yr,
+                  has_funded_3yr: advancedFilters.has_funded_3yr,
                   preferences: prefs,
                 }}
                 defaultName={query ? `Nurseries near ${query}` : 'Nursery search'}
@@ -525,6 +513,7 @@ function SearchContent() {
         )}
       </div>
 
+      {results?.data && query && <SearchJsonLd nurseries={results.data} query={query} />}
       <NurseryModal urn={selectedUrn} onClose={() => setSelectedUrn(null)} />
       <OglAttribution />
     </div>
