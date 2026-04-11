@@ -433,19 +433,19 @@ function SearchContent() {
           </div>
         </div>
 
-        {/* Preferences panel (desktop) */}
-        <div className="hidden lg:block p-4 border-b border-gray-200">
-          <PreferencesPanel value={prefs} onChange={updatePrefs} onClear={handleClear} />
-        </div>
-
-        {/* Mobile prefs toggle */}
-        <div className="lg:hidden p-4 border-b border-gray-200">
+        {/* Preferences toggle (both desktop and mobile) */}
+        <div className="p-4 border-b border-gray-200">
           <button
-            onClick={() => setShowMobilePrefs(true)}
+            onClick={() => setShowMobilePrefs(p => !p)}
             className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg font-semibold"
           >
-            {prefsActive ? 'Edit your priorities' : 'Tell us what matters to you'}
+            {prefsActive ? '✨ Edit your priorities' : '✨ Tell us what matters to you'}
           </button>
+          {showMobilePrefs && (
+            <div className="mt-3">
+              <PreferencesPanel value={prefs} onChange={updatePrefs} onClear={handleClear} />
+            </div>
+          )}
         </div>
 
         {/* Results */}
@@ -530,22 +530,6 @@ function SearchContent() {
           )}
         </div>
       </div>
-
-      {/* Mobile prefs sheet */}
-      {showMobilePrefs && (
-        <div className="lg:hidden fixed inset-0 z-[2000] bg-black/50 flex items-end" onClick={() => setShowMobilePrefs(false)}>
-          <div
-            className="bg-white w-full max-h-[85vh] overflow-y-auto rounded-t-2xl p-4"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-bold text-gray-900">Your priorities</h3>
-              <button onClick={() => setShowMobilePrefs(false)} className="text-gray-500 text-xl">✕</button>
-            </div>
-            <PreferencesPanel value={prefs} onChange={updatePrefs} onClear={handleClear} />
-          </div>
-        </div>
-      )}
 
       {/* Right panel: map */}
       <div className="w-full lg:w-2/3 h-[400px] lg:h-full sticky top-0">
