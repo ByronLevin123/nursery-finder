@@ -31,6 +31,7 @@ const RecentlyViewedTracker = dynamic(() => import('@/components/RecentlyViewedT
 const ProviderPhotoGallery = dynamic(() => import('@/components/ProviderPhotoGallery'), { ssr: false })
 const NurseryQA = dynamic(() => import('@/components/NurseryQA'), { ssr: false })
 const VisitChecklistSection = dynamic(() => import('@/components/VisitChecklistSection'), { ssr: false })
+const StreetViewPanorama = dynamic(() => import('@/components/StreetViewPanorama'), { ssr: false })
 
 export async function generateMetadata({ params }: { params: { urn: string } }): Promise<Metadata> {
   try {
@@ -274,10 +275,10 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
       {/* Visit checklist */}
       <VisitChecklistSection nurseryName={nursery.name} nurseryUrn={nursery.urn} />
 
-      {/* Map */}
+      {/* Street View + Map */}
       {nursery.lat && nursery.lng && (
-        <div className="mb-6 rounded-lg overflow-hidden border border-gray-200 h-48">
-          <SingleNurseryMap lat={nursery.lat} lng={nursery.lng} name={nursery.name} />
+        <div className="mb-6">
+          <StreetViewPanorama lat={nursery.lat} lng={nursery.lng} name={nursery.name} />
         </div>
       )}
 

@@ -6,6 +6,7 @@ import { ingestLandRegistryYear, refreshPropertyStats } from '../services/landRe
 import { refreshCrimeForDistricts } from '../services/policeApi.js'
 import { refreshImdForDistricts } from '../services/imdApi.js'
 import { refreshAllDistricts as refreshPropertyDataDistricts } from '../services/propertyData.js'
+import { syncGooglePlacesData, refreshStaleGoogleData } from '../services/googlePlaces.js'
 import { requireRole } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
 import db from '../db.js'
@@ -181,6 +182,35 @@ router.post('/schools-geocode', async (req, res, next) => {
     res.json(result)
   } catch (err) {
     logger.error({ err: err.message }, 'ingest: school geocoding failed')
+    next(err)
+  }
+})
+
+// POST /api/v1/ingest/google-places?limit=100&photos=1
+router.post('/google-places', async (req, res, next) => {
+  try {
+    const limit = parseInt(req.query.limit) || 100
+    const photosEnabled = req.query.photos !== '0'
+    const staleDays = parseInt(req.query.stale_days) || 90
+    logger.info({ limit, photosEnabled, staleDays }, 'ingest: starting Google Places sync')
+    const result = await syncGooglePlacesData(limit, { staleDays, photosEnabled })
+    res.json(result)
+  } catch (err) {
+    logger.error({ err: err.message }, 'ingest: Google Places sync failed')
+    next(err)
+  }
+})
+
+// POST /api/v1/ingest/google-places-refresh?limit=100
+router.post('/google-places-refresh', async (req, res, next) => {
+  try {
+    const limit = parseInt(req.query.limit) || 100
+    const staleDays = parseInt(req.query.stale_days) || 90
+    logger.info({ limit, staleDays }, 'ingest: starting Google Places stale refresh')
+    const result = await refreshStaleGoogleData(limit, staleDays)
+    res.json(result)
+  } catch (err) {
+    logger.error({ err: err.message }, 'ingest: Google Places refresh failed')
     next(err)
   }
 })

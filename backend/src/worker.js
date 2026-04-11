@@ -13,6 +13,7 @@ import { sendEnhancedWeeklyDigests } from './services/enhancedWeeklyDigest.js'
 import { sendReengagementEmails } from './services/reengagement.js'
 import { processSavedSearchAlerts } from './services/savedSearchAlerts.js'
 import { processOfstedChangeNotifications } from './services/ofstedChangeNotifier.js'
+import { syncGooglePlacesData, refreshStaleGoogleData } from './services/googlePlaces.js'
 import db from './db.js'
 import { logger } from './logger.js'
 
@@ -26,6 +27,28 @@ cron.schedule('0 3 * * *', async () => {
     logger.info(result, 'cron: geocoding complete')
   } catch (err) {
     logger.error({ err: err.message }, 'cron: geocoding failed')
+  }
+})
+
+// Enrich nurseries with Google Places data nightly at 4am (100 per night ≈ 3k/month)
+cron.schedule('0 4 * * *', async () => {
+  logger.info('cron: starting Google Places enrichment')
+  try {
+    const result = await syncGooglePlacesData(100, { photosEnabled: true })
+    logger.info(result, 'cron: Google Places enrichment complete')
+  } catch (err) {
+    logger.error({ err: err.message }, 'cron: Google Places enrichment failed')
+  }
+})
+
+// Refresh stale Google ratings weekly on Sundays at 5am
+cron.schedule('0 5 * * 0', async () => {
+  logger.info('cron: starting Google Places stale refresh')
+  try {
+    const result = await refreshStaleGoogleData(200, 90)
+    logger.info(result, 'cron: Google Places refresh complete')
+  } catch (err) {
+    logger.error({ err: err.message }, 'cron: Google Places refresh failed')
   }
 })
 
