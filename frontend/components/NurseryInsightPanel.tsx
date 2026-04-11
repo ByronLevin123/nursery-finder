@@ -142,7 +142,28 @@ export default function NurseryInsightPanel({
 
   const hasAnyScore = dimensions.some((d) => d.score != null)
 
-  if (!hasAnyScore) return null
+  if (!hasAnyScore) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6 shadow-sm">
+        <h2 className="text-base font-semibold text-gray-900 mb-2">Nursery Insight Scores</h2>
+        <p className="text-sm text-gray-500 mb-3">
+          We score every nursery across 5 dimensions to help you compare at a glance.
+        </p>
+        <div className="grid grid-cols-5 gap-2">
+          {dimensions.map((d) => (
+            <div key={d.key} className="text-center">
+              <span className="text-lg">{d.icon}</span>
+              <p className="text-xs text-gray-400 mt-0.5">{d.label}</p>
+              <p className="text-xs text-gray-300">—</p>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-gray-400 mt-3 border-t border-gray-100 pt-3">
+          Scores are computed from Ofsted data, fees, availability, staffing and reviews. This nursery does not have enough data yet for a score.
+        </p>
+      </div>
+    )
+  }
 
   // Compute overall average of available scores
   const validScores = dimensions.filter((d) => d.score != null).map((d) => d.score!)

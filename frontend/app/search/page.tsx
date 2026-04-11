@@ -277,9 +277,9 @@ function SearchContent() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-[calc(100vh-64px)]">
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)]">
       {/* Left panel: filters + results */}
-      <div className="w-full lg:w-1/3 overflow-y-auto border-r border-gray-200 bg-white">
+      <div className="w-full lg:w-1/3 overflow-y-auto border-r border-gray-200 bg-white lg:h-full">
         <div className="p-4 border-b border-gray-200">
           {/* Search bar with autocomplete */}
           <div className="flex gap-2 mb-4" ref={searchWrapperRef}>
@@ -548,7 +548,7 @@ function SearchContent() {
       )}
 
       {/* Right panel: map */}
-      <div className="w-full lg:w-2/3 h-[400px] lg:h-auto">
+      <div className="w-full lg:w-2/3 h-[400px] lg:h-full sticky top-0">
         {results?.meta.search_lat && results?.meta.search_lng ? (
           <NurseryMap
             nurseries={results.data}
