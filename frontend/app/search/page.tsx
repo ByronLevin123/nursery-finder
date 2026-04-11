@@ -220,13 +220,11 @@ function SearchContent() {
         query: searchQuery.trim(),
         radius_km: radiusKm,
         grade: advancedFilters.grade || grade,
-        funded_2yr: funded2yr,
-        funded_3yr: funded3yr,
         has_availability: advancedFilters.has_availability,
         min_rating: advancedFilters.min_rating,
         provider_type: advancedFilters.provider_type,
-        has_funded_2yr: advancedFilters.has_funded_2yr,
-        has_funded_3yr: advancedFilters.has_funded_3yr,
+        has_funded_2yr: advancedFilters.has_funded_2yr || funded2yr,
+        has_funded_3yr: advancedFilters.has_funded_3yr || funded3yr,
       })
       setResults(data)
     } catch (err: any) {
@@ -445,7 +443,9 @@ function SearchContent() {
               <p className="text-sm text-gray-500">
                 {prefsActive
                   ? `${visibleResults.length} of ${results.meta.total} match your priorities`
-                  : `${results.meta.total} nurseries found within ${radiusKm}km`}
+                  : results.meta.mode === 'place'
+                    ? `${results.meta.total} nurseries found near ${(results.meta as any).place_name || query}`
+                    : `${results.meta.total} nurseries found${results.meta.mode === 'postcode' ? ` within ${radiusKm}km` : ''}`}
               </p>
               {prefsActive && excludedCount > 0 && (
                 <button

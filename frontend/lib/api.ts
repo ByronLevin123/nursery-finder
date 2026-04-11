@@ -86,8 +86,6 @@ export async function smartSearchNurseries(params: {
   query: string
   radius_km?: number
   grade?: string | null
-  funded_2yr?: boolean
-  funded_3yr?: boolean
   has_availability?: boolean
   min_rating?: number | null
   provider_type?: string | null

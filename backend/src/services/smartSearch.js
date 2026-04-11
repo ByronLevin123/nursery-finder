@@ -128,8 +128,56 @@ export async function smartSearch({
     }
   }
 
-  // Fuzzy fallback — text search returned 0 results
-  logger.info({ query: cleaned }, 'text search empty, trying fuzzy fallback')
+  // Place name geocode fallback — try to resolve the query as a place name
+  // and do a spatial search around it before falling back to fuzzy
+  try {
+    const placeRes = await fetch(
+      `https://api.postcodes.io/places?q=${encodeURIComponent(cleaned)}&limit=1`,
+      { signal: AbortSignal.timeout(5000) }
+    )
+    if (placeRes.ok) {
+      const placeData = await placeRes.json()
+      if (placeData.result && placeData.result.length > 0) {
+        const place = placeData.result[0]
+        const placeLat = place.latitude
+        const placeLng = place.longitude
+        if (placeLat && placeLng) {
+          logger.info({ query: cleaned, place: place.name_1, lat: placeLat, lng: placeLng }, 'text search empty, resolved as place name')
+          const { data: placeNurseries, error: placeErr } = await db.rpc('search_nurseries_near', {
+            search_lat: placeLat,
+            search_lng: placeLng,
+            radius_km: Number(radius_km),
+            grade_filter: grade || null,
+            funded_2yr: Boolean(has_funded_2yr),
+            funded_3yr: Boolean(has_funded_3yr),
+          })
+          if (!placeErr && placeNurseries && placeNurseries.length > 0) {
+            let filtered = placeNurseries
+            if (has_availability) filtered = filtered.filter((n) => n.spots_available > 0)
+            if (min_rating) filtered = filtered.filter((n) => n.google_rating >= Number(min_rating))
+            if (provider_type) filtered = filtered.filter((n) => n.provider_type === provider_type)
+
+            return {
+              data: filtered,
+              meta: {
+                total: filtered.length,
+                search_lat: placeLat,
+                search_lng: placeLng,
+                mode: 'place',
+                query: cleaned.replace(/[<>]/g, ''),
+                place_name: place.name_1,
+              },
+            }
+          }
+        }
+      }
+    }
+  } catch (placeErr) {
+    logger.warn({ err: placeErr?.message, query: cleaned }, 'place name geocode failed')
+  }
+
+  // Fuzzy fallback — text search and place geocode returned 0 results
+  logger.info({ query: cleaned }, 'text + place search empty, trying fuzzy fallback')
   const { data: fuzzyData, error: fuzzyError } = await db.rpc('fuzzy_search_nurseries', {
     query_text: cleaned,
     max_results: 50,
