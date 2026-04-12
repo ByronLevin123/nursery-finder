@@ -126,7 +126,7 @@ function DataQualityCard({
         <span
           className={`text-lg font-bold ${isRed ? 'text-red-700' : 'text-amber-700'}`}
         >
-          {count.toLocaleString()}
+          {(count ?? 0).toLocaleString()}
         </span>
       </div>
       <p className={`text-xs ${isRed ? 'text-red-600' : 'text-amber-600'}`}>{description}</p>
@@ -210,12 +210,18 @@ export default function AdminOverview() {
         if (!token) throw new Error('No auth token')
         const [statsData, growthData, qualityData, activityData] = await Promise.all([
           adminFetch('/stats', token),
-          getAdminGrowthStats(token),
-          getAdminDataQuality(token),
-          getAdminActivity(token, 50),
+          getAdminGrowthStats(token).catch(() => null),
+          getAdminDataQuality(token).catch(() => null),
+          getAdminActivity(token, 50).catch(() => []),
         ])
         if (!cancelled) {
-          setStats(statsData)
+          // Map API response to expected shape — fill in derived top-level fields
+          const mapped = {
+            ...statsData,
+            mrr: statsData?.subscriptions?.mrr_gbp ?? statsData?.mrr ?? 0,
+            enquiries_this_month: statsData?.enquiries?.this_month ?? statsData?.enquiries_this_month ?? 0,
+          }
+          setStats(mapped)
           setGrowth(growthData)
           setQuality(qualityData)
           setActivity(activityData)
@@ -326,13 +332,13 @@ export default function AdminOverview() {
           <>
             <StatCard
               label="Total Users"
-              value={stats.users.total.toLocaleString()}
+              value={(stats.users.total ?? 0).toLocaleString()}
               sub={`${stats.users.customers} customers, ${stats.users.providers} providers, ${stats.users.admins} admins`}
               icon={<UsersIcon />}
             />
             <StatCard
               label="Total Nurseries"
-              value={stats.nurseries.total.toLocaleString()}
+              value={(stats.nurseries.total ?? 0).toLocaleString()}
               sub={`${stats.nurseries.claimed} claimed`}
               icon={<BuildingIcon />}
             />
@@ -352,7 +358,7 @@ export default function AdminOverview() {
             />
             <StatCard
               label="MRR"
-              value={`\u00A3${stats.mrr.toLocaleString()}`}
+              value={`\u00A3${(stats.mrr ?? 0).toLocaleString()}`}
               sub="Monthly Recurring Revenue"
               icon={<CurrencyIcon />}
             />
@@ -368,7 +374,7 @@ export default function AdminOverview() {
                   ? `${((stats.nurseries.claimed / stats.nurseries.total) * 100).toFixed(1)}%`
                   : '0%'
               }
-              sub={`${stats.nurseries.claimed} claimed of ${stats.nurseries.total.toLocaleString()}`}
+              sub={`${stats.nurseries.claimed} claimed of ${(stats.nurseries.total ?? 0).toLocaleString()}`}
               href="/admin/invites"
               icon={<ClipboardIcon />}
             />
