@@ -254,7 +254,7 @@ router.get('/claims', async (req, res, next) => {
     let query = db
       .from('nursery_claims')
       .select(
-        'id, urn, claimer_name, claimer_email, claimer_role, evidence_notes, status, created_at, nurseries(name)',
+        'id, urn, claimer_name, claimer_email, claimer_role, evidence_notes, status, created_at',
         { count: 'exact' }
       )
 
@@ -267,11 +267,23 @@ router.get('/claims', async (req, res, next) => {
     const { data, error, count } = await query
     if (error) throw error
 
-    // Flatten nursery name into response
+    // Look up nursery names for each claim's URN
+    const urns = [...new Set((data || []).map((r) => r.urn).filter(Boolean))]
+    let nurseryNames = {}
+    if (urns.length > 0) {
+      const { data: nurseries } = await db
+        .from('nurseries')
+        .select('urn, name')
+        .in('urn', urns)
+      if (nurseries) {
+        nurseryNames = Object.fromEntries(nurseries.map((n) => [n.urn, n.name]))
+      }
+    }
+
     const rows = (data || []).map((row) => ({
       id: row.id,
       urn: row.urn,
-      nursery_name: row.nurseries?.name ?? null,
+      nursery_name: nurseryNames[row.urn] ?? null,
       claimer_name: row.claimer_name,
       claimer_email: row.claimer_email,
       claimer_role: row.claimer_role,
@@ -498,18 +510,31 @@ router.get('/enquiries', async (req, res, next) => {
     const { data, error, count } = await db
       .from('enquiries')
       .select(
-        'id, user_id, nursery_id, child_name, message, status, sent_at, responded_at, nurseries(name)',
+        'id, user_id, nursery_id, child_name, message, status, sent_at, responded_at',
         { count: 'exact' }
       )
       .order('sent_at', { ascending: false })
       .range(offset, offset + limit - 1)
     if (error) throw error
 
+    // Look up nursery names
+    const nurseryIds = [...new Set((data || []).map((r) => r.nursery_id).filter(Boolean))]
+    let nurseryNames = {}
+    if (nurseryIds.length > 0) {
+      const { data: nurseries } = await db
+        .from('nurseries')
+        .select('urn, name')
+        .in('urn', nurseryIds)
+      if (nurseries) {
+        nurseryNames = Object.fromEntries(nurseries.map((n) => [n.urn, n.name]))
+      }
+    }
+
     const rows = (data || []).map((row) => ({
       id: row.id,
       user_id: row.user_id,
       nursery_id: row.nursery_id,
-      nursery_name: row.nurseries?.name ?? null,
+      nursery_name: nurseryNames[row.nursery_id] ?? null,
       child_name: row.child_name,
       message: row.message,
       status: row.status,
@@ -539,7 +564,7 @@ router.get('/subscriptions', async (req, res, next) => {
     const { data, error, count } = await db
       .from('provider_subscriptions')
       .select(
-        'id, user_id, tier, status, current_period_end, created_at, user_profiles(display_name)',
+        'id, user_id, tier, status, current_period_end, created_at',
         { count: 'exact' }
       )
       .order('created_at', { ascending: false })
@@ -547,10 +572,23 @@ router.get('/subscriptions', async (req, res, next) => {
 
     if (error) throw error
 
+    // Look up display names for each subscription's user
+    const userIds = [...new Set((data || []).map((r) => r.user_id).filter(Boolean))]
+    let displayNames = {}
+    if (userIds.length > 0) {
+      const { data: profiles } = await db
+        .from('user_profiles')
+        .select('id, display_name')
+        .in('id', userIds)
+      if (profiles) {
+        displayNames = Object.fromEntries(profiles.map((p) => [p.id, p.display_name]))
+      }
+    }
+
     const rows = (data || []).map((s) => ({
       id: s.id,
       user_id: s.user_id,
-      display_name: s.user_profiles?.display_name ?? null,
+      display_name: displayNames[s.user_id] ?? null,
       type: 'provider',
       tier: s.tier,
       status: s.status,
