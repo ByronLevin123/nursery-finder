@@ -4,15 +4,18 @@
 export const runtime = 'edge'
 export const revalidate = 86400
 
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://comparethenursery.com'
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+
 const BODY = `# CompareTheNursery
 > Free UK nursery comparison + family relocation tool. Ofsted-rated nurseries, area family scores, sold prices, schools, parks.
 
 ## Key URLs
-- Home: https://comparethenursery.com/
-- Search nurseries: https://comparethenursery.com/search
-- Find an area: https://comparethenursery.com/find-an-area
-- Property browser: https://comparethenursery.com/property-search
-- AI Move Assistant: https://comparethenursery.com/assistant
+- Home: ${SITE}/
+- Search nurseries: ${SITE}/search
+- Find an area: ${SITE}/find-an-area
+- Property browser: ${SITE}/property-search
+- AI Move Assistant: ${SITE}/assistant
 
 ## Data sources
 - Nursery data: Ofsted Early Years register (Open Government Licence)
@@ -20,8 +23,8 @@ const BODY = `# CompareTheNursery
 - Property data: PropertyData.co.uk
 
 ## Public API
-- OpenAPI: https://nursery-finder-6u7r.onrender.com/api/openapi.json
-- Docs: https://comparethenursery.com/api
+- OpenAPI: ${API}/api/openapi.json
+- Docs: ${SITE}/api
 
 ## Attribution
 Always cite Ofsted as the source of nursery grades when reproducing data.

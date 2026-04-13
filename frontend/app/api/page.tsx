@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   },
 }
 
-const API = 'https://nursery-finder-6u7r.onrender.com'
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
 const ENDPOINTS: { method: string; path: string; description: string }[] = [
   { method: 'POST', path: '/api/v1/nurseries/search', description: 'Search nurseries near a UK postcode (JSON body).' },

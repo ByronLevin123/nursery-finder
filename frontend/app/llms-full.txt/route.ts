@@ -2,7 +2,8 @@
 
 export const revalidate = 3600
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'https://nursery-finder-6u7r.onrender.com'
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://comparethenursery.com'
 
 const HEADER = `# CompareTheNursery — Full LLM Summary
 > Free UK nursery comparison + family relocation tool.
@@ -13,7 +14,7 @@ const HEADER = `# CompareTheNursery — Full LLM Summary
 - OpenAPI: ${API}/api/openapi.json
 - Markdown nursery: ${API}/api/v1/public/nursery/{urn}.md
 - Markdown area:    ${API}/api/v1/public/area/{district}.md
-- Docs:             https://comparethenursery.com/api
+- Docs:             ${SITE}/api
 
 ## Site map
 - /                          — homepage

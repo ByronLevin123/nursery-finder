@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, useCallback, ReactNode 
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { syncPreferencesWithProfile } from '@/lib/preferences'
+import { API_URL } from '@/lib/api'
 
 export type UserRole = 'customer' | 'provider' | 'admin'
 
@@ -27,14 +28,17 @@ const SessionContext = createContext<SessionContextValue>({
 
 async function fetchRole(token: string): Promise<UserRole> {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://nursery-finder-6u7r.onrender.com'
-    const r = await fetch(`${apiUrl}/api/v1/profile`, {
+    const r = await fetch(`${API_URL}/api/v1/profile`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-    if (!r.ok) return 'customer'
+    if (!r.ok) {
+      console.error('Failed to fetch user role:', r.status)
+      return 'customer'
+    }
     const j = await r.json()
     return (j.role as UserRole) || 'customer'
-  } catch {
+  } catch (err) {
+    console.error('Role fetch error:', err)
     return 'customer'
   }
 }
