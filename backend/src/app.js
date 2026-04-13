@@ -202,7 +202,7 @@ app.use((req, _res, next) => {
     .update({ last_active_at: new Date().toISOString() })
     .eq('id', req.user.id)
     .then(() => {})
-    .catch(() => {})
+    .catch((err) => { logger.warn({ err: err?.message, userId: req.user.id }, 'last_active_at update failed') })
   return next()
 })
 

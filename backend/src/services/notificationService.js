@@ -141,7 +141,7 @@ export async function notifyEnquiryStatusChange(enquiry, oldStatus, newStatus) {
             .from('notifications')
             .update({ email_sent: true })
             .eq('id', notification.id)
-            .catch(() => {})
+            .catch((err) => { logger.warn({ err: err?.message, notificationId: notification.id }, 'Failed to mark notification email_sent') })
         }
       }
     } catch (err) {
@@ -237,7 +237,7 @@ export async function notifyVisitReminder(booking) {
         .from('notifications')
         .update({ email_sent: true })
         .eq('id', notification.id)
-        .catch(() => {})
+        .catch((err) => { logger.warn({ err: err?.message, notificationId: notification.id }, 'Failed to mark notification email_sent') })
     }
   }
 
