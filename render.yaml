@@ -41,7 +41,7 @@ services:
       - key: ADMIN_PASS
         sync: false
       - key: API_BASE
-        value: https://nursery-finder-6u7r.onrender.com
+        sync: false
     dockerCommand: sh -c 'curl -fsS -u "$ADMIN_USER:$ADMIN_PASS" -X POST "$API_BASE/api/v1/ingest/geocode?limit=2000"'
 
   - type: cron
@@ -56,7 +56,7 @@ services:
       - key: ADMIN_PASS
         sync: false
       - key: API_BASE
-        value: https://nursery-finder-6u7r.onrender.com
+        sync: false
     dockerCommand: sh -c 'curl -fsS -u "$ADMIN_USER:$ADMIN_PASS" -X POST "$API_BASE/api/v1/ingest/aggregate-areas"'
 
   - type: cron
@@ -71,7 +71,7 @@ services:
       - key: ADMIN_PASS
         sync: false
       - key: API_BASE
-        value: https://nursery-finder-6u7r.onrender.com
+        sync: false
     dockerCommand: sh -c 'curl -fsS --max-time 1800 -u "$ADMIN_USER:$ADMIN_PASS" -X POST "$API_BASE/api/v1/ingest/ofsted"'
 
   - type: cron
@@ -86,7 +86,7 @@ services:
       - key: ADMIN_PASS
         sync: false
       - key: API_BASE
-        value: https://nursery-finder-6u7r.onrender.com
+        sync: false
     dockerCommand: sh -c 'curl -fsS --max-time 1800 -u "$ADMIN_USER:$ADMIN_PASS" -X POST "$API_BASE/api/v1/ingest/crime"'
 
   - type: cron
@@ -101,7 +101,7 @@ services:
       - key: ADMIN_PASS
         sync: false
       - key: API_BASE
-        value: https://nursery-finder-6u7r.onrender.com
+        sync: false
     dockerCommand: sh -c 'curl -fsS --max-time 7200 -u "$ADMIN_USER:$ADMIN_PASS" -X POST "$API_BASE/api/v1/ingest/land-registry"'
 
   - type: cron
@@ -116,5 +116,5 @@ services:
       - key: ADMIN_PASS
         sync: false
       - key: API_BASE
-        value: https://nursery-finder-6u7r.onrender.com
+        sync: false
     dockerCommand: sh -c 'curl -fsS --max-time 600 -u "$ADMIN_USER:$ADMIN_PASS" -X POST "$API_BASE/api/v1/ingest/family-scores"'

@@ -7,14 +7,27 @@ import { refreshCrimeForDistricts } from '../services/policeApi.js'
 import { refreshImdForDistricts } from '../services/imdApi.js'
 import { refreshAllDistricts as refreshPropertyDataDistricts } from '../services/propertyData.js'
 import { syncGooglePlacesData, refreshStaleGoogleData } from '../services/googlePlaces.js'
+import basicAuth from 'express-basic-auth'
 import { requireRole } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
 import db from '../db.js'
 
 const router = express.Router()
 
-// All ingest routes require admin auth
-router.use(requireRole('admin'))
+// Ingest routes accept EITHER HTTP basic auth (for Render cron jobs)
+// OR Supabase JWT with admin role (for admin panel).
+const cronBasicAuth = basicAuth({
+  users: { [process.env.ADMIN_USER || '']: process.env.ADMIN_PASS || '' },
+  challenge: false,
+})
+
+router.use((req, res, next) => {
+  const authHeader = req.headers.authorization || ''
+  if (authHeader.startsWith('Basic ')) {
+    return cronBasicAuth(req, res, next)
+  }
+  return requireRole('admin')(req, res, next)
+})
 
 // POST /api/v1/ingest/ofsted
 router.post('/ofsted', async (req, res, next) => {
