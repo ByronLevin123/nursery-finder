@@ -397,7 +397,7 @@ function SearchContent() {
                     placeholder="From postcode…"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Transit routing coming soon — showing drive times instead.
+                    Showing estimated drive times.
                   </p>
                 </div>
               )}
