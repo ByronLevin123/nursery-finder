@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { API_URL } from '@/lib/api'
+import { isBusinessEmail, isPasswordValid } from '@/lib/validation'
 
 interface NurseryResult {
   urn: string
@@ -29,6 +30,8 @@ export default function ProviderRegisterPage() {
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [role, setRole] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
 
   // Step 2 — Find your nursery
   const [searchQuery, setSearchQuery] = useState('')
@@ -79,8 +82,18 @@ export default function ProviderRegisterPage() {
     setSearchQuery(nursery.name)
   }
 
+  const emailValid = email.trim() !== '' && isBusinessEmail(email.trim())
+  const passwordCheck = isPasswordValid(password)
+
   const canAdvance = (): boolean => {
-    if (step === 1) return name.trim() !== '' && email.trim() !== '' && role !== ''
+    if (step === 1)
+      return (
+        name.trim() !== '' &&
+        emailValid &&
+        role !== '' &&
+        passwordCheck.valid &&
+        password === confirmPassword
+      )
     if (step === 2) return selectedNursery !== null
     if (step === 3) return evidenceNotes.trim().length >= 10 && confirmed
     return false
@@ -98,6 +111,7 @@ export default function ProviderRegisterPage() {
           email: email.trim(),
           name: name.trim(),
           phone: phone.trim(),
+          password,
           role_at_nursery: role,
           urn: selectedNursery.urn,
           evidence_notes: evidenceNotes.trim(),
@@ -196,16 +210,26 @@ export default function ProviderRegisterPage() {
               </div>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Email address <span className="text-red-500">*</span>
+                  Business email address <span className="text-red-500">*</span>
                 </label>
+                <p className="text-xs text-gray-500 mb-1.5">Use your work or nursery email address</p>
                 <input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="jane@nursery.co.uk"
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition"
+                  className={`w-full rounded-lg border px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:ring-2 outline-none transition ${
+                    email.trim() && !emailValid
+                      ? 'border-red-300 focus:border-red-500 focus:ring-red-200'
+                      : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-200'
+                  }`}
                 />
+                {email.trim() && !emailValid && (
+                  <p className="text-xs text-red-500 mt-1">
+                    Please use your business email address. Personal email domains (Gmail, Hotmail, Yahoo, etc.) are not accepted.
+                  </p>
+                )}
               </div>
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
@@ -237,6 +261,38 @@ export default function ProviderRegisterPage() {
                     </option>
                   ))}
                 </select>
+              </div>
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Password <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Create a password (min 8 characters)"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition"
+                />
+                {password.length > 0 && !passwordCheck.valid && (
+                  <p className="text-xs text-red-500 mt-1">{passwordCheck.error}</p>
+                )}
+              </div>
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                  Confirm password <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm your password"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition"
+                />
+                {confirmPassword.length > 0 && password !== confirmPassword && (
+                  <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
+                )}
               </div>
             </div>
           </div>
@@ -375,18 +431,29 @@ export default function ProviderRegisterPage() {
               </svg>
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration submitted</h2>
+            <p className="text-gray-600 mb-4">
+              Check your email to verify your account. Once verified, you can sign in with your email and password.
+            </p>
             <p className="text-gray-600 mb-6">
-              Check your email for a magic link. Your claim will be reviewed within 24 hours.
+              Your nursery claim will be reviewed within 24 hours.
             </p>
             <p className="text-sm text-gray-500 mb-8">
               We sent a confirmation to <span className="font-medium text-gray-700">{email}</span>
             </p>
-            <Link
-              href="/"
-              className="inline-block rounded-lg bg-indigo-600 px-6 py-2.5 text-white font-medium hover:bg-indigo-700 transition"
-            >
-              Back to home
-            </Link>
+            <div className="flex gap-3 justify-center">
+              <Link
+                href="/login"
+                className="inline-block rounded-lg bg-indigo-600 px-6 py-2.5 text-white font-medium hover:bg-indigo-700 transition"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/"
+                className="inline-block rounded-lg border border-gray-300 px-6 py-2.5 text-gray-700 font-medium hover:bg-gray-50 transition"
+              >
+                Back to home
+              </Link>
+            </div>
           </div>
         )}
 

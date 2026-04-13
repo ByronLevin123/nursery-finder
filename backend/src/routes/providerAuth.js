@@ -5,6 +5,7 @@ import express from 'express'
 import { createClient } from '@supabase/supabase-js'
 import db from '../db.js'
 import { logger } from '../logger.js'
+import { isBusinessEmail } from '../utils/emailValidation.js'
 
 const router = express.Router()
 
@@ -23,7 +24,7 @@ router.post('/register', async (req, res, next) => {
       return res.status(503).json({ error: 'Service not configured' })
     }
 
-    const { email, name, phone, role_at_nursery, urn, evidence_notes } = req.body
+    const { email, name, phone, password, role_at_nursery, urn, evidence_notes } = req.body
 
     // Validate required fields
     if (!email || !name || !urn) {
@@ -34,6 +35,21 @@ router.post('/register', async (req, res, next) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
       return res.status(400).json({ error: 'Invalid email format' })
+    }
+
+    // Require business email for providers
+    if (!isBusinessEmail(email)) {
+      return res.status(400).json({
+        error: 'Please use a business email address. Personal email domains (Gmail, Hotmail, Yahoo, etc.) are not accepted for provider accounts.',
+      })
+    }
+
+    // Validate password
+    if (!password || typeof password !== 'string' || password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' })
+    }
+    if (password.length > 72) {
+      return res.status(400).json({ error: 'Password must be at most 72 characters' })
     }
 
     // Check nursery exists
@@ -73,43 +89,39 @@ router.post('/register', async (req, res, next) => {
     let userId = null
     let isNewUser = false
 
-    // Check if user already exists
-    const { data: existingUsers } = await adminAuth.auth.admin.listUsers()
-    const existingUser = existingUsers?.users?.find(
-      (u) => u.email?.toLowerCase() === email.toLowerCase()
-    )
+    // Check if user already exists (targeted lookup instead of listing all users)
+    const { data: existingProfile } = await db
+      .from('user_profiles')
+      .select('id, role')
+      .eq('email', email.toLowerCase())
+      .maybeSingle()
 
-    if (existingUser) {
-      userId = existingUser.id
-
-      // Check their role — if already a provider, they should use the claim flow
-      const { data: profile } = await db
-        .from('user_profiles')
-        .select('role')
-        .eq('id', userId)
-        .maybeSingle()
-
-      if (profile?.role === 'provider') {
+    if (existingProfile) {
+      if (existingProfile.role === 'provider') {
         return res.status(409).json({
           error: 'An account with this email already exists as a provider. Please sign in and use the claim flow.',
         })
       }
-    } else {
-      // Create new user with magic link (no password)
-      const { data: newUser, error: createErr } = await adminAuth.auth.admin.createUser({
-        email,
-        email_confirm: false,
-        user_metadata: { full_name: name, phone, role_at_nursery },
+      return res.status(409).json({
+        error: 'An account with this email already exists. Please sign in at /login and claim your nursery from there.',
       })
-
-      if (createErr) {
-        logger.error({ err: createErr.message, email }, 'providerAuth: user creation failed')
-        return res.status(400).json({ error: 'Failed to create account: ' + createErr.message })
-      }
-
-      userId = newUser.user.id
-      isNewUser = true
     }
+
+    // Create new user with email + password
+    const { data: newUser, error: createErr } = await adminAuth.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: false,
+      user_metadata: { full_name: name, phone, role_at_nursery },
+    })
+
+    if (createErr) {
+      logger.error({ err: createErr.message, email }, 'providerAuth: user creation failed')
+      return res.status(400).json({ error: 'Failed to create account: ' + createErr.message })
+    }
+
+    userId = newUser.user.id
+    isNewUser = true
 
     // Upsert user profile
     const profileData = {
@@ -133,8 +145,12 @@ router.post('/register', async (req, res, next) => {
       .insert({
         user_id: userId,
         urn,
+        claimer_name: name,
+        claimer_email: email,
+        claimer_phone: phone || null,
+        claimer_role: role_at_nursery || null,
         status: 'pending',
-        evidence_notes: evidence_notes || `Role: ${role_at_nursery || 'Not specified'}. Phone: ${phone || 'Not provided'}.`,
+        evidence_notes: evidence_notes || `Role: ${role_at_nursery || 'Not specified'}.`,
         created_at: new Date().toISOString(),
       })
       .select('id')
@@ -145,17 +161,18 @@ router.post('/register', async (req, res, next) => {
       return res.status(500).json({ error: 'Failed to create claim' })
     }
 
-    // Send magic link for email verification
-    const { error: magicErr } = await adminAuth.auth.admin.generateLink({
-      type: 'magiclink',
+    // Generate email confirmation link
+    const { error: confirmErr } = await adminAuth.auth.admin.generateLink({
+      type: 'signup',
       email,
+      password,
       options: {
-        redirectTo: `${process.env.FRONTEND_URL || 'https://comparethenursery.com'}/provider?claim=${claim.id}`,
+        redirectTo: `${process.env.FRONTEND_URL || 'https://comparethenursery.com'}/login?confirmed=true`,
       },
     })
 
-    if (magicErr) {
-      logger.warn({ err: magicErr.message, email }, 'providerAuth: magic link generation failed')
+    if (confirmErr) {
+      logger.warn({ err: confirmErr.message, email }, 'providerAuth: confirmation email failed')
       // Don't fail the registration — claim is still created
     }
 
@@ -168,7 +185,7 @@ router.post('/register', async (req, res, next) => {
       success: true,
       claim_id: claim.id,
       is_new_user: isNewUser,
-      message: 'Registration successful. Check your email for a verification link. Your claim will be reviewed within 24 hours.',
+      message: 'Registration successful. Check your email to verify your account. Once verified, sign in with your email and password. Your claim will be reviewed within 24 hours.',
     })
   } catch (err) {
     logger.error({ err: err.message }, 'providerAuth: registration failed')
