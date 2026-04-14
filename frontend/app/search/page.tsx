@@ -528,6 +528,8 @@ function SearchContent() {
               </p>
             </div>
           )}
+
+          {results && <OglAttribution />}
         </div>
       </div>
 
@@ -549,7 +551,6 @@ function SearchContent() {
 
       {results?.data && query && <SearchJsonLd nurseries={results.data} query={query} />}
       <NurseryModal urn={selectedUrn} onClose={() => setSelectedUrn(null)} />
-      <OglAttribution />
     </div>
   )
 }
