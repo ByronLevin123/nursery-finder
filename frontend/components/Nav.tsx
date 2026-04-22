@@ -94,7 +94,7 @@ export default function Nav() {
 
           {/* Admin nav links */}
           {isAdmin && (
-            <Link href="/admin/claims" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
+            <Link href="/admin" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
               Admin Dashboard
             </Link>
           )}
@@ -170,45 +170,17 @@ export default function Nav() {
                     </>
                   )}
 
-                  {/* Admin dropdown items */}
+                  {/* Admin dropdown items — Users/Claims/Reports/Promotions
+                      live in the sidebar on /admin/* so the account dropdown
+                      is just for account-level actions. */}
                   {isAdmin && (
-                    <>
-                      <Link
-                        href="/admin/users"
-                        className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        onClick={() => setAccountOpen(false)}
-                      >
-                        Users
-                      </Link>
-                      <Link
-                        href="/admin/claims"
-                        className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        onClick={() => setAccountOpen(false)}
-                      >
-                        Claims
-                      </Link>
-                      <Link
-                        href="/admin/reports"
-                        className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        onClick={() => setAccountOpen(false)}
-                      >
-                        Reports
-                      </Link>
-                      <Link
-                        href="/admin/promotions"
-                        className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        onClick={() => setAccountOpen(false)}
-                      >
-                        Promotions
-                      </Link>
-                      <Link
-                        href="/account"
-                        className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        onClick={() => setAccountOpen(false)}
-                      >
-                        Account
-                      </Link>
-                    </>
+                    <Link
+                      href="/account"
+                      className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      onClick={() => setAccountOpen(false)}
+                    >
+                      Account
+                    </Link>
                   )}
 
                   <button
@@ -264,7 +236,7 @@ export default function Nav() {
             <Link href="/provider" className="block text-sm text-gray-600 font-medium" onClick={() => setMenuOpen(false)}>Provider Dashboard</Link>
           )}
           {isAdmin && (
-            <Link href="/admin/claims" className="block text-sm text-gray-600 font-medium" onClick={() => setMenuOpen(false)}>Admin Dashboard</Link>
+            <Link href="/admin" className="block text-sm text-gray-600 font-medium" onClick={() => setMenuOpen(false)}>Admin Dashboard</Link>
           )}
           {user ? (
             <>
