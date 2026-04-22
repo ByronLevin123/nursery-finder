@@ -7,9 +7,9 @@ import { logger } from '../logger.js'
 
 const FROM = process.env.EMAIL_FROM || 'NurseryMatch <noreply@nurserymatch.com>'
 const SEND_TIMEOUT_MS = 15_000
-const UNSUBSCRIBE_URL = process.env.FRONTEND_URL
-  ? `${process.env.FRONTEND_URL}/account`
-  : 'https://nurserymatch.com/account'
+export const FRONTEND_URL = process.env.FRONTEND_URL || 'https://nurserymatch.com'
+export const UNSUBSCRIBE_URL = `${FRONTEND_URL}/account?tab=notifications`
+const TAGLINE = 'Compare UK nurseries by Ofsted grade'
 
 let _client = null
 let _clientInitTried = false
@@ -107,33 +107,66 @@ export function escapeHtml(value) {
     .replace(/'/g, '&#39;')
 }
 
-function shell({ title, bodyHtml }) {
+/**
+ * Shared email shell. Use this for every transactional email so header,
+ * footer, preheader and spacing stay consistent.
+ *
+ * @param {object} opts
+ * @param {string} opts.title       - document <title> (also used as fallback preheader)
+ * @param {string} [opts.preheader] - inbox preview text (shown in Gmail/Apple Mail preview)
+ * @param {string} opts.bodyHtml    - HTML for the main content area
+ */
+export function shell({ title, preheader, bodyHtml }) {
+  const preheaderText = preheader || title || ''
+  // Preheader hack: hidden text, then whitespace filler so Gmail doesn't pull
+  // visible body text into the preview.
+  const preheaderHtml = `
+    <div style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;mso-hide:all;">
+      ${escapeHtml(preheaderText)}
+    </div>
+    <div style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;mso-hide:all;">
+      &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847; &#8199;&#65279;&#847;
+    </div>`
+
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
 <title>${escapeHtml(title)}</title>
 </head>
 <body style="margin:0;padding:0;background:#f6f7f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1f2937;">
+  ${preheaderHtml}
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f6f7f9;padding:24px 0;">
     <tr>
       <td align="center">
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;">
           <tr>
-            <td style="padding:20px 24px;background:#2563eb;color:#ffffff;font-size:18px;font-weight:700;">
-              NurseryMatch
+            <td style="padding:24px 28px 20px 28px;background:#2563eb;">
+              <div style="font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;line-height:1.2;">NurseryMatch</div>
+              <div style="font-size:12px;color:#bfdbfe;margin-top:4px;letter-spacing:0.2px;">${escapeHtml(TAGLINE)}</div>
             </td>
           </tr>
           <tr>
-            <td style="padding:24px;font-size:15px;line-height:1.55;color:#1f2937;">
+            <td style="padding:28px;font-size:15px;line-height:1.55;color:#1f2937;">
               ${bodyHtml}
             </td>
           </tr>
           <tr>
-            <td style="padding:16px 24px;border-top:1px solid #e5e7eb;font-size:12px;color:#6b7280;">
-              You are receiving this because you used NurseryMatch.
-              <a href="${UNSUBSCRIBE_URL}" style="color:#2563eb;">Manage email preferences</a>.
+            <td style="padding:20px 28px 24px 28px;border-top:1px solid #e5e7eb;background:#fafbfc;font-size:12px;color:#6b7280;line-height:1.6;">
+              <div style="color:#374151;margin-bottom:10px;">— The NurseryMatch Team</div>
+              <div>
+                <a href="${FRONTEND_URL}" style="color:#6b7280;text-decoration:underline;">nurserymatch.com</a>
+                &nbsp;·&nbsp;
+                <a href="${FRONTEND_URL}/privacy" style="color:#6b7280;text-decoration:underline;">Privacy</a>
+                &nbsp;·&nbsp;
+                <a href="${UNSUBSCRIBE_URL}" style="color:#6b7280;text-decoration:underline;">Manage email preferences</a>
+              </div>
+              <div style="margin-top:10px;color:#9ca3af;">
+                You are receiving this because you used NurseryMatch.
+              </div>
             </td>
           </tr>
         </table>
@@ -180,6 +213,9 @@ export function renderShortlistEmail({ nurseries = [], userName } = {}) {
 
   const html = shell({
     title: subject,
+    preheader: count > 0
+      ? `${count} ${count === 1 ? 'nursery' : 'nurseries'} on your shortlist.`
+      : 'Your saved nurseries in one place.',
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
       <p style="margin:0 0 16px 0;">Here is the nursery shortlist you saved on NurseryMatch.</p>
@@ -217,6 +253,9 @@ export function renderComparisonEmail({ nurseries = [], userName } = {}) {
 
   const html = shell({
     title: subject,
+    preheader: count > 0
+      ? `Side-by-side comparison of ${count} ${count === 1 ? 'nursery' : 'nurseries'}.`
+      : 'Your NurseryMatch comparison.',
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
       <p style="margin:0 0 16px 0;">Here is the side-by-side nursery comparison you put together on NurseryMatch.</p>
@@ -275,6 +314,9 @@ export function renderDigestEmail({ savedSearches = [], newMatches = {}, userNam
 
   const html = shell({
     title: subject,
+    preheader: totalMatches > 0
+      ? `${totalMatches} new ${totalMatches === 1 ? 'match' : 'matches'} across your saved searches.`
+      : 'Updates from your saved searches.',
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
       <p style="margin:0 0 16px 0;">Here is your saved-search digest from NurseryMatch.</p>
@@ -330,6 +372,7 @@ export function renderEnquiryNotificationEmail({
 
   const html = shell({
     title: subject,
+    preheader: `${parentName || 'A parent'} is asking about a place. Reply within 24 hours to close the booking.`,
     bodyHtml: `
       <p style="margin:0 0 12px 0;">You have a new enquiry for <strong>${safeName}</strong>.</p>
       ${detailRows.map((r) => `<p style="margin:0 0 8px 0;">${r}</p>`).join('')}
@@ -366,6 +409,7 @@ export function renderClaimApprovedEmail(nursery = {}, providerUrl = '') {
 
   const html = shell({
     title: subject,
+    preheader: 'You can now manage your nursery profile on NurseryMatch.',
     bodyHtml: `
       <p style="margin:0 0 12px 0;">Good news,</p>
       <p style="margin:0 0 16px 0;">
@@ -408,6 +452,7 @@ export function renderProviderInviteEmail(nursery = {}) {
 
   const html = shell({
     title: subject,
+    preheader: 'Parents are searching for your nursery. Claim your free listing in 2 minutes.',
     bodyHtml: `
       <p style="margin:0 0 12px 0;">Hi,</p>
       <p style="margin:0 0 16px 0;">
