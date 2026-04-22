@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 import { API_URL } from '@/lib/api'
 
-const SITE_URL = 'https://comparethenursery.com'
+const SITE_URL = 'https://nurserymatch.com'
 
 export const revalidate = 86400 // regenerate at most once per day
 

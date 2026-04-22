@@ -8,19 +8,19 @@ import PriorityWizardButton from '@/components/PriorityWizardButton'
 const RecentlyViewed = dynamic(() => import('@/components/RecentlyViewed'), { ssr: false })
 
 export const metadata: Metadata = {
-  title: 'CompareTheNursery — Compare UK Nurseries by Ofsted Grade',
+  title: 'NurseryMatch — Compare UK Nurseries by Ofsted Grade',
   description:
     'Compare 27,000+ UK nurseries with real Ofsted ratings, family scores by area, live property data, and anonymous parent reviews.',
   alternates: { canonical: '/' },
   openGraph: {
-    title: 'CompareTheNursery — Compare UK Nurseries by Ofsted Grade',
+    title: 'NurseryMatch — Compare UK Nurseries by Ofsted Grade',
     description:
       'Compare 27,000+ UK nurseries with real Ofsted ratings, family scores by area, live property data, and anonymous parent reviews.',
     url: '/',
-    siteName: 'CompareTheNursery',
+    siteName: 'NurseryMatch',
     type: 'website',
     locale: 'en_GB',
-    images: [{ url: '/og-default.png', width: 1200, height: 630, alt: 'CompareTheNursery' }],
+    images: [{ url: '/og-default.png', width: 1200, height: 630, alt: 'NurseryMatch' }],
   },
 }
 

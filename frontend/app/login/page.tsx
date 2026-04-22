@@ -146,12 +146,12 @@ function LoginInner() {
   return (
     <div className="max-w-md mx-auto px-4 py-16">
       <h1 className="text-3xl font-bold text-gray-900 mb-2">
-        {tab === 'signin' ? 'Sign in to CompareTheNursery' : 'Create your account'}
+        {tab === 'signin' ? 'Sign in to NurseryMatch' : 'Create your account'}
       </h1>
       <p className="text-gray-600 mb-6">
         {tab === 'signin'
           ? 'Save your shortlist, sync preferences across devices, and get alerts on new matches.'
-          : 'Join CompareTheNursery to save nurseries, compare options, and get personalised alerts.'}
+          : 'Join NurseryMatch to save nurseries, compare options, and get personalised alerts.'}
       </p>
 
       {/* Confirmed email banner */}

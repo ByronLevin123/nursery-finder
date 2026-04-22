@@ -2,7 +2,7 @@
 // All helpers return plain objects suitable for stringifying inside
 // <script type="application/ld+json"> tags.
 
-const SITE_URL = 'https://comparethenursery.com'
+const SITE_URL = 'https://nurserymatch.com'
 
 type AnyObj = Record<string, any>
 
@@ -10,7 +10,7 @@ export function organizationSchema(): AnyObj {
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: 'CompareTheNursery',
+    name: 'NurseryMatch',
     url: SITE_URL,
     logo: `${SITE_URL}/og-default.png`,
     description:
@@ -23,7 +23,7 @@ export function websiteSchema(): AnyObj {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    name: 'CompareTheNursery',
+    name: 'NurseryMatch',
     url: SITE_URL,
     potentialAction: {
       '@type': 'SearchAction',

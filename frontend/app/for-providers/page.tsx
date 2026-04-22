@@ -4,9 +4,9 @@ import RoiCalculator from '@/components/RoiCalculator'
 import OglAttribution from '@/components/OglAttribution'
 
 export const metadata: Metadata = {
-  title: 'For Nursery Providers — Grow Your Nursery | CompareTheNursery',
+  title: 'For Nursery Providers — Grow Your Nursery | NurseryMatch',
   description:
-    'Claim your free listing on CompareTheNursery. Get found by local parents, manage your reputation, and fill your spaces faster. 27,000+ nurseries listed.',
+    'Claim your free listing on NurseryMatch. Get found by local parents, manage your reputation, and fill your spaces faster. 27,000+ nurseries listed.',
   keywords: [
     'nursery marketing',
     'nursery listing',
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     'nursery promotion',
   ],
   openGraph: {
-    title: 'Grow Your Nursery with CompareTheNursery',
+    title: 'Grow Your Nursery with NurseryMatch',
     description:
       'Claim your free listing. Get found by parents, manage reviews, and fill spaces faster.',
   },
@@ -46,10 +46,10 @@ export default function ForProvidersPage() {
       <section className="bg-gradient-to-br from-blue-600 to-blue-800 text-white">
         <div className="max-w-5xl mx-auto px-4 py-20 md:py-28 text-center">
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-6">
-            Grow your nursery with CompareTheNursery
+            Grow your nursery with NurseryMatch
           </h1>
           <p className="text-lg md:text-xl text-blue-100 max-w-2xl mx-auto mb-8">
-            Parents across the UK use CompareTheNursery to find the right nursery for their family.
+            Parents across the UK use NurseryMatch to find the right nursery for their family.
             Make sure they find yours.
           </p>
           <Link
@@ -82,7 +82,7 @@ export default function ForProvidersPage() {
       {/* Benefits */}
       <section className="max-w-5xl mx-auto px-4 py-16">
         <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">
-          Why list on CompareTheNursery?
+          Why list on NurseryMatch?
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <BenefitCard
@@ -123,7 +123,7 @@ export default function ForProvidersPage() {
             How it works
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <StepCard step={1} title="Find your nursery" description="Search by name, postcode, or URN to find your existing listing on CompareTheNursery." />
+            <StepCard step={1} title="Find your nursery" description="Search by name, postcode, or URN to find your existing listing on NurseryMatch." />
             <StepCard step={2} title="Claim it" description="Verify you are the owner or manager. We review claims within 24 hours." />
             <StepCard step={3} title="Go live" description="Update your profile, add photos, set your hours, and start receiving enquiries from parents." />
           </div>
@@ -215,7 +215,7 @@ export default function ForProvidersPage() {
           Calculate your return
         </h2>
         <p className="text-center text-gray-500 mb-10 max-w-xl mx-auto">
-          See how much additional revenue CompareTheNursery could generate for your nursery.
+          See how much additional revenue NurseryMatch could generate for your nursery.
         </p>
         <RoiCalculator />
       </section>

@@ -78,17 +78,17 @@ function inlineFormat(text: string): string {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = await getBlogPost(params.slug)
-  if (!post) return { title: 'Guide Not Found | CompareTheNursery' }
+  if (!post) return { title: 'Guide Not Found | NurseryMatch' }
 
   return {
-    title: `${post.title} | CompareTheNursery`,
+    title: `${post.title} | NurseryMatch`,
     description: post.excerpt,
     alternates: { canonical: `/guides/${post.slug}` },
     openGraph: {
-      title: `${post.title} | CompareTheNursery`,
+      title: `${post.title} | NurseryMatch`,
       description: post.excerpt,
       url: `/guides/${post.slug}`,
-      siteName: 'CompareTheNursery',
+      siteName: 'NurseryMatch',
       type: 'article',
       locale: 'en_GB',
       ...(post.date ? { publishedTime: post.date } : {}),
@@ -174,11 +174,11 @@ export default async function GuidePage({ params }: Props) {
             author: { '@type': 'Organization', name: post.author },
             publisher: {
               '@type': 'Organization',
-              name: 'CompareTheNursery',
-              url: 'https://comparethenursery.com',
+              name: 'NurseryMatch',
+              url: 'https://nurserymatch.com',
             },
             ...(post.date ? { datePublished: post.date } : {}),
-            url: `https://comparethenursery.com/guides/${post.slug}`,
+            url: `https://nurserymatch.com/guides/${post.slug}`,
           }),
         }}
       />

@@ -353,7 +353,7 @@ export default function AccountPage() {
       <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Email Preferences</h2>
         <p className="text-sm text-gray-500 mb-4">
-          Choose which emails you would like to receive from CompareTheNursery.
+          Choose which emails you would like to receive from NurseryMatch.
         </p>
         <div className="space-y-3">
           <label className="flex items-center gap-3">
@@ -629,7 +629,7 @@ export default function AccountPage() {
                 const url = URL.createObjectURL(blob)
                 const a = document.createElement('a')
                 a.href = url
-                a.download = 'my-comparethenursery-data.json'
+                a.download = 'my-nurserymatch-data.json'
                 a.click()
                 URL.revokeObjectURL(url)
               } catch (err: any) {

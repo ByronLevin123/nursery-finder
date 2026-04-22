@@ -37,7 +37,7 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const [a, b] = await Promise.all([getNursery(params.urnA), getNursery(params.urnB)])
-    const title = `${a.name} vs ${b.name} — CompareTheNursery`
+    const title = `${a.name} vs ${b.name} — NurseryMatch`
     const description = `Side-by-side comparison of ${a.name} (${a.ofsted_overall_grade || 'Unrated'}) and ${b.name} (${b.ofsted_overall_grade || 'Unrated'}). Compare Ofsted grades, places, fees, and more.`
     return {
       title,
@@ -46,13 +46,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       openGraph: {
         title,
         description,
-        siteName: 'CompareTheNursery',
+        siteName: 'NurseryMatch',
         type: 'website',
         locale: 'en_GB',
       },
     }
   } catch {
-    return { title: 'Compare Nurseries | CompareTheNursery' }
+    return { title: 'Compare Nurseries | NurseryMatch' }
   }
 }
 

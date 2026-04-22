@@ -4,7 +4,7 @@ import Link from 'next/link'
 export const metadata: Metadata = {
   title: 'Contact Us',
   description:
-    'Get in touch with Compare the Nursery. Reach out for general enquiries, provider support, or data issues.',
+    'Get in touch with NurseryMatch. Reach out for general enquiries, provider support, or data issues.',
 }
 
 export default function ContactPage() {
@@ -23,11 +23,11 @@ export default function ContactPage() {
         <section className="bg-white border border-gray-200 rounded-xl p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">General Enquiries</h2>
           <p className="text-gray-600 mb-3">
-            For general questions about Compare the Nursery, feedback, or partnership
+            For general questions about NurseryMatch, feedback, or partnership
             opportunities:
           </p>
           <a
-            href="mailto:hello@comparethenursery.com"
+            href="mailto:hello@nurserymatch.com"
             className="inline-flex items-center gap-2 text-indigo-600 font-semibold hover:underline"
           >
             <svg
@@ -39,7 +39,7 @@ export default function ContactPage() {
               <path d="M3 4a2 2 0 0 0-2 2v1.161l8.441 4.221a1.25 1.25 0 0 0 1.118 0L19 7.162V6a2 2 0 0 0-2-2H3Z" />
               <path d="m19 8.839-7.77 3.885a2.75 2.75 0 0 1-2.46 0L1 8.839V14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.839Z" />
             </svg>
-            hello@comparethenursery.com
+            hello@nurserymatch.com
           </a>
         </section>
 
@@ -76,7 +76,7 @@ export default function ContactPage() {
             about your personal data under UK GDPR:
           </p>
           <a
-            href="mailto:privacy@comparethenursery.com"
+            href="mailto:privacy@nurserymatch.com"
             className="inline-flex items-center gap-2 text-indigo-600 font-semibold hover:underline"
           >
             <svg
@@ -91,7 +91,7 @@ export default function ContactPage() {
                 clipRule="evenodd"
               />
             </svg>
-            privacy@comparethenursery.com
+            privacy@nurserymatch.com
           </a>
         </section>
 

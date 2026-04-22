@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
-  description: 'CompareTheNursery terms of service — rules for using our nursery comparison platform.',
+  description: 'NurseryMatch terms of service — rules for using our nursery comparison platform.',
 }
 
 export default function TermsPage() {
@@ -14,8 +14,8 @@ export default function TermsPage() {
         <section>
           <h2 className="text-xl font-semibold text-gray-900 mb-3">1. About these terms</h2>
           <p className="text-gray-600">
-            These terms govern your use of comparethenursery.com (&quot;the Site&quot;), operated by
-            CompareTheNursery (&quot;we&quot;, &quot;us&quot;). By using the Site you agree to these terms.
+            These terms govern your use of nurserymatch.com (&quot;the Site&quot;), operated by
+            NurseryMatch (&quot;we&quot;, &quot;us&quot;). By using the Site you agree to these terms.
             If you do not agree, please do not use the Site.
           </p>
         </section>
@@ -122,8 +122,8 @@ export default function TermsPage() {
           <h2 className="text-xl font-semibold text-gray-900 mb-3">12. Contact</h2>
           <p className="text-gray-600">
             Questions about these terms? Email us at{' '}
-            <a href="mailto:hello@comparethenursery.com" className="text-blue-600 hover:underline">
-              hello@comparethenursery.com
+            <a href="mailto:hello@nurserymatch.com" className="text-blue-600 hover:underline">
+              hello@nurserymatch.com
             </a>
           </p>
         </section>

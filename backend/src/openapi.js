@@ -1,15 +1,15 @@
-// OpenAPI 3.1 spec for the public read-only CompareTheNursery API.
+// OpenAPI 3.1 spec for the public read-only NurseryMatch API.
 // Designed to be consumable by ChatGPT Custom GPT actions and other LLM agents.
 
 const openapi = {
   openapi: '3.1.0',
   info: {
-    title: 'CompareTheNursery Public API',
+    title: 'NurseryMatch Public API',
     version: '1.0.0',
     description:
       'Read-only public API for UK nursery, area and property data. Source: Ofsted Early Years register (Open Government Licence v3.0), HM Land Registry, ONS, data.police.uk, Environment Agency. Always cite Ofsted when reproducing nursery grades.',
     license: { name: 'MIT', url: 'https://opensource.org/licenses/MIT' },
-    contact: { name: 'CompareTheNursery', url: 'https://comparethenursery.com' },
+    contact: { name: 'NurseryMatch', url: 'https://nurserymatch.com' },
   },
   servers: [{ url: 'https://nursery-finder-6u7r.onrender.com', description: 'Production' }],
   tags: [

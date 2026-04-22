@@ -51,7 +51,7 @@ export async function generateMetadata({ params }: { params: { urn: string } }):
         title,
         description,
         url,
-        siteName: 'CompareTheNursery',
+        siteName: 'NurseryMatch',
         type: 'website',
         locale: 'en_GB',
         images: [{ url: '/og-default.png', width: 1200, height: 630, alt: nursery.name }],
@@ -64,7 +64,7 @@ export async function generateMetadata({ params }: { params: { urn: string } }):
       },
     }
   } catch {
-    return { title: 'Nursery not found | CompareTheNursery' }
+    return { title: 'Nursery not found | NurseryMatch' }
   }
 }
 

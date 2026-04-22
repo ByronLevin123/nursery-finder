@@ -3,7 +3,7 @@ title: "Understanding Ofsted Ratings: A Parent's Guide"
 slug: understanding-ofsted-ratings
 excerpt: "What do Ofsted nursery grades really mean? Learn how inspections work and what to look for beyond the headline rating."
 date: "2026-03-01"
-author: "CompareTheNursery Team"
+author: "NurseryMatch Team"
 ---
 
 # Understanding Ofsted Ratings: A Parent's Guide
@@ -30,7 +30,7 @@ The inspection report is far more valuable than the grade alone. Two Good-rated 
 
 ## When Was the Last Inspection?
 
-Ofsted inspections happen roughly every four years for Good-rated settings and every 30 months for those Requires Improvement or Inadequate. If a nursery was last inspected five or six years ago, the information may not reflect its current quality. Staff may have changed, new leadership may be in place, and practices may have evolved. On CompareTheNursery, we flag nurseries with inspections older than four years so you know to investigate further.
+Ofsted inspections happen roughly every four years for Good-rated settings and every 30 months for those Requires Improvement or Inadequate. If a nursery was last inspected five or six years ago, the information may not reflect its current quality. Staff may have changed, new leadership may be in place, and practices may have evolved. On NurseryMatch, we flag nurseries with inspections older than four years so you know to investigate further.
 
 ## New Nurseries Without a Rating
 
@@ -38,4 +38,4 @@ Nurseries that have recently registered may not yet have been inspected. This do
 
 ## Use Ofsted as a Starting Point
 
-Ofsted ratings are a useful filter for narrowing down your options, but they should be one part of your research. Combine them with personal visits, parent reviews, and practical considerations like location and cost. CompareTheNursery brings all this information together so you can compare nurseries with confidence.
+Ofsted ratings are a useful filter for narrowing down your options, but they should be one part of your research. Combine them with personal visits, parent reviews, and practical considerations like location and cost. NurseryMatch brings all this information together so you can compare nurseries with confidence.

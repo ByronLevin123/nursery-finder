@@ -90,7 +90,7 @@ export async function ingestSchoolsFromCsv(csvUrl) {
   logger.info({ csvUrl }, 'schools: downloading CSV')
   const response = await axios.get(csvUrl, {
     responseType: 'arraybuffer',
-    headers: { 'User-Agent': 'CompareTheNursery/1.0 (data@comparethenursery.com)' },
+    headers: { 'User-Agent': 'NurseryMatch/1.0 (data@nurserymatch.com)' },
   })
 
   const rawCsv = Buffer.from(response.data).toString('utf-8')

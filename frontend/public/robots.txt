@@ -5,4 +5,4 @@ Disallow: /account
 Disallow: /login
 Disallow: /shortlist
 
-Sitemap: https://comparethenursery.com/sitemap.xml
+Sitemap: https://nurserymatch.com/sitemap.xml

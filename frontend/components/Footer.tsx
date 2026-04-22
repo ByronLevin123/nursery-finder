@@ -7,7 +7,7 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row justify-between items-start gap-6">
           <div>
-            <p className="font-semibold text-gray-800">CompareTheNursery</p>
+            <p className="font-semibold text-gray-800">NurseryMatch</p>
             <p className="text-sm text-gray-500 mt-1">
               Find and compare Ofsted-rated nurseries across the UK
             </p>

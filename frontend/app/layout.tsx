@@ -9,7 +9,7 @@ import { organizationSchema, websiteSchema, jsonLdScript } from '@/lib/schema'
 import { API_URL } from '@/lib/api'
 import './globals.css'
 
-const SITE_URL = 'https://comparethenursery.com'
+const SITE_URL = 'https://nurserymatch.com'
 
 export const viewport: Viewport = {
   themeColor: '#4f46e5',
@@ -17,8 +17,8 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | CompareTheNursery',
-    default: 'CompareTheNursery — Compare UK Nurseries by Ofsted Grade',
+    template: '%s | NurseryMatch',
+    default: 'NurseryMatch — Compare UK Nurseries by Ofsted Grade',
   },
   description:
     'Find and compare Ofsted-rated nurseries near you. Search by postcode, filter by grade, and find funded places.',
@@ -33,11 +33,11 @@ export const metadata: Metadata = {
     'nursery comparison',
   ],
   openGraph: {
-    title: 'CompareTheNursery — Compare UK Nurseries by Ofsted Grade',
+    title: 'NurseryMatch — Compare UK Nurseries by Ofsted Grade',
     description:
       'Compare 27,000+ UK nurseries with real Ofsted ratings, family scores by area, live property data, and parent reviews.',
     url: SITE_URL,
-    siteName: 'CompareTheNursery',
+    siteName: 'NurseryMatch',
     locale: 'en_GB',
     type: 'website',
     images: [
@@ -45,13 +45,13 @@ export const metadata: Metadata = {
         url: '/og-default.png',
         width: 1200,
         height: 630,
-        alt: 'CompareTheNursery — UK nursery comparison',
+        alt: 'NurseryMatch — UK nursery comparison',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'CompareTheNursery — Compare UK Nurseries by Ofsted Grade',
+    title: 'NurseryMatch — Compare UK Nurseries by Ofsted Grade',
     description:
       'Compare 27,000+ UK nurseries with Ofsted ratings, family scores, and live property data.',
     images: ['/og-default.png'],

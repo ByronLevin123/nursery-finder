@@ -183,7 +183,7 @@ router.post('/:id/approve', requireRole('admin'), async (req, res, next) => {
           .maybeSingle()
         const providerUrl = process.env.FRONTEND_URL
           ? `${process.env.FRONTEND_URL}/provider`
-          : 'https://comparethenursery.com/provider'
+          : 'https://nurserymatch.com/provider'
         const rendered = renderClaimApprovedEmail(nurseryRow || { name: claim.urn }, providerUrl)
         await sendEmail({
           to: claim.claimer_email,

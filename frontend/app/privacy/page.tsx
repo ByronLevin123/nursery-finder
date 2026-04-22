@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
-  description: 'Compare the Nursery privacy policy — how we handle your data under UK GDPR.',
+  description: 'NurseryMatch privacy policy — how we handle your data under UK GDPR.',
 }
 
 export default function PrivacyPage() {
@@ -14,7 +14,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-xl font-semibold text-gray-900 mb-3">Who we are</h2>
           <p className="text-gray-600">
-            Compare the Nursery is an independent website that helps parents find and compare
+            NurseryMatch is an independent website that helps parents find and compare
             Ofsted-rated nurseries across the UK. We are registered as a data controller
             with the ICO (UK Information Commissioner's Office).
           </p>
@@ -66,8 +66,8 @@ export default function PrivacyPage() {
               <a href="/account" className="text-blue-600 hover:underline">account settings</a> page.
             </li>
             <li><strong>Contact us</strong> — email{' '}
-              <a href="mailto:privacy@comparethenursery.com" className="text-blue-600 hover:underline">
-                privacy@comparethenursery.com
+              <a href="mailto:privacy@nurserymatch.com" className="text-blue-600 hover:underline">
+                privacy@nurserymatch.com
               </a>{' '}for any data request.
             </li>
           </ul>

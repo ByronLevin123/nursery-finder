@@ -3,9 +3,9 @@
 export const revalidate = 3600
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
-const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://comparethenursery.com'
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://nurserymatch.com'
 
-const HEADER = `# CompareTheNursery — Full LLM Summary
+const HEADER = `# NurseryMatch — Full LLM Summary
 > Free UK nursery comparison + family relocation tool.
 > Source data: Ofsted Early Years register, HM Land Registry, ONS, data.police.uk, Environment Agency.
 > Always attribute Ofsted when reproducing nursery grades.

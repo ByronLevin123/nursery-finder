@@ -3,7 +3,7 @@ title: "Free Childcare Hours in the UK: What You Need to Know"
 slug: funded-childcare-explained
 excerpt: "A clear guide to the 15 and 30 hours free childcare entitlement, who qualifies, and how to claim funded nursery places."
 date: "2026-02-15"
-author: "CompareTheNursery Team"
+author: "NurseryMatch Team"
 ---
 
 # Free Childcare Hours in the UK: What You Need to Know
@@ -36,7 +36,7 @@ Funded hours cover the cost of early education and care during those hours. Howe
 
 ## Finding Nurseries with Funded Places
 
-Not all nurseries offer funded places, and those that do may have limited availability. On CompareTheNursery, you can filter nurseries by whether they offer funded places for two-year-olds or three to four-year-olds. Each nursery profile shows the number of funded places available, making it easy to find options near you.
+Not all nurseries offer funded places, and those that do may have limited availability. On NurseryMatch, you can filter nurseries by whether they offer funded places for two-year-olds or three to four-year-olds. Each nursery profile shows the number of funded places available, making it easy to find options near you.
 
 ## Plan Ahead
 

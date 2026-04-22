@@ -17,7 +17,7 @@ import { syncGooglePlacesData, refreshStaleGoogleData } from './services/googleP
 import db from './db.js'
 import { logger } from './logger.js'
 
-logger.info('CompareTheNursery worker started')
+logger.info('NurseryMatch worker started')
 
 // Geocode 500 nurseries every night at 3am
 cron.schedule('0 3 * * *', async () => {

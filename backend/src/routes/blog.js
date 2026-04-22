@@ -63,7 +63,7 @@ function loadPosts() {
         title: meta.title || file.replace('.md', '').replace(/-/g, ' '),
         excerpt: meta.excerpt || body.slice(0, 160) + '...',
         date: meta.date || null,
-        author: meta.author || 'CompareTheNursery Team',
+        author: meta.author || 'NurseryMatch Team',
         body,
       })
     }

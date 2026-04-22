@@ -14,7 +14,7 @@ const request = (await import('supertest')).default
 describe('OpenAPI spec', () => {
   it('is valid OpenAPI 3.1 with required info fields', () => {
     expect(openapi.openapi).toBe('3.1.0')
-    expect(openapi.info.title).toBe('CompareTheNursery Public API')
+    expect(openapi.info.title).toBe('NurseryMatch Public API')
     expect(openapi.info.version).toBe('1.0.0')
     expect(openapi.info.license.name).toBe('MIT')
     expect(Array.isArray(openapi.servers)).toBe(true)

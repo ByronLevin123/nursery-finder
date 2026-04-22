@@ -64,7 +64,7 @@ export default function ComparisonPrintView({ nurseries }: Props) {
       {/* Title */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">
-          Nursery Comparison — CompareTheNursery
+          Nursery Comparison — NurseryMatch
         </h1>
         <p className="text-sm text-gray-500 mt-1">Generated on {now}</p>
       </div>
@@ -104,7 +104,7 @@ export default function ComparisonPrintView({ nurseries }: Props) {
 
       {/* Footer */}
       <div className="mt-8 pt-4 border-t border-gray-300 text-xs text-gray-500 text-center">
-        Generated from comparethenursery.com
+        Generated from nurserymatch.com
       </div>
     </div>
   )

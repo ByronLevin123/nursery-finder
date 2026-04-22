@@ -3,7 +3,7 @@ title: "How to Choose the Right Nursery for Your Child"
 slug: how-to-choose-nursery
 excerpt: "A comprehensive guide to finding the perfect nursery for your family, from Ofsted ratings to practical visits."
 date: "2026-03-15"
-author: "CompareTheNursery Team"
+author: "NurseryMatch Team"
 ---
 
 # How to Choose the Right Nursery for Your Child
@@ -36,8 +36,8 @@ Outdoor space is important for young children. A nursery with a garden or regula
 
 ## Talk to Other Parents
 
-Word of mouth is powerful. Ask parents in your area about their experiences. Online reviews can also give you a sense of how a nursery operates day to day. On CompareTheNursery, you can read reviews from verified parents and compare nurseries side by side.
+Word of mouth is powerful. Ask parents in your area about their experiences. Online reviews can also give you a sense of how a nursery operates day to day. On NurseryMatch, you can read reviews from verified parents and compare nurseries side by side.
 
 ## Make Your Decision
 
-There is no single perfect nursery. The right choice depends on your child's personality, your family's needs, and your budget. Use CompareTheNursery to shortlist nurseries in your area, read the Ofsted reports, visit your favourites, and choose with confidence.
+There is no single perfect nursery. The right choice depends on your child's personality, your family's needs, and your budget. Use NurseryMatch to shortlist nurseries in your area, read the Ofsted reports, visit your favourites, and choose with confidence.

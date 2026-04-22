@@ -8,7 +8,7 @@ API_URL=${API_URL:-http://localhost:3001}
 ADMIN_USER=${ADMIN_USER:-admin}
 ADMIN_PASS=${ADMIN_PASS:-admin}
 
-echo "=== CompareTheNursery First Import ==="
+echo "=== NurseryMatch First Import ==="
 echo "API: $API_URL"
 echo ""
 
