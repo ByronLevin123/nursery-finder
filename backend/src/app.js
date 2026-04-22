@@ -81,6 +81,13 @@ import assistantRouter from './routes/assistant.js'
 
 const app = express()
 
+// Trust the first proxy (Render's load balancer). Without this, every client
+// appears to come from the LB's IP, which causes express-rate-limit to treat
+// all users as the same "IP" — the per-IP limit becomes a global cap and the
+// site 429s as soon as a handful of users browse. With `1`, express reads the
+// left-most IP from X-Forwarded-For, which is the real client.
+app.set('trust proxy', 1)
+
 // Security
 app.use(helmet())
 
@@ -162,10 +169,13 @@ app.use(
 // Request logging
 app.use(pinoHttp({ logger }))
 
-// Rate limiting — public endpoints (100 req / 15 min per IP)
+// Rate limiting — public endpoints (300 req / 15 min per IP).
+// A single Find-an-Area or Search page can fan out 10+ requests per navigation
+// (area summaries per district, nursery details, overlays). 300/15min per real
+// client IP is generous for normal browsing and still blocks scrape-style abuse.
 const publicLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 300,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later' },
