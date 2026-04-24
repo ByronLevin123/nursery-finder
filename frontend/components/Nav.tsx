@@ -140,6 +140,13 @@ export default function Nav() {
                   {isProvider && (
                     <>
                       <Link
+                        href="/provider"
+                        className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => setAccountOpen(false)}
+                      >
+                        Dashboard
+                      </Link>
+                      <Link
                         href="/provider/enquiries"
                         className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         onClick={() => setAccountOpen(false)}

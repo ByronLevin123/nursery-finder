@@ -4,6 +4,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { isPasswordValid } from '@/lib/validation'
+import { API_URL } from '@/lib/api'
 
 type Tab = 'signin' | 'signup'
 type AuthMethod = 'password' | 'magic-link'
@@ -12,7 +13,8 @@ type SuccessView = null | 'magic-link-sent' | 'signup-confirm' | 'password-reset
 function LoginInner() {
   const params = useSearchParams()
   const router = useRouter()
-  const next = params.get('next') || '/shortlist'
+  const explicitNext = params.get('next')
+  const next = explicitNext || '/shortlist'
   const confirmed = params.get('confirmed')
 
   const [tab, setTab] = useState<Tab>('signin')
@@ -39,13 +41,33 @@ function LoginInner() {
     e.preventDefault()
     setLoading(true)
     setError(null)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
       setError(error.message)
       setLoading(false)
-    } else {
-      router.push(next)
+      return
     }
+    if (explicitNext) {
+      router.push(next)
+      return
+    }
+    // No explicit redirect — route based on role
+    try {
+      const token = data.session?.access_token
+      if (token) {
+        const r = await fetch(`${API_URL}/api/v1/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (r.ok) {
+          const profile = await r.json()
+          if (profile.role === 'provider') { router.push('/provider'); return }
+          if (profile.role === 'admin') { router.push('/admin'); return }
+        }
+      }
+    } catch {
+      // Fall through to default
+    }
+    router.push('/shortlist')
   }
 
   async function handleMagicLink(e: React.FormEvent) {

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useSession } from '@/components/SessionProvider'
-import { getAuthToken, API_URL } from '@/lib/api'
+import { API_URL } from '@/lib/api'
 
 interface ProviderSubscription {
   tier: string
@@ -80,8 +80,7 @@ export default function ProviderBillingPage() {
 
     async function loadSubscription() {
       try {
-        const token = await getAuthToken()
-        if (!token) throw new Error('Not authenticated')
+        const token = session!.access_token
         const res = await fetch(`${API_URL}/api/v1/billing/subscription`, {
           headers: { Authorization: `Bearer ${token}` },
         })
@@ -100,7 +99,7 @@ export default function ProviderBillingPage() {
   async function handleCheckout(tier: string) {
     setActionLoading(tier)
     try {
-      const token = await getAuthToken()
+      const token = session?.access_token
       if (!token) throw new Error('Not authenticated')
       const res = await fetch(`${API_URL}/api/v1/billing/checkout`, {
         method: 'POST',
@@ -125,7 +124,7 @@ export default function ProviderBillingPage() {
   async function handleManageBilling() {
     setActionLoading('portal')
     try {
-      const token = await getAuthToken()
+      const token = session?.access_token
       if (!token) throw new Error('Not authenticated')
       const res = await fetch(`${API_URL}/api/v1/billing/portal`, {
         method: 'POST',

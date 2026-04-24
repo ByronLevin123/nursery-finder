@@ -245,30 +245,48 @@ export default function AccountPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Home postcode</label>
-              <input
-                type="text"
-                value={homePostcode}
-                onChange={(e) => setHomePostcode(e.target.value.toUpperCase())}
-                maxLength={16}
-                placeholder="SW11 1AA"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
-              />
+          {/* Provider quick links */}
+          {role === 'provider' && (
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+              <p className="text-sm font-medium text-indigo-900 mb-2">Nursery Management</p>
+              <div className="flex flex-wrap gap-2">
+                <Link href="/provider" className="text-sm text-indigo-700 hover:text-indigo-900 underline">Dashboard</Link>
+                <span className="text-indigo-300">|</span>
+                <Link href="/provider/onboarding" className="text-sm text-indigo-700 hover:text-indigo-900 underline">Edit Nursery</Link>
+                <span className="text-indigo-300">|</span>
+                <Link href="/provider/billing" className="text-sm text-indigo-700 hover:text-indigo-900 underline">Billing</Link>
+                <span className="text-indigo-300">|</span>
+                <Link href="/provider/enquiries" className="text-sm text-indigo-700 hover:text-indigo-900 underline">Enquiries</Link>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Work postcode</label>
-              <input
-                type="text"
-                value={workPostcode}
-                onChange={(e) => setWorkPostcode(e.target.value.toUpperCase())}
-                maxLength={16}
-                placeholder="EC2A 1AA"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
-              />
+          )}
+
+          {role !== 'provider' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Home postcode</label>
+                <input
+                  type="text"
+                  value={homePostcode}
+                  onChange={(e) => setHomePostcode(e.target.value.toUpperCase())}
+                  maxLength={16}
+                  placeholder="SW11 1AA"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Work postcode</label>
+                <input
+                  type="text"
+                  value={workPostcode}
+                  onChange={(e) => setWorkPostcode(e.target.value.toUpperCase())}
+                  maxLength={16}
+                  placeholder="EC2A 1AA"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Avatar URL</label>
@@ -282,60 +300,64 @@ export default function AccountPage() {
             />
           </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700">Children</label>
-              <button
-                type="button"
-                onClick={addChild}
-                className="text-xs text-blue-600 hover:underline"
-              >
-                + Add child
-              </button>
-            </div>
-            {children.length === 0 && (
-              <p className="text-xs text-gray-500">No children added yet.</p>
-            )}
-            <div className="space-y-2">
-              {children.map((c, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={c.name || ''}
-                    onChange={(e) => updateChild(idx, { name: e.target.value })}
-                    placeholder="Name"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  />
-                  <input
-                    type="number"
-                    value={c.age_months ?? 0}
-                    onChange={(e) => updateChild(idx, { age_months: Number(e.target.value) })}
-                    min={0}
-                    max={120}
-                    placeholder="Age (months)"
-                    className="w-32 px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  />
+          {role !== 'provider' && (
+            <>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">Children</label>
                   <button
                     type="button"
-                    onClick={() => removeChild(idx)}
-                    className="text-xs text-red-600 hover:underline"
+                    onClick={addChild}
+                    className="text-xs text-blue-600 hover:underline"
                   >
-                    Remove
+                    + Add child
                   </button>
                 </div>
-              ))}
-            </div>
-          </div>
+                {children.length === 0 && (
+                  <p className="text-xs text-gray-500">No children added yet.</p>
+                )}
+                <div className="space-y-2">
+                  {children.map((c, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={c.name || ''}
+                        onChange={(e) => updateChild(idx, { name: e.target.value })}
+                        placeholder="Name"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      />
+                      <input
+                        type="number"
+                        value={c.age_months ?? 0}
+                        onChange={(e) => updateChild(idx, { age_months: Number(e.target.value) })}
+                        min={0}
+                        max={120}
+                        placeholder="Age (months)"
+                        className="w-32 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeChild(idx)}
+                        className="text-xs text-red-600 hover:underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={emailAlerts}
-              onChange={(e) => setEmailAlerts(e.target.checked)}
-              className="w-4 h-4"
-            />
-            <span className="text-sm text-gray-700">Email me about new matching nurseries</span>
-          </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={emailAlerts}
+                  onChange={(e) => setEmailAlerts(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm text-gray-700">Email me about new matching nurseries</span>
+              </label>
+            </>
+          )}
         </div>
 
         <div className="mt-6 flex justify-end">
