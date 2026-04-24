@@ -263,6 +263,13 @@ export default function Nav() {
               <Link href="/shortlist" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>
                 Shortlist {shortlistCount > 0 && `(${shortlistCount})`}
               </Link>
+              <Link
+                href={compareCount >= 2 ? `/compare?urns=${getCompareList().join(',')}` : '/compare'}
+                className="block text-sm text-gray-600"
+                onClick={() => setMenuOpen(false)}
+              >
+                Compare {compareCount > 0 && `(${compareCount})`}
+              </Link>
               <Link href="/quiz" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Quiz</Link>
               <Link href="/guides" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Guides</Link>
             </>

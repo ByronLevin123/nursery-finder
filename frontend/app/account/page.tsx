@@ -42,7 +42,6 @@ export default function AccountPage() {
   // Form state mirrors profile
   const [displayName, setDisplayName] = useState('')
   const [homePostcode, setHomePostcode] = useState('')
-  const [workPostcode, setWorkPostcode] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [emailAlerts, setEmailAlerts] = useState(false)
   const [children, setChildren] = useState<ProfileChild[]>([])
@@ -60,10 +59,9 @@ export default function AccountPage() {
         setProfile(p)
         setDisplayName(p.display_name || '')
         setHomePostcode(p.home_postcode || '')
-        setWorkPostcode(p.work_postcode || '')
         setAvatarUrl(p.avatar_url || '')
         setEmailAlerts(!!p.email_alerts)
-        setChildren(Array.isArray(p.children) ? p.children : [])
+        setChildren(Array.isArray(p.children) ? p.children.map(c => ({ ...c, id: c.id || crypto.randomUUID() })) : [])
         setEmailWeeklyDigest(p.email_weekly_digest !== false)
         setEmailNewNurseries(p.email_new_nurseries !== false)
         setEmailMarketing(p.email_marketing !== false)
@@ -110,7 +108,6 @@ export default function AccountPage() {
       const updated = await updateProfile(session.access_token, {
         display_name: displayName || null,
         home_postcode: homePostcode || null,
-        work_postcode: workPostcode || null,
         avatar_url: avatarUrl || null,
         email_alerts: emailAlerts,
         children,
@@ -143,7 +140,7 @@ export default function AccountPage() {
   }
 
   function addChild() {
-    setChildren((prev) => [...prev, { name: '', age_months: 0 }])
+    setChildren((prev) => [...prev, { id: crypto.randomUUID(), name: '', age_months: 0 }])
   }
   function removeChild(idx: number) {
     setChildren((prev) => prev.filter((_, i) => i !== idx))
@@ -262,29 +259,16 @@ export default function AccountPage() {
           )}
 
           {role !== 'provider' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Home postcode</label>
-                <input
-                  type="text"
-                  value={homePostcode}
-                  onChange={(e) => setHomePostcode(e.target.value.toUpperCase())}
-                  maxLength={16}
-                  placeholder="SW11 1AA"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Work postcode</label>
-                <input
-                  type="text"
-                  value={workPostcode}
-                  onChange={(e) => setWorkPostcode(e.target.value.toUpperCase())}
-                  maxLength={16}
-                  placeholder="EC2A 1AA"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Home postcode</label>
+              <input
+                type="text"
+                value={homePostcode}
+                onChange={(e) => setHomePostcode(e.target.value.toUpperCase())}
+                maxLength={16}
+                placeholder="SW11 1AA"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+              />
             </div>
           )}
 
@@ -318,7 +302,7 @@ export default function AccountPage() {
                 )}
                 <div className="space-y-2">
                   {children.map((c, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
+                    <div key={c.id || idx} className="flex items-center gap-2">
                       <input
                         type="text"
                         value={c.name || ''}

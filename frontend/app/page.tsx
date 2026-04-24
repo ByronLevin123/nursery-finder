@@ -210,11 +210,6 @@ export default function HomePage() {
               Search by postcode
             </a>
           </div>
-          <p className="mt-4">
-            <a href="/pricing" className="text-white/80 hover:text-white text-sm font-medium underline underline-offset-2">
-              See our plans &rarr;
-            </a>
-          </p>
         </div>
       </section>
 
