@@ -263,6 +263,7 @@ export async function submitReview(
 }
 
 export interface ProfileChild {
+  id?: string
   name?: string
   age_months?: number
 }

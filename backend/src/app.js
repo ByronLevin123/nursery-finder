@@ -27,6 +27,7 @@ import profileRouter from './routes/profile.js'
 import propertiesRouter from './routes/properties.js'
 import publicMarkdownRouter from './routes/publicMarkdown.js'
 import openapi from './openapi.js'
+import swaggerUi from 'swagger-ui-express'
 import emailRouter from './routes/email.js'
 import savedSearchesRouter from './routes/savedSearches.js'
 import overlaysRouter from './routes/overlays.js'
@@ -263,6 +264,12 @@ app.get('/api/openapi.json', (req, res, next) => {
     next(err)
   }
 })
+
+// Swagger UI — interactive API docs
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openapi, {
+  customSiteTitle: 'CompareTheNursery API Docs',
+  customCss: '.swagger-ui .topbar { display: none }',
+}))
 
 // AI routes — mounted at /api/v1 so router defines its own subpaths
 app.use('/api/v1', aiRouter)

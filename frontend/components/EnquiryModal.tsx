@@ -29,6 +29,7 @@ export default function EnquiryModal({ nurseries, onClose, childName, childDob }
   const [message, setMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [queuedMessage, setQueuedMessage] = useState('')
   const [error, setError] = useState('')
 
   function toggleNursery(id: string) {
@@ -65,7 +66,8 @@ export default function EnquiryModal({ nurseries, onClose, childName, childDob }
         const err = await res.json().catch(() => ({}))
         throw new Error(err.error || 'Failed to send enquiries')
       }
-      await res.json()
+      const result = await res.json()
+      if (result.message) setQueuedMessage(result.message)
       setSuccess(true)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
@@ -99,6 +101,11 @@ export default function EnquiryModal({ nurseries, onClose, childName, childDob }
           <h2 className="text-lg font-bold text-gray-900 mb-2">
             Enquiries sent to {selected.length} {selected.length === 1 ? 'nursery' : 'nurseries'}!
           </h2>
+          {queuedMessage && (
+            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
+              {queuedMessage}
+            </p>
+          )}
           <p className="text-sm text-gray-600 mb-4">Track responses at your applications page.</p>
           <div className="flex gap-2 justify-center">
             <Link

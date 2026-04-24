@@ -140,6 +140,13 @@ export default function Nav() {
                   {isProvider && (
                     <>
                       <Link
+                        href="/provider"
+                        className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => setAccountOpen(false)}
+                      >
+                        Dashboard
+                      </Link>
+                      <Link
                         href="/provider/enquiries"
                         className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         onClick={() => setAccountOpen(false)}
@@ -227,6 +234,13 @@ export default function Nav() {
               <Link href="/find-an-area" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Find an Area</Link>
               <Link href="/shortlist" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>
                 Shortlist {shortlistCount > 0 && `(${shortlistCount})`}
+              </Link>
+              <Link
+                href={compareCount >= 2 ? `/compare?urns=${getCompareList().join(',')}` : '/compare'}
+                className="block text-sm text-gray-600"
+                onClick={() => setMenuOpen(false)}
+              >
+                Compare {compareCount > 0 && `(${compareCount})`}
               </Link>
               <Link href="/quiz" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Quiz</Link>
               <Link href="/guides" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Guides</Link>

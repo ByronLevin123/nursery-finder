@@ -500,55 +500,165 @@ router.patch('/reviews/:id', async (req, res, next) => {
 })
 
 // ---------------------------------------------------------------------------
-// GET /enquiries — paginated enquiry list
+// GET /enquiries — paginated enquiry list with filters
 // ---------------------------------------------------------------------------
 router.get('/enquiries', async (req, res, next) => {
   try {
     if (!db) return res.status(503).json({ error: 'Database not configured' })
     const { page, limit, offset } = paginate(req.query)
+    const { status, nursery_id, claimed, from, to } = req.query
 
-    const { data, error, count } = await db
+    let query = db
       .from('enquiries')
       .select(
-        'id, user_id, nursery_id, child_name, message, status, sent_at, responded_at',
+        'id, user_id, nursery_id, child_name, child_dob, preferred_start, session_preference, message, status, requires_admin_review, sent_at, responded_at',
         { count: 'exact' }
       )
-      .order('sent_at', { ascending: false })
-      .range(offset, offset + limit - 1)
+
+    if (status) query = query.eq('status', status)
+    if (nursery_id) query = query.eq('nursery_id', nursery_id)
+    if (from) query = query.gte('sent_at', from)
+    if (to) query = query.lte('sent_at', to)
+    if (claimed === 'true') query = query.eq('requires_admin_review', false)
+    if (claimed === 'false') query = query.eq('requires_admin_review', true)
+
+    query = query.order('sent_at', { ascending: false }).range(offset, offset + limit - 1)
+
+    const { data, error, count } = await query
     if (error) throw error
 
-    // Look up nursery names
+    // Look up nursery names + claimed status
     const nurseryIds = [...new Set((data || []).map((r) => r.nursery_id).filter(Boolean))]
-    let nurseryNames = {}
+    let nurseryMap = {}
     if (nurseryIds.length > 0) {
       const { data: nurseries } = await db
         .from('nurseries')
-        .select('urn, name')
-        .in('urn', nurseryIds)
+        .select('id, name, urn, claimed_by_user_id')
+        .in('id', nurseryIds)
       if (nurseries) {
-        nurseryNames = Object.fromEntries(nurseries.map((n) => [n.urn, n.name]))
+        nurseryMap = Object.fromEntries(nurseries.map((n) => [n.id, n]))
       }
     }
 
-    const rows = (data || []).map((row) => ({
-      id: row.id,
-      user_id: row.user_id,
-      nursery_id: row.nursery_id,
-      nursery_name: nurseryNames[row.nursery_id] ?? null,
-      child_name: row.child_name,
-      message: row.message,
-      status: row.status,
-      sent_at: row.sent_at,
-      responded_at: row.responded_at,
-    }))
+    // Look up parent display names
+    const userIds = [...new Set((data || []).map((r) => r.user_id).filter(Boolean))]
+    let userMap = {}
+    if (userIds.length > 0) {
+      const { data: profiles } = await db
+        .from('user_profiles')
+        .select('id, display_name')
+        .in('id', userIds)
+      if (profiles) {
+        userMap = Object.fromEntries(profiles.map((p) => [p.id, p.display_name]))
+      }
+    }
 
-    logger.info({ page, limit }, 'admin enquiries list')
+    const rows = (data || []).map((row) => {
+      const nursery = nurseryMap[row.nursery_id] || {}
+      return {
+        id: row.id,
+        user_id: row.user_id,
+        parent_name: userMap[row.user_id] ?? null,
+        nursery_id: row.nursery_id,
+        nursery_name: nursery.name ?? null,
+        nursery_urn: nursery.urn ?? null,
+        nursery_claimed: !!nursery.claimed_by_user_id,
+        child_name: row.child_name,
+        message: row.message,
+        status: row.status,
+        requires_admin_review: row.requires_admin_review ?? false,
+        sent_at: row.sent_at,
+        responded_at: row.responded_at,
+      }
+    })
+
+    logger.info({ page, limit, status, claimed }, 'admin enquiries list')
     return res.json({
       data: rows,
       meta: paginationMeta(count ?? 0, page, limit),
     })
   } catch (err) {
     logger.error({ err: err?.message }, 'admin enquiries list failed')
+    next(err)
+  }
+})
+
+// ---------------------------------------------------------------------------
+// GET /bookings — paginated visit bookings list with filters
+// ---------------------------------------------------------------------------
+router.get('/bookings', async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+    const { page, limit, offset } = paginate(req.query)
+    const { status, nursery_id, from, to } = req.query
+
+    let query = db
+      .from('visit_bookings')
+      .select(
+        'id, user_id, nursery_id, slot_date, slot_time, status, notes, created_at',
+        { count: 'exact' }
+      )
+
+    if (status) query = query.eq('status', status)
+    if (nursery_id) query = query.eq('nursery_id', nursery_id)
+    if (from) query = query.gte('slot_date', from)
+    if (to) query = query.lte('slot_date', to)
+
+    query = query.order('slot_date', { ascending: false }).range(offset, offset + limit - 1)
+
+    const { data, error, count } = await query
+    if (error) throw error
+
+    // Look up nursery names
+    const nurseryIds = [...new Set((data || []).map((r) => r.nursery_id).filter(Boolean))]
+    let nurseryMap = {}
+    if (nurseryIds.length > 0) {
+      const { data: nurseries } = await db
+        .from('nurseries')
+        .select('id, name, urn')
+        .in('id', nurseryIds)
+      if (nurseries) {
+        nurseryMap = Object.fromEntries(nurseries.map((n) => [n.id, n]))
+      }
+    }
+
+    // Look up parent display names
+    const userIds = [...new Set((data || []).map((r) => r.user_id).filter(Boolean))]
+    let userMap = {}
+    if (userIds.length > 0) {
+      const { data: profiles } = await db
+        .from('user_profiles')
+        .select('id, display_name')
+        .in('id', userIds)
+      if (profiles) {
+        userMap = Object.fromEntries(profiles.map((p) => [p.id, p.display_name]))
+      }
+    }
+
+    const rows = (data || []).map((row) => {
+      const nursery = nurseryMap[row.nursery_id] || {}
+      return {
+        id: row.id,
+        user_id: row.user_id,
+        parent_name: userMap[row.user_id] ?? null,
+        nursery_id: row.nursery_id,
+        nursery_name: nursery.name ?? null,
+        nursery_urn: nursery.urn ?? null,
+        slot_date: row.slot_date,
+        slot_time: row.slot_time,
+        status: row.status,
+        notes: row.notes,
+        created_at: row.created_at,
+      }
+    })
+
+    logger.info({ page, limit, status }, 'admin bookings list')
+    return res.json({
+      data: rows,
+      meta: paginationMeta(count ?? 0, page, limit),
+    })
+  } catch (err) {
+    logger.error({ err: err?.message }, 'admin bookings list failed')
     next(err)
   }
 })

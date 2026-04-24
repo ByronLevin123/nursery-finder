@@ -42,7 +42,6 @@ export default function AccountPage() {
   // Form state mirrors profile
   const [displayName, setDisplayName] = useState('')
   const [homePostcode, setHomePostcode] = useState('')
-  const [workPostcode, setWorkPostcode] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [emailAlerts, setEmailAlerts] = useState(false)
   const [children, setChildren] = useState<ProfileChild[]>([])
@@ -60,10 +59,9 @@ export default function AccountPage() {
         setProfile(p)
         setDisplayName(p.display_name || '')
         setHomePostcode(p.home_postcode || '')
-        setWorkPostcode(p.work_postcode || '')
         setAvatarUrl(p.avatar_url || '')
         setEmailAlerts(!!p.email_alerts)
-        setChildren(Array.isArray(p.children) ? p.children : [])
+        setChildren(Array.isArray(p.children) ? p.children.map(c => ({ ...c, id: c.id || crypto.randomUUID() })) : [])
         setEmailWeeklyDigest(p.email_weekly_digest !== false)
         setEmailNewNurseries(p.email_new_nurseries !== false)
         setEmailMarketing(p.email_marketing !== false)
@@ -110,7 +108,6 @@ export default function AccountPage() {
       const updated = await updateProfile(session.access_token, {
         display_name: displayName || null,
         home_postcode: homePostcode || null,
-        work_postcode: workPostcode || null,
         avatar_url: avatarUrl || null,
         email_alerts: emailAlerts,
         children,
@@ -143,7 +140,7 @@ export default function AccountPage() {
   }
 
   function addChild() {
-    setChildren((prev) => [...prev, { name: '', age_months: 0 }])
+    setChildren((prev) => [...prev, { id: crypto.randomUUID(), name: '', age_months: 0 }])
   }
   function removeChild(idx: number) {
     setChildren((prev) => prev.filter((_, i) => i !== idx))
@@ -245,7 +242,23 @@ export default function AccountPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Provider quick links */}
+          {role === 'provider' && (
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+              <p className="text-sm font-medium text-indigo-900 mb-2">Nursery Management</p>
+              <div className="flex flex-wrap gap-2">
+                <Link href="/provider" className="text-sm text-indigo-700 hover:text-indigo-900 underline">Dashboard</Link>
+                <span className="text-indigo-300">|</span>
+                <Link href="/provider/onboarding" className="text-sm text-indigo-700 hover:text-indigo-900 underline">Edit Nursery</Link>
+                <span className="text-indigo-300">|</span>
+                <Link href="/provider/billing" className="text-sm text-indigo-700 hover:text-indigo-900 underline">Billing</Link>
+                <span className="text-indigo-300">|</span>
+                <Link href="/provider/enquiries" className="text-sm text-indigo-700 hover:text-indigo-900 underline">Enquiries</Link>
+              </div>
+            </div>
+          )}
+
+          {role !== 'provider' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Home postcode</label>
               <input
@@ -257,18 +270,7 @@ export default function AccountPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Work postcode</label>
-              <input
-                type="text"
-                value={workPostcode}
-                onChange={(e) => setWorkPostcode(e.target.value.toUpperCase())}
-                maxLength={16}
-                placeholder="EC2A 1AA"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
-              />
-            </div>
-          </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Avatar URL</label>
@@ -282,60 +284,64 @@ export default function AccountPage() {
             />
           </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700">Children</label>
-              <button
-                type="button"
-                onClick={addChild}
-                className="text-xs text-blue-600 hover:underline"
-              >
-                + Add child
-              </button>
-            </div>
-            {children.length === 0 && (
-              <p className="text-xs text-gray-500">No children added yet.</p>
-            )}
-            <div className="space-y-2">
-              {children.map((c, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={c.name || ''}
-                    onChange={(e) => updateChild(idx, { name: e.target.value })}
-                    placeholder="Name"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  />
-                  <input
-                    type="number"
-                    value={c.age_months ?? 0}
-                    onChange={(e) => updateChild(idx, { age_months: Number(e.target.value) })}
-                    min={0}
-                    max={120}
-                    placeholder="Age (months)"
-                    className="w-32 px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  />
+          {role !== 'provider' && (
+            <>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">Children</label>
                   <button
                     type="button"
-                    onClick={() => removeChild(idx)}
-                    className="text-xs text-red-600 hover:underline"
+                    onClick={addChild}
+                    className="text-xs text-blue-600 hover:underline"
                   >
-                    Remove
+                    + Add child
                   </button>
                 </div>
-              ))}
-            </div>
-          </div>
+                {children.length === 0 && (
+                  <p className="text-xs text-gray-500">No children added yet.</p>
+                )}
+                <div className="space-y-2">
+                  {children.map((c, idx) => (
+                    <div key={c.id || idx} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={c.name || ''}
+                        onChange={(e) => updateChild(idx, { name: e.target.value })}
+                        placeholder="Name"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      />
+                      <input
+                        type="number"
+                        value={c.age_months ?? 0}
+                        onChange={(e) => updateChild(idx, { age_months: Number(e.target.value) })}
+                        min={0}
+                        max={120}
+                        placeholder="Age (months)"
+                        className="w-32 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeChild(idx)}
+                        className="text-xs text-red-600 hover:underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={emailAlerts}
-              onChange={(e) => setEmailAlerts(e.target.checked)}
-              className="w-4 h-4"
-            />
-            <span className="text-sm text-gray-700">Email me about new matching nurseries</span>
-          </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={emailAlerts}
+                  onChange={(e) => setEmailAlerts(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm text-gray-700">Email me about new matching nurseries</span>
+              </label>
+            </>
+          )}
         </div>
 
         <div className="mt-6 flex justify-end">

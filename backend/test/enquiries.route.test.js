@@ -141,6 +141,9 @@ beforeAll(async () => {
 beforeEach(() => {
   store.enquiries = []
   store.nurseries.clear()
+  // Both nurseries are claimed by a provider — enquiries go through the
+  // direct-send path rather than the admin-queued path. Tests that need the
+  // queued path should override `claimed_by_user_id` to null in the test body.
   store.nurseries.set('n-1', {
     id: 'n-1',
     urn: 'EY100',
@@ -148,7 +151,7 @@ beforeEach(() => {
     town: 'London',
     contact_email: null,
     email: null,
-    claimed_by_user_id: null,
+    claimed_by_user_id: 'provider-1',
   })
   store.nurseries.set('n-2', {
     id: 'n-2',
@@ -157,7 +160,7 @@ beforeEach(() => {
     town: 'Leeds',
     contact_email: null,
     email: null,
-    claimed_by_user_id: null,
+    claimed_by_user_id: 'provider-2',
   })
 })
 
@@ -179,6 +182,28 @@ describe('POST /api/v1/enquiries', () => {
     expect(res.status).toBe(201)
     expect(res.body.data.length).toBe(2)
     expect(res.body.meta.sent).toBe(2)
+    expect(res.body.meta.queued).toBe(0)
+  })
+
+  it('queues enquiries for unclaimed nurseries instead of sending', async () => {
+    // Override fixture: mark both as unclaimed so they go through the
+    // admin-review / queued path.
+    store.nurseries.get('n-1').claimed_by_user_id = null
+    store.nurseries.get('n-2').claimed_by_user_id = null
+
+    const res = await request(app)
+      .post('/api/v1/enquiries')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({
+        nursery_ids: ['n-1', 'n-2'],
+        child_name: 'Alice',
+        message: 'Interested in a place',
+      })
+    expect(res.status).toBe(201)
+    expect(res.body.data.length).toBe(2)
+    expect(res.body.meta.sent).toBe(0)
+    expect(res.body.meta.queued).toBe(2)
+    expect(res.body.data.every((e) => e.status === 'queued')).toBe(true)
   })
 
   it('rejects empty nursery_ids', async () => {
