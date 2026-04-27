@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import dynamic from 'next/dynamic'
 import HomeSearch from '@/components/HomeSearch'
 import AreaSummaryCard from '@/components/AreaSummaryCard'
+import NewsletterSignup from '@/components/NewsletterSignup'
 import OglAttribution from '@/components/OglAttribution'
 import PriorityWizardButton from '@/components/PriorityWizardButton'
 
@@ -210,6 +211,13 @@ export default function HomePage() {
               Search by postcode
             </a>
           </div>
+        </div>
+      </section>
+
+      {/* Newsletter signup */}
+      <section className="px-4 py-12 bg-gray-50 border-t border-gray-200">
+        <div className="max-w-2xl mx-auto">
+          <NewsletterSignup />
         </div>
       </section>
 
