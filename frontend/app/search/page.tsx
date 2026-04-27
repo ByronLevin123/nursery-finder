@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { smartSearchNurseries, Nursery, SearchResult, AreaSummary, getAreaSummary, postcodeDistrict, getTravelTime, TravelMode, getSearchSuggestions, SearchSuggestion, API_URL } from '@/lib/api'
+import { trackEvent } from '@/lib/analytics'
 import PostcodeAutocomplete from '@/components/PostcodeAutocomplete'
 import NurseryCard from '@/components/NurseryCard'
 import NurseryModal from '@/components/NurseryModal'
@@ -257,6 +258,14 @@ function SearchContent() {
         has_funded_3yr: advancedFilters.has_funded_3yr || funded3yr,
       })
       setResults(data)
+      // Plausible goal — fire after a successful search so we can measure
+      // search → result-click → enquiry conversion. Don't include the raw
+      // query (might be a postcode = personal data); only the mode + count.
+      trackEvent('Search', {
+        mode: data?.meta?.mode || 'unknown',
+        results: data?.meta?.total || 0,
+        radius_km: radiusKm,
+      })
       // Fetch nearby promotions based on search center
       if (data?.meta?.search_lat && data?.meta?.search_lng) {
         fetch(`${API_URL}/api/v1/promotions/nearby?lat=${data.meta.search_lat}&lng=${data.meta.search_lng}`)

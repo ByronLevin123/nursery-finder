@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { API_URL } from '@/lib/api'
+import { trackEvent } from '@/lib/analytics'
 
 interface Props {
   urn: string
@@ -139,6 +140,7 @@ export default function ClaimNurseryButton({
         setError(j.error || 'Failed to submit claim')
       } else {
         const j = await res.json()
+        trackEvent('Claim Submit', { urn })
         setMyClaim({ urn, status: j.status || 'pending' })
         setModalOpen(false)
         setToast('Claim submitted — we will review within 2 working days.')

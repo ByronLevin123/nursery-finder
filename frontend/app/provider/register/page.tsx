@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { API_URL } from '@/lib/api'
+import { trackEvent } from '@/lib/analytics'
 import { isBusinessEmail, isPasswordValid } from '@/lib/validation'
 
 interface NurseryResult {
@@ -121,6 +122,7 @@ export default function ProviderRegisterPage() {
         const body = await res.json().catch(() => null)
         throw new Error(body?.error || `Registration failed (${res.status})`)
       }
+      trackEvent('Provider Register', { role_at_nursery: role })
       setStep(4)
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please try again.')
