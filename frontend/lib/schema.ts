@@ -6,6 +6,15 @@ const SITE_URL = 'https://nurserymatch.com'
 
 type AnyObj = Record<string, any>
 
+// Social profile URLs that schema.org's `sameAs` consumes (Google uses
+// these for the Knowledge Graph entity). Add new accounts here as they're
+// created — see docs/LAUNCH_CHECKLIST.md "Social accounts" task.
+const SOCIAL_PROFILES: string[] = [
+  // 'https://twitter.com/nurserymatch',
+  // 'https://www.linkedin.com/company/nurserymatch',
+  // 'https://bsky.app/profile/nurserymatch.bsky.social',
+]
+
 export function organizationSchema(): AnyObj {
   return {
     '@context': 'https://schema.org',
@@ -15,7 +24,7 @@ export function organizationSchema(): AnyObj {
     logo: `${SITE_URL}/og-default.png`,
     description:
       'Free UK nursery comparison and family relocation tool. Ofsted-rated nurseries, area family scores, and live property data.',
-    sameAs: [],
+    sameAs: SOCIAL_PROFILES,
   }
 }
 
@@ -70,9 +79,18 @@ export function nurserySchema(nursery: AnyObj, areaStats?: AnyObj): AnyObj {
   if (nursery.phone) out.telephone = nursery.phone
   if (nursery.website) out.sameAs = [nursery.website]
   if (nursery.fee_avg_monthly) {
-    out.priceRange = `£${nursery.fee_avg_monthly}/month`
+    // Google's priceRange validator wants currency-symbol notation
+    // ($, $$, $$$, ££, etc.), not free-form strings. Map our monthly
+    // average to a UK band: <£800/mo = £, £800-1500 = ££, >£1500 = £££.
+    out.priceRange =
+      nursery.fee_avg_monthly < 800 ? '£' : nursery.fee_avg_monthly < 1500 ? '££' : '£££'
   }
-  if (nursery.opening_hours) out.openingHours = nursery.opening_hours
+  if (nursery.opening_hours) {
+    // Accept either a Schema.org-format string ("Mo-Fr 08:00-17:30") or a
+    // free-form value. We pass through whatever's stored — providers who've
+    // claimed will have set this to a sensible value via the editor.
+    out.openingHours = nursery.opening_hours
+  }
   if (nursery.review_avg_rating || nursery.google_rating) {
     out.aggregateRating = {
       '@type': 'AggregateRating',
@@ -112,17 +130,9 @@ export function placeSchema(area: AnyObj): AnyObj {
     ...(area.lat && area.lng
       ? { geo: { '@type': 'GeoCoordinates', latitude: area.lat, longitude: area.lng } }
       : {}),
-    ...(area.family_score
-      ? {
-          aggregateRating: {
-            '@type': 'AggregateRating',
-            ratingValue: area.family_score,
-            bestRating: 100,
-            worstRating: 0,
-            reviewCount: area.nursery_count_total || 1,
-          },
-        }
-      : {}),
+    // Note: we used to include an aggregateRating here using family_score,
+    // but Google's validator rejects AggregateRating on Place (it expects
+    // a reviewable entity). Family score is surfaced in the page UI instead.
   }
 }
 

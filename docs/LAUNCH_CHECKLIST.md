@@ -156,7 +156,10 @@ nurserymatch.com → Goals → Add goal → "Custom event":
       `https://nurserymatch.com/sitemap.xml`.
 - [ ] URL Inspection → request indexing for `/`, `/search`, `/find-an-area`,
       `/guides`, `/about`, `/faq` (10/day cap). Spread over a few days.
-- [ ] (Optional) Bing Webmaster Tools — submit sitemap there too.
+- [ ] (Optional) Bing Webmaster Tools — add the site at
+      https://www.bing.com/webmasters, copy the meta-tag verification
+      content value into Vercel env as `NEXT_PUBLIC_BING_VERIFICATION`,
+      redeploy, click Verify in Bing, then submit the sitemap.
 
 ### Legal / compliance (external clocks — start in Week 1)
 
@@ -197,8 +200,15 @@ nurserymatch.com → Goals → Add goal → "Custom event":
   - [ ] LinkedIn page
   - [ ] BlueSky
   - [ ] Instagram (if you'll post photos)
-- [ ] Create press kit page content (logos, screenshots, founder bio,
-      3 stats). I'll build the page once you supply assets.
+- [ ] After social accounts exist, populate the `SOCIAL_PROFILES` array
+      in `frontend/lib/schema.ts` so Google's Knowledge Graph picks up
+      the links via schema.org `sameAs`.
+- [ ] **Press kit page exists at `/press`** — but two TODOs to fill:
+  - [ ] Replace the founder-bio placeholder in
+        `frontend/app/press/page.tsx` (Byron's actual 2-3 sentences).
+  - [ ] Drop a logo SVG and 3-4 screenshots into
+        `frontend/public/press-kit/`, then remove the "(pending)" link
+        markers in `/press`.
 - [ ] Write 3 launch blog posts (queue at least one in advance).
 
 ### Operations

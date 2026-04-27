@@ -62,6 +62,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const plausibleDomain = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN
+  const bingVerification = process.env.NEXT_PUBLIC_BING_VERIFICATION
   const apiOrigin = (() => {
     try {
       return new URL(API_URL).origin
@@ -74,6 +75,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="manifest" href="/manifest.json" />
+        {/* Bing Webmaster Tools verification — set NEXT_PUBLIC_BING_VERIFICATION
+            in Vercel to the content value Bing gives you when you add the site. */}
+        {bingVerification && <meta name="msvalidate.01" content={bingVerification} />}
         {apiOrigin && <link rel="preconnect" href={apiOrigin} crossOrigin="" />}
         <link rel="dns-prefetch" href="https://api.postcodes.io" />
         <script

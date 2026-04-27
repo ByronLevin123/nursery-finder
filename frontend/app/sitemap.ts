@@ -18,6 +18,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/terms`,        changeFrequency: 'yearly',  priority: 0.2 },
     { url: `${SITE_URL}/refund`,       changeFrequency: 'yearly',  priority: 0.2 },
     { url: `${SITE_URL}/dmca`,         changeFrequency: 'yearly',  priority: 0.2 },
+    { url: `${SITE_URL}/press`,        changeFrequency: 'monthly', priority: 0.3 },
   ]
 
   let nurseryEntries: MetadataRoute.Sitemap = []

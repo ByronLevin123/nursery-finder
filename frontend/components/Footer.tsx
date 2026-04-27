@@ -62,6 +62,9 @@ export default function Footer() {
                 <Link href="/dmca" className="text-gray-500 hover:text-gray-700">
                   Copyright / Takedown
                 </Link>
+                <Link href="/press" className="text-gray-500 hover:text-gray-700">
+                  Press
+                </Link>
               </div>
             </div>
           </div>
