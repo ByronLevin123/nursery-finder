@@ -34,6 +34,42 @@ export default function PrivacyPage() {
         </section>
 
         <section>
+          <h2 className="text-xl font-semibold text-gray-900 mb-3">Legal basis for processing</h2>
+          <p className="text-gray-600 mb-3">
+            Under UK GDPR (Article 6) we rely on the following legal bases for processing your data.
+            For data relating to children we additionally rely on Article 8 (parental consent) where
+            applicable.
+          </p>
+          <ul className="list-disc pl-5 text-gray-600 space-y-2">
+            <li>
+              <strong>Contract</strong> — to create your account, deliver the search and comparison
+              service you signed up for, and process paid provider subscriptions.
+            </li>
+            <li>
+              <strong>Consent</strong> — for optional marketing emails (welcome drips, weekly
+              digests, re-engagement messages). You can withdraw consent at any time from your{' '}
+              <a href="/account?tab=notifications" className="text-blue-600 hover:underline">
+                notification preferences
+              </a>.
+            </li>
+            <li>
+              <strong>Legitimate interests</strong> — for security, fraud prevention, anonymous
+              analytics (Plausible, cookieless), and improving the search experience. We balance
+              these interests against your privacy and you have the right to object.
+            </li>
+            <li>
+              <strong>Legal obligation</strong> — for ICO compliance, accounting / tax records on
+              paid subscriptions, and any safeguarding disclosures we are required to make.
+            </li>
+          </ul>
+          <p className="text-gray-600 mt-3">
+            We do not use your data for automated decision-making or profiling that produces legal
+            effects on you. Nursery match scores are advisory only and you remain in control of
+            which nurseries to consider.
+          </p>
+        </section>
+
+        <section>
           <h2 className="text-xl font-semibold text-gray-900 mb-3">What we do NOT collect</h2>
           <ul className="list-disc pl-5 text-gray-600 space-y-2">
             <li>No tracking cookies</li>
