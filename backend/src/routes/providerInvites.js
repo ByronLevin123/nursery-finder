@@ -1,12 +1,25 @@
 // Provider invite routes — admin-only bulk outreach to unclaimed nurseries.
 
 import express from 'express'
+import rateLimit from 'express-rate-limit'
 import db from '../db.js'
 import { requireRole } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
 import { sendEmail, renderProviderInviteEmail, isEmailAvailable } from '../services/emailService.js'
 
 const router = express.Router()
+
+// Defense-in-depth: even though these endpoints are admin-only, cap outreach
+// volume per admin to bound the blast radius of a compromised admin account.
+// 200 invites/batch * 5 batches/hour = 1,000 invites/hour ceiling per admin.
+const inviteSendLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.user?.id || req.ip,
+  message: { error: 'Invite send limit reached. Try again in an hour.' },
+})
 
 // Every route requires admin role
 router.use(requireRole('admin'))
@@ -65,7 +78,7 @@ router.post('/preview', async (req, res, next) => {
 // ---------------------------------------------------------------------------
 // POST /send — send invite emails to selected nurseries
 // ---------------------------------------------------------------------------
-router.post('/send', async (req, res, next) => {
+router.post('/send', inviteSendLimiter, async (req, res, next) => {
   try {
     if (!db) return res.status(503).json({ error: 'Database not configured' })
 
