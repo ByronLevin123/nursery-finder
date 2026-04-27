@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import Script from 'next/script'
 import { Analytics } from '@vercel/analytics/react'
+import CookieBanner from '@/components/CookieBanner'
 import Footer from '@/components/Footer'
 import MobileNav from '@/components/MobileNav'
 import Nav from '@/components/Nav'
@@ -98,6 +99,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main className="min-h-screen pb-16 md:pb-0">{children}</main>
           <Footer />
           <MobileNav />
+          <CookieBanner />
           <Analytics />
         </SessionProvider>
       </body>
