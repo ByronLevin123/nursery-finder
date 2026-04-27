@@ -17,6 +17,7 @@ import rateLimit from 'express-rate-limit'
 import pinoHttp from 'pino-http'
 import { logger } from './logger.js'
 import { errorHandler, notFound } from './middleware/errorHandler.js'
+import authRouter from './routes/auth.js'
 import healthRouter from './routes/health.js'
 import nurseriesRouter from './routes/nurseries.js'
 import ingestRouter from './routes/ingest.js'
@@ -220,6 +221,7 @@ app.use((req, _res, next) => {
 
 // Routes
 app.use('/api/v1/health', healthRouter)
+app.use('/api/v1/auth', authRouter)
 app.use('/api/v1/profile', profileRouter)
 app.use('/api/v1/nurseries', qaRouter)
 app.use('/api/v1/nurseries', nurseriesRouter)
