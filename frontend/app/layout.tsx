@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import Script from 'next/script'
 import { Analytics } from '@vercel/analytics/react'
 import CookieBanner from '@/components/CookieBanner'
+import ErrorBoundary from '@/components/ErrorBoundary'
 import Footer from '@/components/Footer'
 import MobileNav from '@/components/MobileNav'
 import Nav from '@/components/Nav'
@@ -109,7 +110,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-sans antialiased">
         <SessionProvider>
           <Nav />
-          <main className="min-h-screen pb-16 md:pb-0">{children}</main>
+          {/* ErrorBoundary on the main content tree only — keeps nav and
+              footer rendered if a route component throws, so the user
+              can still navigate away. */}
+          <main className="min-h-screen pb-16 md:pb-0">
+            <ErrorBoundary>{children}</ErrorBoundary>
+          </main>
           <Footer />
           <MobileNav />
           <CookieBanner />

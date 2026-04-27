@@ -170,7 +170,37 @@ app.use(
 )
 
 // Request logging
-app.use(pinoHttp({ logger }))
+app.use(
+  pinoHttp({
+    logger,
+    // Stable request IDs that travel with the response (helps support
+    // when a user shares an X-Request-Id from a 5xx page).
+    genReqId: (req) => {
+      const incoming = req.headers['x-request-id']
+      if (typeof incoming === 'string' && incoming.length < 100) return incoming
+      // Cheap unique-enough ID without pulling in uuid for one usage.
+      return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+    },
+    customAttributeKeys: { reqId: 'request_id' },
+    // Don't log full bodies (PII risk) — pino's redact list catches what
+    // does land via { req: ... } already.
+    serializers: {
+      req: (req) => ({
+        id: req.id,
+        method: req.method,
+        url: req.url,
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+      }),
+    },
+  })
+)
+
+// Echo the request ID in the response so support / Sentry can correlate.
+app.use((req, res, next) => {
+  if (req.id) res.setHeader('X-Request-Id', req.id)
+  next()
+})
 
 // Rate limiting — public endpoints (300 req / 15 min per IP).
 // A single Find-an-Area or Search page can fan out 10+ requests per navigation
