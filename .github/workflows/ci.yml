@@ -30,7 +30,7 @@ jobs:
         run: npm test
 
   frontend:
-    name: Frontend (build)
+    name: Frontend (lint + typecheck + test + build)
     runs-on: ubuntu-latest
     env:
       NEXT_PUBLIC_API_URL: https://example.com
@@ -46,6 +46,15 @@ jobs:
       - name: Install
         working-directory: frontend
         run: npm ci
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+      - name: Typecheck
+        working-directory: frontend
+        run: npm run typecheck
+      - name: Test
+        working-directory: frontend
+        run: npm test
       - name: Build
         working-directory: frontend
         run: npm run build

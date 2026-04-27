@@ -1,0 +1,67 @@
+# Dependabot keeps dependencies fresh + flags known CVEs.
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+version: 2
+updates:
+  # Backend (Express + Supabase + Resend + Stripe)
+  - package-ecosystem: npm
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: Europe/London
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - backend
+    commit-message:
+      prefix: deps
+      include: scope
+    # Group patch + minor bumps so the inbox isn't flooded; security PRs
+    # bypass groups automatically.
+    groups:
+      backend-minor-patch:
+        update-types:
+          - minor
+          - patch
+
+  # Frontend (Next.js + React)
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: Europe/London
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - frontend
+    commit-message:
+      prefix: deps
+      include: scope
+    groups:
+      frontend-minor-patch:
+        update-types:
+          - minor
+          - patch
+    # Don't auto-bump Next major between LTS lines — they often bring
+    # config changes that need manual handling.
+    ignore:
+      - dependency-name: next
+        update-types:
+          - version-update:semver-major
+
+  # GitHub Actions used in workflows
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - ci
+    commit-message:
+      prefix: ci(deps)
+      include: scope
