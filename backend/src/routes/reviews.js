@@ -3,7 +3,7 @@ import crypto from 'crypto'
 import rateLimit from 'express-rate-limit'
 import db from '../db.js'
 import { extractCategoryScores } from '../services/reviewNlp.js'
-import { requireAuth } from '../middleware/supabaseAuth.js'
+import { requireAuth, requireVerifiedEmail } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
 
 const router = express.Router()
@@ -52,7 +52,7 @@ function isIsoDate(s) {
 }
 
 // POST /api/v1/nurseries/:urn/reviews
-router.post('/:urn/reviews', requireAuth, reviewSubmissionLimiter, async (req, res, next) => {
+router.post('/:urn/reviews', requireAuth, requireVerifiedEmail, reviewSubmissionLimiter, async (req, res, next) => {
   try {
     const { urn } = req.params
     const {

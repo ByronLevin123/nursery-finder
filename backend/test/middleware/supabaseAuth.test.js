@@ -101,7 +101,8 @@ describe('optionalAuth', () => {
       .set('Authorization', 'Bearer admin-token')
 
     expect(res.status).toBe(200)
-    expect(res.body.user).toEqual({ id: 'admin-1', email: 'admin@test.com' })
+    expect(res.body.user).toMatchObject({ id: 'admin-1', email: 'admin@test.com' })
+    expect(res.body.user).toHaveProperty('email_confirmed_at')
   })
 
   it('leaves req.user undefined when no token is provided', async () => {
@@ -131,7 +132,8 @@ describe('requireAuth', () => {
       .set('Authorization', 'Bearer provider-token')
 
     expect(res.status).toBe(200)
-    expect(res.body.user).toEqual({ id: 'provider-1', email: 'provider@test.com' })
+    expect(res.body.user).toMatchObject({ id: 'provider-1', email: 'provider@test.com' })
+    expect(res.body.user).toHaveProperty('email_confirmed_at')
   })
 
   it('returns 401 when no token is provided', async () => {

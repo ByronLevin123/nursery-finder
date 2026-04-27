@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 
-const USER = { id: 'user-1', email: 'user@example.com' }
+const USER = {
+  id: 'user-1',
+  email: 'user@example.com',
+  // Required by requireVerifiedEmail middleware on the enquiry route. Set
+  // to a fixed past timestamp so the user counts as verified in tests.
+  email_confirmed_at: '2026-01-01T00:00:00Z',
+}
 const userToken = 'user-token'
 
 const store = {
@@ -168,6 +174,22 @@ describe('POST /api/v1/enquiries', () => {
   it('requires auth', async () => {
     const res = await request(app).post('/api/v1/enquiries').send({})
     expect(res.status).toBe(401)
+  })
+
+  it('blocks users with unverified email (403, code email_not_verified)', async () => {
+    // Temporarily clear email_confirmed_at on the test user.
+    const original = USER.email_confirmed_at
+    USER.email_confirmed_at = null
+    try {
+      const res = await request(app)
+        .post('/api/v1/enquiries')
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ nursery_ids: ['n-1'], child_name: 'Alice' })
+      expect(res.status).toBe(403)
+      expect(res.body.code).toBe('email_not_verified')
+    } finally {
+      USER.email_confirmed_at = original
+    }
   })
 
   it('creates enquiries for multiple nurseries', async () => {

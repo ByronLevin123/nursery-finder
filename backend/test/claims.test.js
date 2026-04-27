@@ -1,7 +1,17 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 
-const TEST_USER = { id: 'user-claims-1', email: 'claimer@example.com' }
-const ADMIN_USER = { id: 'admin-1', email: 'admin@example.com' }
+// email_confirmed_at populated so requireVerifiedEmail middleware on
+// POST /api/v1/claims doesn't 403 the test user.
+const TEST_USER = {
+  id: 'user-claims-1',
+  email: 'claimer@example.com',
+  email_confirmed_at: '2026-01-01T00:00:00Z',
+}
+const ADMIN_USER = {
+  id: 'admin-1',
+  email: 'admin@example.com',
+  email_confirmed_at: '2026-01-01T00:00:00Z',
+}
 
 const store = {
   nurseries: new Map(),

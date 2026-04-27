@@ -4,8 +4,7 @@
 import express from 'express'
 import rateLimit from 'express-rate-limit'
 import db from '../db.js'
-import { requireAuth } from '../middleware/supabaseAuth.js'
-import { requireRole } from '../middleware/supabaseAuth.js'
+import { requireAuth, requireVerifiedEmail, requireRole } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
 import { isEmailAvailable, sendEmail, renderClaimApprovedEmail } from '../services/emailService.js'
 
@@ -61,7 +60,7 @@ function validateClaimBody(body) {
 }
 
 // POST /api/v1/claims — submit a new claim
-router.post('/', requireAuth, claimSubmissionLimiter, async (req, res, next) => {
+router.post('/', requireAuth, requireVerifiedEmail, claimSubmissionLimiter, async (req, res, next) => {
   try {
     if (!db) return res.status(503).json({ error: 'Database not configured' })
     const err = validateClaimBody(req.body)

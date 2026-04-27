@@ -3,7 +3,7 @@
 import express from 'express'
 import rateLimit from 'express-rate-limit'
 import db from '../db.js'
-import { requireAuth } from '../middleware/supabaseAuth.js'
+import { requireAuth, requireVerifiedEmail } from '../middleware/supabaseAuth.js'
 import { verifyTurnstile } from '../middleware/turnstile.js'
 import {
   sendEmail,
@@ -27,7 +27,14 @@ const enquiryLimiter = rateLimit({
 // POST /api/v1/enquiries — submit enquiries to multiple nurseries.
 // verifyTurnstile is a no-op when TURNSTILE_SECRET_KEY is unset (dev/preview),
 // so this stays test-clean until the production keys are configured.
-router.post('/', requireAuth, enquiryLimiter, verifyTurnstile, async (req, res, next) => {
+// requireVerifiedEmail blocks unconfirmed accounts from spamming providers.
+router.post(
+  '/',
+  requireAuth,
+  requireVerifiedEmail,
+  enquiryLimiter,
+  verifyTurnstile,
+  async (req, res, next) => {
   try {
     if (!db) return res.status(503).json({ error: 'Database not configured' })
 
