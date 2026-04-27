@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import { getBlogPost, getBlogPosts } from '@/lib/api'
 import Breadcrumbs from '@/components/Breadcrumbs'
 import Link from 'next/link'
+import OglAttribution from '@/components/OglAttribution'
 import { breadcrumbSchema, jsonLdScript } from '@/lib/schema'
 
 export const dynamic = 'force-dynamic'
@@ -192,6 +193,8 @@ export default async function GuidePage({ params }: Props) {
           ),
         }}
       />
+
+      <OglAttribution />
     </div>
   )
 }

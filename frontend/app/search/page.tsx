@@ -479,7 +479,14 @@ function SearchContent() {
           {results && (
             <div className="mb-3 space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">
+                <p
+                  className="text-sm text-gray-500"
+                  // aria-live makes screen readers announce the new result count
+                  // as the user updates filters / sorts. role=status is the
+                  // standard pairing for non-urgent live regions.
+                  aria-live="polite"
+                  role="status"
+                >
                   {prefsActive
                     ? `${visibleResults.length} of ${results.meta.total} match your priorities`
                     : results.meta.mode === 'place'
