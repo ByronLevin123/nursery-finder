@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { API_URL } from '@/lib/api'
+import { trackEvent } from '@/lib/analytics'
 
 /**
  * Pre-launch waitlist / newsletter signup.
@@ -55,6 +56,7 @@ export default function NewsletterSignup({
         const body = await res.json().catch(() => ({}))
         throw new Error(body.error || 'Could not subscribe right now')
       }
+      trackEvent('Newsletter Subscribe', { variant })
       setState('success')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong')

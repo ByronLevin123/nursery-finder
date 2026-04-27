@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { isPasswordValid } from '@/lib/validation'
 import { API_URL } from '@/lib/api'
+import { trackEvent } from '@/lib/analytics'
 
 type Tab = 'signin' | 'signup'
 type AuthMethod = 'password' | 'magic-link'
@@ -147,8 +148,12 @@ function LoginInner() {
         emailRedirectTo: redirectTo,
       },
     })
-    if (error) setError(error.message)
-    else setSuccessView('signup-confirm')
+    if (error) {
+      setError(error.message)
+    } else {
+      trackEvent('Signup', { method: 'password' })
+      setSuccessView('signup-confirm')
+    }
     setLoading(false)
   }
 

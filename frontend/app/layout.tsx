@@ -85,12 +85,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: jsonLdScript(websiteSchema()) }}
         />
         {plausibleDomain && (
-          <Script
-            defer
-            data-domain={plausibleDomain}
-            src="https://plausible.io/js/script.js"
-            strategy="afterInteractive"
-          />
+          <>
+            {/* Stub: queues custom events fired before the deferred Plausible
+                script loads. Once the real script arrives it replays the
+                queue. Without this, early trackEvent() calls (e.g. on a
+                quick checkout completion) would be silently lost. */}
+            <Script id="plausible-stub" strategy="beforeInteractive">
+              {`window.plausible=window.plausible||function(){(window.plausible.q=window.plausible.q||[]).push(arguments)}`}
+            </Script>
+            <Script
+              defer
+              data-domain={plausibleDomain}
+              src="https://plausible.io/js/script.outbound-links.js"
+              strategy="afterInteractive"
+            />
+          </>
         )}
       </head>
       <body className="font-sans antialiased">

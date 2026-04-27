@@ -105,6 +105,47 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Trust strip — qualitative signals (vs the quantitative chips above).
+          Sits between hero and features so users see it on first paint. */}
+      <section className="px-4 py-6 border-y border-gray-100 bg-white">
+        <div className="max-w-5xl mx-auto">
+          <ul className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-gray-600">
+            <li className="flex items-center gap-2">
+              <span aria-hidden className="text-base">🛡️</span>
+              <span>
+                Official{' '}
+                <a
+                  href="https://www.gov.uk/government/statistical-data-sets/monthly-management-information-ofsteds-early-years-register"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-gray-800 hover:underline"
+                >
+                  Ofsted
+                </a>{' '}
+                inspection data
+              </span>
+            </li>
+            <li className="flex items-center gap-2">
+              <span aria-hidden className="text-base">🪶</span>
+              <span>Independent — not affiliated with Ofsted or any nursery group</span>
+            </li>
+            <li className="flex items-center gap-2">
+              <span aria-hidden className="text-base">🔒</span>
+              <span>
+                Cookieless analytics, no tracking —{' '}
+                <a href="/privacy" className="font-semibold text-gray-800 hover:underline">
+                  read our policy
+                </a>
+              </span>
+            </li>
+            <li className="flex items-center gap-2">
+              <span aria-hidden className="text-base">💛</span>
+              <span>Always free for parents</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
       {/* Recently viewed nurseries (client-only, shows if user has history) */}
       <section className="px-4 py-6">
         <div className="max-w-5xl mx-auto">

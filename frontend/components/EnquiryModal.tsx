@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react'
 import { useSession } from '@/components/SessionProvider'
 import Link from 'next/link'
 import { API_URL } from '@/lib/api'
+import { trackEvent } from '@/lib/analytics'
 import TurnstileWidget from '@/components/TurnstileWidget'
 
 interface NurseryItem {
@@ -81,6 +82,11 @@ export default function EnquiryModal({ nurseries, onClose, childName, childDob }
       }
       const result = await res.json()
       if (result.message) setQueuedMessage(result.message)
+      trackEvent('Enquiry Submit', {
+        nurseries: selected.length,
+        sent: result?.meta?.sent ?? 0,
+        queued: result?.meta?.queued ?? 0,
+      })
       setSuccess(true)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
