@@ -45,11 +45,13 @@ export default function NewsletterSignup({
       })
       if (res.status === 404) {
         // Backend endpoint not yet deployed — fail soft, look successful so
-        // the user isn't confused. We'll wire to Resend in a follow-up.
+        // the user isn't confused.
         setState('success')
         return
       }
-      if (!res.ok) {
+      // 200 = subscribed, 202 = queued (Resend not configured yet on backend),
+      // 'already_subscribed' = idempotent. All count as success to the user.
+      if (!res.ok && res.status !== 202) {
         const body = await res.json().catch(() => ({}))
         throw new Error(body.error || 'Could not subscribe right now')
       }
