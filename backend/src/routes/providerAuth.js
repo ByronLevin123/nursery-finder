@@ -176,7 +176,7 @@ router.post('/register', registerLimiter, async (req, res, next) => {
       email,
       password,
       options: {
-        redirectTo: `${process.env.FRONTEND_URL || 'https://comparethenursery.com'}/login?confirmed=true`,
+        redirectTo: `${process.env.FRONTEND_URL || 'https://nurserymatch.com'}/login?confirmed=true`,
       },
     })
 

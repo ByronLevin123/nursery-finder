@@ -158,7 +158,12 @@ vi.mock('../src/db.js', () => ({
   },
 }))
 
-const TEST_USER = { id: 'user-review-1', email: 'reviewer@example.com' }
+// email_confirmed_at populated for requireVerifiedEmail on POST review.
+const TEST_USER = {
+  id: 'user-review-1',
+  email: 'reviewer@example.com',
+  email_confirmed_at: '2026-01-01T00:00:00Z',
+}
 const validToken = 'review-token'
 
 vi.mock('@supabase/supabase-js', async () => ({

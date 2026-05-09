@@ -4,8 +4,8 @@ import db from '../db.js'
 import { logger } from '../logger.js'
 import { sendEmail, isEmailAvailable, escapeHtml } from './emailService.js'
 
-const FRONTEND_URL = process.env.FRONTEND_URL || 'https://comparethenursery.com'
-const FROM = process.env.EMAIL_FROM || 'CompareTheNursery <hello@comparethenursery.com>'
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://nurserymatch.com'
+const FROM = process.env.EMAIL_FROM || 'NurseryMatch <hello@nurserymatch.com>'
 
 // ---------- core helpers ----------
 
@@ -50,7 +50,7 @@ ${preheader ? `<span style="display:none;font-size:1px;color:#f6f7f9;max-height:
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;">
           <tr>
             <td style="padding:20px 24px;background:#2563eb;color:#ffffff;font-size:18px;font-weight:700;">
-              CompareTheNursery
+              NurseryMatch
             </td>
           </tr>
           <tr>
@@ -60,7 +60,7 @@ ${preheader ? `<span style="display:none;font-size:1px;color:#f6f7f9;max-height:
           </tr>
           <tr>
             <td style="padding:16px 24px;border-top:1px solid #e5e7eb;font-size:12px;color:#6b7280;">
-              You are receiving this because you used CompareTheNursery.
+              You are receiving this because you used NurseryMatch.
               <a href="${FRONTEND_URL}/account" style="color:#2563eb;">Manage email preferences</a>.
             </td>
           </tr>

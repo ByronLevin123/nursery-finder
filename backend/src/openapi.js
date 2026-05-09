@@ -30,12 +30,12 @@ const urnParam = { in: 'path', name: 'urn', required: true, schema: { type: 'str
 const openapi = {
   openapi: '3.1.0',
   info: {
-    title: 'CompareTheNursery Public API',
+    title: 'NurseryMatch Public API',
     version: '1.0.0',
     description:
       'Full API for CompareTheNursery — UK nursery comparison, area intelligence, property data, provider management, and admin dashboard. Public endpoints are free and keyless. Authenticated endpoints require a Supabase JWT bearer token. Source data: Ofsted Early Years register (OGL v3.0), HM Land Registry, ONS, data.police.uk, Environment Agency.',
     license: { name: 'MIT', url: 'https://opensource.org/licenses/MIT' },
-    contact: { name: 'CompareTheNursery', url: 'https://comparethenursery.com' },
+    contact: { name: 'NurseryMatch', url: 'https://nurserymatch.com' },
   },
   servers: [{ url: 'https://nursery-finder-6u7r.onrender.com', description: 'Production' }],
   tags: [

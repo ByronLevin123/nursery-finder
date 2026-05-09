@@ -17,7 +17,9 @@ import rateLimit from 'express-rate-limit'
 import pinoHttp from 'pino-http'
 import { logger } from './logger.js'
 import { errorHandler, notFound } from './middleware/errorHandler.js'
+import authRouter from './routes/auth.js'
 import healthRouter from './routes/health.js'
+import newsletterRouter from './routes/newsletter.js'
 import nurseriesRouter from './routes/nurseries.js'
 import ingestRouter from './routes/ingest.js'
 import areasRouter from './routes/areas.js'
@@ -82,6 +84,13 @@ import assistantRouter from './routes/assistant.js'
 
 const app = express()
 
+// Trust the first proxy (Render's load balancer). Without this, every client
+// appears to come from the LB's IP, which causes express-rate-limit to treat
+// all users as the same "IP" — the per-IP limit becomes a global cap and the
+// site 429s as soon as a handful of users browse. With `1`, express reads the
+// left-most IP from X-Forwarded-For, which is the real client.
+app.set('trust proxy', 1)
+
 // Security
 app.use(helmet())
 
@@ -139,8 +148,8 @@ app.use(publicCorsPaths, cors({ origin: '*', methods: ['GET', 'POST'] }))
 // Default CORS for everything else (auth-protected etc.)
 const allowedOrigins = [
   process.env.FRONTEND_URL,
-  'https://comparethenursery.com',
-  'https://www.comparethenursery.com',
+  'https://nurserymatch.com',
+  'https://www.nurserymatch.com',
   'https://nursery-finder.vercel.app',
   ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:3000'] : []),
 ].filter(Boolean)
@@ -161,12 +170,45 @@ app.use(
 )
 
 // Request logging
-app.use(pinoHttp({ logger }))
+app.use(
+  pinoHttp({
+    logger,
+    // Stable request IDs that travel with the response (helps support
+    // when a user shares an X-Request-Id from a 5xx page).
+    genReqId: (req) => {
+      const incoming = req.headers['x-request-id']
+      if (typeof incoming === 'string' && incoming.length < 100) return incoming
+      // Cheap unique-enough ID without pulling in uuid for one usage.
+      return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+    },
+    customAttributeKeys: { reqId: 'request_id' },
+    // Don't log full bodies (PII risk) — pino's redact list catches what
+    // does land via { req: ... } already.
+    serializers: {
+      req: (req) => ({
+        id: req.id,
+        method: req.method,
+        url: req.url,
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+      }),
+    },
+  })
+)
 
-// Rate limiting — public endpoints (100 req / 15 min per IP)
+// Echo the request ID in the response so support / Sentry can correlate.
+app.use((req, res, next) => {
+  if (req.id) res.setHeader('X-Request-Id', req.id)
+  next()
+})
+
+// Rate limiting — public endpoints (300 req / 15 min per IP).
+// A single Find-an-Area or Search page can fan out 10+ requests per navigation
+// (area summaries per district, nursery details, overlays). 300/15min per real
+// client IP is generous for normal browsing and still blocks scrape-style abuse.
 const publicLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 300,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later' },
@@ -210,6 +252,8 @@ app.use((req, _res, next) => {
 
 // Routes
 app.use('/api/v1/health', healthRouter)
+app.use('/api/v1/auth', authRouter)
+app.use('/api/v1/newsletter', newsletterRouter)
 app.use('/api/v1/profile', profileRouter)
 app.use('/api/v1/nurseries', qaRouter)
 app.use('/api/v1/nurseries', nurseriesRouter)

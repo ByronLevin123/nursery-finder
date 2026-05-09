@@ -11,6 +11,10 @@ const NAV_ITEMS = [
   { label: 'Reviews', href: '/admin/reviews' },
   { label: 'Enquiries', href: '/admin/enquiries' },
   { label: 'Subscriptions', href: '/admin/subscriptions' },
+  { label: 'Reports', href: '/admin/reports' },
+  { label: 'Promotions', href: '/admin/promotions' },
+  { label: 'Invites', href: '/admin/invites' },
+  { label: 'Docs', href: '/admin/docs' },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

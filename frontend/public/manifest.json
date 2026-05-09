@@ -1,6 +1,6 @@
 {
-  "name": "CompareTheNursery",
-  "short_name": "CTN",
+  "name": "NurseryMatch",
+  "short_name": "NurseryMatch",
   "description": "Compare UK nurseries by Ofsted grade",
   "start_url": "/",
   "display": "standalone",

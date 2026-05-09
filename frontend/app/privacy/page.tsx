@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
-  description: 'Compare the Nursery privacy policy — how we handle your data under UK GDPR.',
+  description: 'NurseryMatch privacy policy — how we handle your data under UK GDPR.',
 }
 
 export default function PrivacyPage() {
@@ -14,7 +14,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-xl font-semibold text-gray-900 mb-3">Who we are</h2>
           <p className="text-gray-600">
-            Compare the Nursery is an independent website that helps parents find and compare
+            NurseryMatch is an independent website that helps parents find and compare
             Ofsted-rated nurseries across the UK. We are registered as a data controller
             with the ICO (UK Information Commissioner's Office).
           </p>
@@ -31,6 +31,42 @@ export default function PrivacyPage() {
             <li><strong>Nursery search queries</strong> — postcode and filters. Anonymised, no personal data stored.</li>
             <li><strong>Website analytics</strong> — we use Plausible Analytics which is cookieless and collects no personal data.</li>
           </ul>
+        </section>
+
+        <section>
+          <h2 className="text-xl font-semibold text-gray-900 mb-3">Legal basis for processing</h2>
+          <p className="text-gray-600 mb-3">
+            Under UK GDPR (Article 6) we rely on the following legal bases for processing your data.
+            For data relating to children we additionally rely on Article 8 (parental consent) where
+            applicable.
+          </p>
+          <ul className="list-disc pl-5 text-gray-600 space-y-2">
+            <li>
+              <strong>Contract</strong> — to create your account, deliver the search and comparison
+              service you signed up for, and process paid provider subscriptions.
+            </li>
+            <li>
+              <strong>Consent</strong> — for optional marketing emails (welcome drips, weekly
+              digests, re-engagement messages). You can withdraw consent at any time from your{' '}
+              <a href="/account?tab=notifications" className="text-blue-600 hover:underline">
+                notification preferences
+              </a>.
+            </li>
+            <li>
+              <strong>Legitimate interests</strong> — for security, fraud prevention, anonymous
+              analytics (Plausible, cookieless), and improving the search experience. We balance
+              these interests against your privacy and you have the right to object.
+            </li>
+            <li>
+              <strong>Legal obligation</strong> — for ICO compliance, accounting / tax records on
+              paid subscriptions, and any safeguarding disclosures we are required to make.
+            </li>
+          </ul>
+          <p className="text-gray-600 mt-3">
+            We do not use your data for automated decision-making or profiling that produces legal
+            effects on you. Nursery match scores are advisory only and you remain in control of
+            which nurseries to consider.
+          </p>
         </section>
 
         <section>
@@ -66,8 +102,8 @@ export default function PrivacyPage() {
               <a href="/account" className="text-blue-600 hover:underline">account settings</a> page.
             </li>
             <li><strong>Contact us</strong> — email{' '}
-              <a href="mailto:privacy@comparethenursery.com" className="text-blue-600 hover:underline">
-                privacy@comparethenursery.com
+              <a href="mailto:privacy@nurserymatch.com" className="text-blue-600 hover:underline">
+                privacy@nurserymatch.com
               </a>{' '}for any data request.
             </li>
           </ul>

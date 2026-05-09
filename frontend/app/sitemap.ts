@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 import { API_URL } from '@/lib/api'
 
-const SITE_URL = 'https://comparethenursery.com'
+const SITE_URL = 'https://nurserymatch.com'
 
 export const revalidate = 86400 // regenerate at most once per day
 
@@ -11,7 +11,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/search`,       changeFrequency: 'daily',   priority: 0.9 },
     { url: `${SITE_URL}/find-an-area`, changeFrequency: 'weekly',  priority: 0.8 },
     { url: `${SITE_URL}/compare`,      changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${SITE_URL}/about`,        changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${SITE_URL}/faq`,          changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${SITE_URL}/contact`,      changeFrequency: 'yearly',  priority: 0.3 },
     { url: `${SITE_URL}/privacy`,      changeFrequency: 'yearly',  priority: 0.2 },
+    { url: `${SITE_URL}/terms`,        changeFrequency: 'yearly',  priority: 0.2 },
+    { url: `${SITE_URL}/refund`,       changeFrequency: 'yearly',  priority: 0.2 },
+    { url: `${SITE_URL}/dmca`,         changeFrequency: 'yearly',  priority: 0.2 },
+    { url: `${SITE_URL}/press`,        changeFrequency: 'monthly', priority: 0.3 },
   ]
 
   let nurseryEntries: MetadataRoute.Sitemap = []

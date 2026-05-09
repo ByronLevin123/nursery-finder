@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 
-const USER = { id: 'user-1', email: 'user@example.com' }
+const USER = {
+  id: 'user-1',
+  email: 'user@example.com',
+  // Required by requireVerifiedEmail middleware on the enquiry route. Set
+  // to a fixed past timestamp so the user counts as verified in tests.
+  email_confirmed_at: '2026-01-01T00:00:00Z',
+}
 const userToken = 'user-token'
 
 const store = {
@@ -141,6 +147,9 @@ beforeAll(async () => {
 beforeEach(() => {
   store.enquiries = []
   store.nurseries.clear()
+  // Both nurseries are claimed by a provider — enquiries go through the
+  // direct-send path rather than the admin-queued path. Tests that need the
+  // queued path should override `claimed_by_user_id` to null in the test body.
   store.nurseries.set('n-1', {
     id: 'n-1',
     urn: 'EY100',
@@ -148,7 +157,7 @@ beforeEach(() => {
     town: 'London',
     contact_email: null,
     email: null,
-    claimed_by_user_id: null,
+    claimed_by_user_id: 'provider-1',
   })
   store.nurseries.set('n-2', {
     id: 'n-2',
@@ -157,7 +166,7 @@ beforeEach(() => {
     town: 'Leeds',
     contact_email: null,
     email: null,
-    claimed_by_user_id: null,
+    claimed_by_user_id: 'provider-2',
   })
 })
 
@@ -165,6 +174,22 @@ describe('POST /api/v1/enquiries', () => {
   it('requires auth', async () => {
     const res = await request(app).post('/api/v1/enquiries').send({})
     expect(res.status).toBe(401)
+  })
+
+  it('blocks users with unverified email (403, code email_not_verified)', async () => {
+    // Temporarily clear email_confirmed_at on the test user.
+    const original = USER.email_confirmed_at
+    USER.email_confirmed_at = null
+    try {
+      const res = await request(app)
+        .post('/api/v1/enquiries')
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ nursery_ids: ['n-1'], child_name: 'Alice' })
+      expect(res.status).toBe(403)
+      expect(res.body.code).toBe('email_not_verified')
+    } finally {
+      USER.email_confirmed_at = original
+    }
   })
 
   it('creates enquiries for multiple nurseries', async () => {
@@ -178,10 +203,9 @@ describe('POST /api/v1/enquiries', () => {
       })
     expect(res.status).toBe(201)
     expect(res.body.data.length).toBe(2)
-    // Both nurseries are unclaimed so they get queued, not sent
-    expect(res.body.meta.queued).toBe(2)
-    expect(res.body.meta.sent).toBe(0)
-    expect(res.body.message).toBeDefined()
+    // Both nurseries are claimed so they get sent directly
+    expect(res.body.meta.sent).toBe(2)
+    expect(res.body.meta.queued).toBe(0)
   })
 
   it('rejects empty nursery_ids', async () => {

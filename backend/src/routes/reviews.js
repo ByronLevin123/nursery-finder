@@ -1,11 +1,26 @@
 import express from 'express'
 import crypto from 'crypto'
+import rateLimit from 'express-rate-limit'
 import db from '../db.js'
 import { extractCategoryScores } from '../services/reviewNlp.js'
-import { requireAuth } from '../middleware/supabaseAuth.js'
+import { requireAuth, requireVerifiedEmail } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
 
 const router = express.Router()
+
+// Per-user review submission limit. The route already enforces 3 reviews per
+// IP/24h in code (via ip_hash) — that catches abuse from a single IP. This
+// middleware adds a complementary user-level cap (20/24h) to catch a single
+// user posting bulk reviews while VPN-hopping. Generous limit because the
+// IP check is the tighter gate; this is just an upper bound.
+const reviewSubmissionLimiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.user?.id || req.ip,
+  message: { error: 'Review submission limit reached. Try again tomorrow.' },
+})
 
 const URL_RE = /(https?:\/\/|www\.)\S+/gi
 
@@ -37,7 +52,7 @@ function isIsoDate(s) {
 }
 
 // POST /api/v1/nurseries/:urn/reviews
-router.post('/:urn/reviews', requireAuth, async (req, res, next) => {
+router.post('/:urn/reviews', requireAuth, requireVerifiedEmail, reviewSubmissionLimiter, async (req, res, next) => {
   try {
     const { urn } = req.params
     const {

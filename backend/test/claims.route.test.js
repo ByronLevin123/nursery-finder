@@ -119,8 +119,17 @@ vi.mock('../src/db.js', () => ({
   },
 }))
 
-const TEST_USER = { id: 'user-claim-1', email: 'claimer@example.com' }
-const ADMIN_USER = { id: 'admin-claim-1', email: 'admin@example.com' }
+// email_confirmed_at populated for requireVerifiedEmail on POST /claims.
+const TEST_USER = {
+  id: 'user-claim-1',
+  email: 'claimer@example.com',
+  email_confirmed_at: '2026-01-01T00:00:00Z',
+}
+const ADMIN_USER = {
+  id: 'admin-claim-1',
+  email: 'admin@example.com',
+  email_confirmed_at: '2026-01-01T00:00:00Z',
+}
 const validToken = 'claims-valid-token'
 const adminToken = 'claims-admin-token'
 

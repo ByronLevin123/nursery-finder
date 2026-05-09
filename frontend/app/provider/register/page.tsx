@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { API_URL } from '@/lib/api'
+import { trackEvent } from '@/lib/analytics'
 import { isBusinessEmail, isPasswordValid } from '@/lib/validation'
 
 interface NurseryResult {
@@ -121,6 +122,7 @@ export default function ProviderRegisterPage() {
         const body = await res.json().catch(() => null)
         throw new Error(body?.error || `Registration failed (${res.status})`)
       }
+      trackEvent('Provider Register', { role_at_nursery: role })
       setStep(4)
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please try again.')
@@ -147,7 +149,7 @@ export default function ProviderRegisterPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <Link href="/" className="text-2xl font-bold text-indigo-600 hover:text-indigo-500">
-            CompareTheNursery
+            NurseryMatch
           </Link>
           <h1 className="mt-4 text-3xl font-bold text-gray-900">Register as a Provider</h1>
           <p className="mt-2 text-gray-600">Claim your nursery listing and manage your profile</p>

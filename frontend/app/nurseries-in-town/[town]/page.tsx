@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const town = formatTown(params.town)
   try {
     const { stats } = await getNurseriesInTown(params.town)
-    const title = `Best Nurseries in ${town} — ${stats.total} Compared | CompareTheNursery`
+    const title = `Best Nurseries in ${town} — ${stats.total} Compared | NurseryMatch`
     const description = `Compare ${stats.total} Ofsted-rated nurseries in ${town}. ${stats.outstanding} Outstanding, ${stats.good} Good. Find the best nursery for your child.`
     const url = `/nurseries-in-town/${encodeURIComponent(params.town.toLowerCase())}`
     return {
@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         title,
         description,
         url,
-        siteName: 'CompareTheNursery',
+        siteName: 'NurseryMatch',
         type: 'website',
         locale: 'en_GB',
         images: [{ url: '/og-default.png', width: 1200, height: 630, alt: `Nurseries in ${town}` }],
@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       twitter: { card: 'summary_large_image', title, description, images: ['/og-default.png'] },
     }
   } catch {
-    return { title: `Best Nurseries in ${town} | CompareTheNursery` }
+    return { title: `Best Nurseries in ${town} | NurseryMatch` }
   }
 }
 

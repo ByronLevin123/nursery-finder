@@ -26,7 +26,7 @@ if (process.env.NODE_ENV === 'production') {
 const PORT = process.env.PORT || 3001
 
 const server = app.listen(PORT, () => {
-  logger.info({ port: PORT, env: process.env.NODE_ENV }, 'CompareTheNursery API started')
+  logger.info({ port: PORT, env: process.env.NODE_ENV }, 'NurseryMatch API started')
 })
 
 // Graceful shutdown — let in-flight requests finish before exiting

@@ -21,13 +21,23 @@ function extractToken(req) {
   return parts[1]
 }
 
+function userFrom(supabaseUser) {
+  return {
+    id: supabaseUser.id,
+    email: supabaseUser.email,
+    // Supabase exposes email_confirmed_at on the user object once the user
+    // has clicked the verification link. Used by requireVerifiedEmail below.
+    email_confirmed_at: supabaseUser.email_confirmed_at || null,
+  }
+}
+
 export async function optionalAuth(req, _res, next) {
   try {
     const token = extractToken(req)
     if (!token || !authClient) return next()
     const { data, error } = await authClient.auth.getUser(token)
     if (error || !data?.user) return next()
-    req.user = { id: data.user.id, email: data.user.email }
+    req.user = userFrom(data.user)
     return next()
   } catch (err) {
     logger.warn({ err: err?.message }, 'optionalAuth failed')
@@ -45,12 +55,34 @@ export async function requireAuth(req, res, next) {
     if (error || !data?.user) {
       return res.status(401).json({ error: 'Invalid or expired token' })
     }
-    req.user = { id: data.user.id, email: data.user.email }
+    req.user = userFrom(data.user)
     return next()
   } catch (err) {
     logger.warn({ err: err?.message }, 'requireAuth failed')
     return res.status(401).json({ error: 'Authentication failed' })
   }
+}
+
+/**
+ * Block unverified accounts from write actions. Must be applied AFTER
+ * requireAuth so req.user is populated. Returns 403 with a structured
+ * error code so the frontend can show a "check your inbox" CTA rather
+ * than a generic permission error.
+ *
+ * Used for enquiries, reviews, claims — anything where an unverified
+ * account could spam real recipients (other parents, providers, admins).
+ */
+export function requireVerifiedEmail(req, res, next) {
+  if (!req.user) {
+    // Defense in depth — should never hit this when chained after requireAuth.
+    return res.status(401).json({ error: 'Authentication required' })
+  }
+  if (req.user.email_confirmed_at) return next()
+  return res.status(403).json({
+    error: 'Please verify your email address before continuing.',
+    code: 'email_not_verified',
+    hint: 'We sent a confirmation link when you signed up — check your inbox (or spam folder).',
+  })
 }
 
 // requireRole(...roles) — requires authenticated user whose user_profiles.role is in the allowed set.
@@ -141,4 +173,4 @@ export function requirePaidProvider(req, res, next) {
   })
 }
 
-export default { optionalAuth, requireAuth, requireRole, requirePaidProvider }
+export default { optionalAuth, requireAuth, requireVerifiedEmail, requireRole, requirePaidProvider }

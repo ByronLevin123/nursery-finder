@@ -2,25 +2,26 @@ import { Metadata } from 'next'
 import dynamic from 'next/dynamic'
 import HomeSearch from '@/components/HomeSearch'
 import AreaSummaryCard from '@/components/AreaSummaryCard'
+import NewsletterSignup from '@/components/NewsletterSignup'
 import OglAttribution from '@/components/OglAttribution'
 import PriorityWizardButton from '@/components/PriorityWizardButton'
 
 const RecentlyViewed = dynamic(() => import('@/components/RecentlyViewed'), { ssr: false })
 
 export const metadata: Metadata = {
-  title: 'CompareTheNursery — Compare UK Nurseries by Ofsted Grade',
+  title: 'NurseryMatch — Compare UK Nurseries by Ofsted Grade',
   description:
     'Compare 27,000+ UK nurseries with real Ofsted ratings, family scores by area, live property data, and anonymous parent reviews.',
   alternates: { canonical: '/' },
   openGraph: {
-    title: 'CompareTheNursery — Compare UK Nurseries by Ofsted Grade',
+    title: 'NurseryMatch — Compare UK Nurseries by Ofsted Grade',
     description:
       'Compare 27,000+ UK nurseries with real Ofsted ratings, family scores by area, live property data, and anonymous parent reviews.',
     url: '/',
-    siteName: 'CompareTheNursery',
+    siteName: 'NurseryMatch',
     type: 'website',
     locale: 'en_GB',
-    images: [{ url: '/og-default.png', width: 1200, height: 630, alt: 'CompareTheNursery' }],
+    images: [{ url: '/og-default.png', width: 1200, height: 630, alt: 'NurseryMatch' }],
   },
 }
 
@@ -101,6 +102,47 @@ export default function HomePage() {
               Updated daily
             </span>
           </div>
+        </div>
+      </section>
+
+      {/* Trust strip — qualitative signals (vs the quantitative chips above).
+          Sits between hero and features so users see it on first paint. */}
+      <section className="px-4 py-6 border-y border-gray-100 bg-white">
+        <div className="max-w-5xl mx-auto">
+          <ul className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-gray-600">
+            <li className="flex items-center gap-2">
+              <span aria-hidden className="text-base">🛡️</span>
+              <span>
+                Official{' '}
+                <a
+                  href="https://www.gov.uk/government/statistical-data-sets/monthly-management-information-ofsteds-early-years-register"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-gray-800 hover:underline"
+                >
+                  Ofsted
+                </a>{' '}
+                inspection data
+              </span>
+            </li>
+            <li className="flex items-center gap-2">
+              <span aria-hidden className="text-base">🪶</span>
+              <span>Independent — not affiliated with Ofsted or any nursery group</span>
+            </li>
+            <li className="flex items-center gap-2">
+              <span aria-hidden className="text-base">🔒</span>
+              <span>
+                Cookieless analytics, no tracking —{' '}
+                <a href="/privacy" className="font-semibold text-gray-800 hover:underline">
+                  read our policy
+                </a>
+              </span>
+            </li>
+            <li className="flex items-center gap-2">
+              <span aria-hidden className="text-base">💛</span>
+              <span>Always free for parents</span>
+            </li>
+          </ul>
         </div>
       </section>
 
@@ -210,6 +252,13 @@ export default function HomePage() {
               Search by postcode
             </a>
           </div>
+        </div>
+      </section>
+
+      {/* Newsletter signup */}
+      <section className="px-4 py-12 bg-gray-50 border-t border-gray-200">
+        <div className="max-w-2xl mx-auto">
+          <NewsletterSignup />
         </div>
       </section>
 

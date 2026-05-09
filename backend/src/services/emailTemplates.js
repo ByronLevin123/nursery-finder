@@ -1,49 +1,8 @@
 // Email lifecycle templates — each returns { subject, html, text }.
-// Uses the same shell/escapeHtml pattern as emailService.js.
+// Shell/footer/branding come from emailService.js so every email in the app
+// shares the same visual identity.
 
-import { escapeHtml } from './emailService.js'
-
-const FRONTEND_URL = process.env.FRONTEND_URL || 'https://comparethenursery.com'
-const UNSUBSCRIBE_URL = `${FRONTEND_URL}/account?tab=notifications`
-
-// ---------- shared shell ----------
-
-function shell({ title, bodyHtml }) {
-  return `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${escapeHtml(title)}</title>
-</head>
-<body style="margin:0;padding:0;background:#f6f7f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1f2937;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f6f7f9;padding:24px 0;">
-    <tr>
-      <td align="center">
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;">
-          <tr>
-            <td style="padding:20px 24px;background:#2563eb;color:#ffffff;font-size:18px;font-weight:700;">
-              CompareTheNursery
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:24px;font-size:15px;line-height:1.55;color:#1f2937;">
-              ${bodyHtml}
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:16px 24px;border-top:1px solid #e5e7eb;font-size:12px;color:#6b7280;">
-              You are receiving this because you used CompareTheNursery.
-              <a href="${UNSUBSCRIBE_URL}" style="color:#2563eb;">Manage email preferences</a>.
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`
-}
+import { escapeHtml, shell, FRONTEND_URL, UNSUBSCRIBE_URL } from './emailService.js'
 
 function ctaButton(href, label) {
   return `<a href="${escapeHtml(href)}" style="display:inline-block;padding:12px 24px;background:#2563eb;color:#ffffff;border-radius:8px;text-decoration:none;font-weight:600;">${escapeHtml(label)}</a>`
@@ -53,13 +12,14 @@ function ctaButton(href, label) {
 
 export function renderWelcomeEmail({ userName } = {}) {
   const greeting = userName ? `Hi ${escapeHtml(userName)},` : 'Hi,'
-  const subject = 'Welcome to CompareTheNursery!'
+  const subject = 'Welcome to NurseryMatch!'
 
   const html = shell({
     title: subject,
+    preheader: 'Start comparing Ofsted-rated nurseries in under a minute.',
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
-      <p style="margin:0 0 16px 0;">Welcome to CompareTheNursery — the easiest way to find and compare Ofsted-rated nurseries near you.</p>
+      <p style="margin:0 0 16px 0;">Welcome to NurseryMatch — the easiest way to find and compare Ofsted-rated nurseries near you.</p>
       <p style="margin:0 0 8px 0;font-weight:600;">Here is how to get started:</p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
@@ -90,7 +50,7 @@ export function renderWelcomeEmail({ userName } = {}) {
   const text = [
     greeting,
     '',
-    'Welcome to CompareTheNursery!',
+    'Welcome to NurseryMatch!',
     '',
     'Here is how to get started:',
     '1. Take the nursery quiz — answer a few questions and we will match you.',
@@ -113,6 +73,7 @@ export function renderWelcomeDay3Email({ userName } = {}) {
 
   const html = shell({
     title: subject,
+    preheader: 'See Ofsted ratings, fees, funded places and reviews at a glance.',
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
       <p style="margin:0 0 16px 0;">
@@ -150,6 +111,7 @@ export function renderWelcomeDay7Email({ userName } = {}) {
 
   const html = shell({
     title: subject,
+    preheader: 'Crime rates, schools, property prices and nursery density for any UK postcode.',
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
       <p style="margin:0 0 16px 0;">
@@ -222,6 +184,9 @@ export function renderWeeklyDigestEmail({ nurseries = [], userName, postcode } =
 
   const html = shell({
     title: subject,
+    preheader: count > 0
+      ? `${count} ${count === 1 ? 'nursery' : 'nurseries'} added or updated near ${postcode || 'you'}.`
+      : 'Your weekly nursery update from NurseryMatch.',
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
       <p style="margin:0 0 16px 0;">Here are the nurseries added or updated near ${escapeHtml(postcode || 'you')} in the last 7 days.</p>
@@ -257,14 +222,17 @@ export function renderReengagementEmail({ userName, postcode, newCount = 0 } = {
   const subject =
     newCount > 0
       ? `We miss you! ${newCount} new nurseries near ${postcode || 'you'}`
-      : 'We miss you at CompareTheNursery'
+      : 'We miss you at NurseryMatch'
 
   const html = shell({
     title: subject,
+    preheader: newCount > 0
+      ? `${newCount} new nurseries to explore near ${postcode || 'you'} since your last visit.`
+      : 'New nurseries, reviews and features since you were last here.',
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
       <p style="margin:0 0 16px 0;">
-        It has been a while since you visited CompareTheNursery.
+        It has been a while since you visited NurseryMatch.
         ${newCount > 0 ? `Since then, <strong>${newCount} new nurseries</strong> have been added near ${safePostcode}.` : 'We have been busy adding new nurseries, reviews and features.'}
       </p>
       <p style="margin:0 0 20px 0;">
@@ -280,7 +248,7 @@ export function renderReengagementEmail({ userName, postcode, newCount = 0 } = {
   const text = [
     greeting,
     '',
-    'It has been a while since you visited CompareTheNursery.',
+    'It has been a while since you visited NurseryMatch.',
     newCount > 0
       ? `Since then, ${newCount} new nurseries have been added near ${postcode || 'your area'}.`
       : 'We have been busy adding new nurseries, reviews and features.',
@@ -297,16 +265,17 @@ export function renderReengagementEmail({ userName, postcode, newCount = 0 } = {
 
 export function renderProviderInviteEmail({ nurseryName, urn } = {}) {
   const safeName = escapeHtml(nurseryName || 'your nursery')
-  const subject = `Claim ${nurseryName || 'your nursery'} on CompareTheNursery`
+  const subject = `Claim ${nurseryName || 'your nursery'} on NurseryMatch`
   const claimUrl = urn
     ? `${FRONTEND_URL}/nursery/${encodeURIComponent(urn)}?claim=1`
     : `${FRONTEND_URL}/provider`
 
   const html = shell({
     title: subject,
+    preheader: 'Parents are searching for your nursery. Claim your free listing in 2 minutes.',
     bodyHtml: `
       <p style="margin:0 0 16px 0;">
-        <strong>${safeName}</strong> is already listed on CompareTheNursery and parents are searching for it.
+        <strong>${safeName}</strong> is already listed on NurseryMatch and parents are searching for it.
         Claim your free profile to take control.
       </p>
       <p style="margin:0 0 8px 0;font-weight:600;">Benefits of claiming your nursery:</p>
@@ -324,7 +293,7 @@ export function renderProviderInviteEmail({ nurseryName, urn } = {}) {
   })
 
   const text = [
-    `${nurseryName || 'Your nursery'} is listed on CompareTheNursery and parents are searching for it.`,
+    `${nurseryName || 'Your nursery'} is listed on NurseryMatch and parents are searching for it.`,
     '',
     'Benefits of claiming:',
     '- Update your description, photos and opening hours',
@@ -346,7 +315,10 @@ export function renderSavedSearchAlertEmail({ searchResults = [], userName } = {
   const subject =
     totalNew > 0
       ? `${totalNew} new ${totalNew === 1 ? 'nursery' : 'nurseries'} matching your saved searches`
-      : 'Saved search update from CompareTheNursery'
+      : 'Saved search update from NurseryMatch'
+  const preheader = totalNew > 0
+    ? `Matches in areas you're watching. See them before they fill up.`
+    : 'Weekly check-in on your saved searches.'
 
   const sections = searchResults
     .map((r) => {
@@ -372,6 +344,7 @@ export function renderSavedSearchAlertEmail({ searchResults = [], userName } = {
 
   const html = shell({
     title: subject,
+    preheader,
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
       <p style="margin:0 0 16px 0;">New nurseries have appeared in areas you are watching. Here is a summary:</p>
@@ -438,6 +411,7 @@ export function renderOfstedChangeEmail({
 
   const html = shell({
     title: subject,
+    preheader: `${previousGrade || 'Unknown'} → ${newGrade || 'Unknown'}. See the full Ofsted report.`,
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
       <p style="margin:0 0 16px 0;">
@@ -495,10 +469,13 @@ export function renderProviderEnquiryDigestEmail({
 
   const html = shell({
     title: subject,
+    preheader: count > 0
+      ? `Respond within 24 hours to maximise your booking rate.`
+      : 'Weekly summary of parent enquiries.',
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
       <p style="margin:0 0 16px 0;">
-        <strong>${safeName}</strong> received <strong>${count} new ${count === 1 ? 'enquiry' : 'enquiries'}</strong> from parents this week on CompareTheNursery.
+        <strong>${safeName}</strong> received <strong>${count} new ${count === 1 ? 'enquiry' : 'enquiries'}</strong> from parents this week on NurseryMatch.
       </p>
       <p style="margin:0 0 20px 0;">
         ${ctaButton(safeUrl, 'View enquiries')}
@@ -533,6 +510,7 @@ export function renderEnhancedWeeklyDigestEmail({
   const greeting = userName ? `Hi ${escapeHtml(userName)},` : 'Hi,'
   const subject = 'Your weekly nursery digest'
   const safePostcode = escapeHtml(postcode || 'your area')
+  const totalUpdates = newNurseries.length + ofstedChanges.length + newAnswers.length + (newReviewCount > 0 ? 1 : 0)
 
   // Build sections
   const sections = []
@@ -622,6 +600,9 @@ export function renderEnhancedWeeklyDigestEmail({
 
   const html = shell({
     title: subject,
+    preheader: totalUpdates > 0
+      ? `New nurseries, Ofsted changes and reviews near ${postcode || 'you'}.`
+      : `Weekly check-in from NurseryMatch.`,
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
       <p style="margin:0 0 16px 0;">Here is your weekly digest of nursery updates.</p>
@@ -679,11 +660,12 @@ export function renderProviderWelcomeEmail({ providerName, nurseryName } = {}) {
 
   const html = shell({
     title: subject,
+    preheader: 'Complete your profile, respond to enquiries and track performance.',
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
       <p style="margin:0 0 16px 0;">
         Great news — your claim for <strong>${safeName}</strong> has been approved.
-        You now have full control of your nursery profile on CompareTheNursery.
+        You now have full control of your nursery profile on NurseryMatch.
       </p>
       <p style="margin:0 0 8px 0;font-weight:600;">What you can do now:</p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -741,6 +723,7 @@ export function renderProviderPaymentConfirmationEmail({ providerName, tier, amo
 
   const html = shell({
     title: subject,
+    preheader: `${safeAmount} received. Your ${safeTier} plan is now active.`,
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
       <p style="margin:0 0 16px 0;">
@@ -800,6 +783,7 @@ export function renderProviderEnquiryNotificationEmail({
 
   const html = shell({
     title: subject,
+    preheader: `${parentName || 'A parent'} is asking about a place. Reply within 24 hours to close the booking.`,
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
       <p style="margin:0 0 16px 0;">

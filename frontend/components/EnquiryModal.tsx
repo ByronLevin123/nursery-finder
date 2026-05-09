@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useSession } from '@/components/SessionProvider'
 import Link from 'next/link'
 import { API_URL } from '@/lib/api'
+import { trackEvent } from '@/lib/analytics'
+import TurnstileWidget from '@/components/TurnstileWidget'
 
 interface NurseryItem {
   id: string
@@ -31,6 +33,17 @@ export default function EnquiryModal({ nurseries, onClose, childName, childDob }
   const [success, setSuccess] = useState(false)
   const [queuedMessage, setQueuedMessage] = useState('')
   const [error, setError] = useState('')
+  // Turnstile token. Empty string means either: (a) no Turnstile site key
+  // configured (graceful degradation — backend also no-ops) or (b) the
+  // user hasn't completed the challenge yet. The widget calls onToken('')
+  // in case (a) on mount, so we don't need to gate submission separately.
+  const [turnstileToken, setTurnstileToken] = useState<string>(
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ? '' : 'unconfigured'
+  )
+
+  const handleTurnstileToken = useCallback((token: string) => {
+    setTurnstileToken(token || (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ? '' : 'unconfigured'))
+  }, [])
 
   function toggleNursery(id: string) {
     setSelected((prev) =>
@@ -60,6 +73,7 @@ export default function EnquiryModal({ nurseries, onClose, childName, childDob }
           preferred_start: preferredStart || null,
           session_preference: sessionPref || null,
           message: message || null,
+          turnstile_token: turnstileToken === 'unconfigured' ? undefined : turnstileToken,
         }),
       })
       if (!res.ok) {
@@ -68,6 +82,11 @@ export default function EnquiryModal({ nurseries, onClose, childName, childDob }
       }
       const result = await res.json()
       if (result.message) setQueuedMessage(result.message)
+      trackEvent('Enquiry Submit', {
+        nurseries: selected.length,
+        sent: result?.meta?.sent ?? 0,
+        queued: result?.meta?.queued ?? 0,
+      })
       setSuccess(true)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
@@ -222,9 +241,12 @@ export default function EnquiryModal({ nurseries, onClose, childName, childDob }
 
         {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
 
+        {/* Turnstile renders only when site key is configured. */}
+        <TurnstileWidget onToken={handleTurnstileToken} />
+
         <button
           onClick={handleSubmit}
-          disabled={submitting || selected.length === 0}
+          disabled={submitting || selected.length === 0 || !turnstileToken}
           className="w-full py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50"
         >
           {submitting

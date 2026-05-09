@@ -7,15 +7,15 @@ import { breadcrumbSchema, jsonLdScript } from '@/lib/schema'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'Browse Nurseries by Town | CompareTheNursery',
+  title: 'Browse Nurseries by Town | NurseryMatch',
   description:
     'Browse Ofsted-rated nurseries by town across the UK. Find and compare the best nurseries near you.',
   alternates: { canonical: '/nurseries-in-town' },
   openGraph: {
-    title: 'Browse Nurseries by Town | CompareTheNursery',
+    title: 'Browse Nurseries by Town | NurseryMatch',
     description: 'Browse Ofsted-rated nurseries by town across the UK.',
     url: '/nurseries-in-town',
-    siteName: 'CompareTheNursery',
+    siteName: 'NurseryMatch',
     type: 'website',
     locale: 'en_GB',
   },

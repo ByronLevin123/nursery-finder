@@ -1,0 +1,49 @@
+name: Lighthouse CI
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/lighthouse.yml'
+  workflow_dispatch:
+
+# Audits Core Web Vitals on key pages so a perf regression is caught at PR
+# time. Doesn't block merges yet — assertions are advisory until we have
+# a production baseline (see 'continue-on-error' on the assert step).
+
+jobs:
+  lighthouse:
+    name: Lighthouse audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_API_URL: https://example.com
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install
+        working-directory: frontend
+        run: npm ci
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+      - name: Run Lighthouse CI
+        working-directory: frontend
+        # @lhci/cli is fetched at run time — no permanent dependency entry.
+        run: |
+          npm i -D --no-save @lhci/cli@0.13.x
+          npx lhci autorun --collect.startServerCommand="npm start" \
+            --collect.url="http://localhost:3000/" \
+            --collect.url="http://localhost:3000/search" \
+            --collect.url="http://localhost:3000/find-an-area" \
+            --collect.url="http://localhost:3000/about" \
+            --collect.url="http://localhost:3000/faq" \
+            --collect.numberOfRuns=1 \
+            --upload.target=temporary-public-storage || true
+        continue-on-error: true

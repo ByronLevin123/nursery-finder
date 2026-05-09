@@ -1,13 +1,14 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { supabase } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useSession } from '@/components/SessionProvider'
 import ConfirmModal from '@/components/ConfirmModal'
 import { getProfile, updateProfile, getSubscription, createPortalSession, getAuthToken, exportMyData, deleteMyAccount, getNotificationPreferences, updateNotificationPreferences, type Profile, type ProfileChild, type SubscriptionInfo, type NotificationPreferences } from '@/lib/api'
 import { loadPreferences, savePreferences, hasActivePreferences, DEFAULT_PREFERENCES, type Preferences } from '@/lib/preferences'
+import { trackEvent } from '@/lib/analytics'
 
 interface SavedSearch {
   id: string
@@ -20,9 +21,22 @@ interface SavedSearch {
   name: string | null
 }
 
-export default function AccountPage() {
+function AccountPageInner() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { session, user, role, loading: sessionLoading, signOut } = useSession()
+
+  // Stripe Checkout success URL is /account?upgraded=1. Fire the conversion
+  // event once when we land here, then strip the param so a refresh doesn't
+  // double-count.
+  useEffect(() => {
+    if (searchParams?.get('upgraded') === '1') {
+      trackEvent('Provider Checkout Success')
+      const url = new URL(window.location.href)
+      url.searchParams.delete('upgraded')
+      window.history.replaceState({}, '', url.toString())
+    }
+  }, [searchParams])
 
   const [profile, setProfile] = useState<Profile | null>(null)
   const [searches, setSearches] = useState<SavedSearch[]>([])
@@ -359,7 +373,7 @@ export default function AccountPage() {
       <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Email Preferences</h2>
         <p className="text-sm text-gray-500 mb-4">
-          Choose which emails you would like to receive from CompareTheNursery.
+          Choose which emails you would like to receive from NurseryMatch.
         </p>
         <div className="space-y-3">
           <label className="flex items-center gap-3">
@@ -635,7 +649,7 @@ export default function AccountPage() {
                 const url = URL.createObjectURL(blob)
                 const a = document.createElement('a')
                 a.href = url
-                a.download = 'my-comparethenursery-data.json'
+                a.download = 'my-nurserymatch-data.json'
                 a.click()
                 URL.revokeObjectURL(url)
               } catch (err: any) {
@@ -695,5 +709,19 @@ export default function AccountPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function AccountPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen text-gray-400">
+          Loading…
+        </div>
+      }
+    >
+      <AccountPageInner />
+    </Suspense>
   )
 }

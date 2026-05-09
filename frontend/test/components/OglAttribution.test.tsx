@@ -9,7 +9,7 @@ describe('OglAttribution', () => {
       screen.getByText(/licensed under the/i)
     ).toBeInTheDocument()
     expect(
-      screen.getByText(/Compare the Nursery is independent of Ofsted/i)
+      screen.getByText(/NurseryMatch is independent of Ofsted/i)
     ).toBeInTheDocument()
   })
 

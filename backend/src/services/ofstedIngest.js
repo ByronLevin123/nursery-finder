@@ -31,7 +31,7 @@ const GRADE_MAP = {
 async function findCurrentCsvUrl() {
   logger.info('ofsted: fetching stats page to find current CSV URL')
   const { data: html } = await axios.get(OFSTED_STATS_PAGE, {
-    headers: { 'User-Agent': 'CompareTheNursery/1.0 (data@comparethenursery.com)' },
+    headers: { 'User-Agent': 'NurseryMatch/1.0 (data@nurserymatch.com)' },
   })
   const $ = cheerio.load(html)
 
@@ -95,7 +95,7 @@ export async function ingestOfstedRegister() {
   logger.info({ csvUrl }, 'ofsted: downloading CSV')
   const response = await axios.get(csvUrl, {
     responseType: 'arraybuffer',
-    headers: { 'User-Agent': 'CompareTheNursery/1.0 (data@comparethenursery.com)' },
+    headers: { 'User-Agent': 'NurseryMatch/1.0 (data@nurserymatch.com)' },
   })
 
   // CSV has 2 info rows before the header row — skip them

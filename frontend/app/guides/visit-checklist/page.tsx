@@ -5,16 +5,16 @@ import OglAttribution from '@/components/OglAttribution'
 import { breadcrumbSchema, jsonLdScript } from '@/lib/schema'
 
 export const metadata: Metadata = {
-  title: 'Nursery Visit Checklist — What to Look For | CompareTheNursery',
+  title: 'Nursery Visit Checklist — What to Look For | NurseryMatch',
   description:
     'A comprehensive checklist for parents visiting nurseries. Know what to look for, what questions to ask, and how to compare nurseries side by side.',
   alternates: { canonical: '/guides/visit-checklist' },
   openGraph: {
-    title: 'Nursery Visit Checklist — What to Look For | CompareTheNursery',
+    title: 'Nursery Visit Checklist — What to Look For | NurseryMatch',
     description:
       'A comprehensive checklist for parents visiting nurseries. Know what to look for and what questions to ask.',
     url: '/guides/visit-checklist',
-    siteName: 'CompareTheNursery',
+    siteName: 'NurseryMatch',
     type: 'website',
     locale: 'en_GB',
   },

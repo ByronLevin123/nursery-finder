@@ -1,4 +1,4 @@
-# CompareTheNursery — Master Project Context
+# NurseryMatch — Master Project Context
 
 > Claude Code reads this file at the start of every session.
 > Never delete or rename this file.
@@ -7,12 +7,12 @@
 
 ## What we are building
 
-**CompareTheNursery** — a UK nursery comparison website that lets parents find and evaluate
+**NurseryMatch** — a UK nursery comparison website that lets parents find and evaluate
 Ofsted-rated nurseries near them. Phase 1 is a nursery search and profile product.
 Phase 8 adds a family relocation layer (area intelligence + property prices).
 
 **Live URL targets:**
-- Frontend: Vercel (comparethenursery.com)
+- Frontend: Vercel (nurserymatch.com)
 - Backend API: Railway (nursery-finder-api.railway.app)
 - Database: Supabase (PostgreSQL + PostGIS)
 

@@ -2,15 +2,27 @@
 // User-scoped routes use Supabase JWT auth. Admin routes use basic auth.
 
 import express from 'express'
+import rateLimit from 'express-rate-limit'
 import db from '../db.js'
-import { requireAuth } from '../middleware/supabaseAuth.js'
-import { requireRole } from '../middleware/supabaseAuth.js'
+import { requireAuth, requireVerifiedEmail, requireRole } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
 import { isEmailAvailable, sendEmail, renderClaimApprovedEmail } from '../services/emailService.js'
 
 const router = express.Router()
 
 const VALID_ROLES = ['Owner', 'Manager', 'Marketing', 'Other']
+
+// Per-user claim submission limit. A real provider claims maybe 1-3 nurseries
+// in a session (a nursery group might claim a small chain). 10/day per user
+// is generous for legit use and a hard ceiling on claim spam.
+const claimSubmissionLimiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.user?.id || req.ip,
+  message: { error: 'Claim submission limit reached. Try again tomorrow.' },
+})
 
 function validateClaimBody(body) {
   if (!body || typeof body !== 'object') return 'invalid body'
@@ -48,7 +60,7 @@ function validateClaimBody(body) {
 }
 
 // POST /api/v1/claims — submit a new claim
-router.post('/', requireAuth, async (req, res, next) => {
+router.post('/', requireAuth, requireVerifiedEmail, claimSubmissionLimiter, async (req, res, next) => {
   try {
     if (!db) return res.status(503).json({ error: 'Database not configured' })
     const err = validateClaimBody(req.body)
@@ -183,7 +195,7 @@ router.post('/:id/approve', requireRole('admin'), async (req, res, next) => {
           .maybeSingle()
         const providerUrl = process.env.FRONTEND_URL
           ? `${process.env.FRONTEND_URL}/provider`
-          : 'https://comparethenursery.com/provider'
+          : 'https://nurserymatch.com/provider'
         const rendered = renderClaimApprovedEmail(nurseryRow || { name: claim.urn }, providerUrl)
         await sendEmail({
           to: claim.claimer_email,

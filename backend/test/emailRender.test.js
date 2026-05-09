@@ -36,7 +36,7 @@ describe('renderShortlistEmail', () => {
 
   it('handles empty nurseries array gracefully', () => {
     const out = renderShortlistEmail({ nurseries: [] })
-    expect(out.subject).toBe('Your CompareTheNursery shortlist')
+    expect(out.subject).toBe('Your NurseryMatch shortlist')
     expect(out.html).toContain('shortlist is empty')
     expect(out.text).toContain('(empty shortlist)')
   })
@@ -85,7 +85,7 @@ describe('renderDigestEmail', () => {
 
   it('handles users with no saved searches', () => {
     const out = renderDigestEmail({ savedSearches: [], newMatches: {} })
-    expect(out.subject).toBe('CompareTheNursery digest')
+    expect(out.subject).toBe('NurseryMatch digest')
     expect(out.html).toContain('no saved searches')
     expect(out.text).toBeTruthy()
   })

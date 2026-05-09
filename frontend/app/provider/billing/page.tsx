@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useSession } from '@/components/SessionProvider'
 import { API_URL } from '@/lib/api'
+import { trackEvent } from '@/lib/analytics'
 
 interface ProviderSubscription {
   tier: string
@@ -111,6 +112,7 @@ export default function ProviderBillingPage() {
       })
       if (!res.ok) throw new Error('Failed to create checkout session')
       const data = await res.json()
+      trackEvent('Provider Checkout Start', { tier })
       if (data.url) {
         window.location.href = data.url
       }

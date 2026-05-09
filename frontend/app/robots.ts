@@ -27,7 +27,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/admin', '/provider/*/edit', '/account'],
       })),
     ],
-    sitemap: 'https://comparethenursery.com/sitemap.xml',
-    host: 'https://comparethenursery.com',
+    sitemap: 'https://nurserymatch.com/sitemap.xml',
+    host: 'https://nurserymatch.com',
   }
 }

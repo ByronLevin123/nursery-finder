@@ -6,6 +6,7 @@ import { useSession } from '@/components/SessionProvider'
 import PostcodeAutocomplete from '@/components/PostcodeAutocomplete'
 import Link from 'next/link'
 import { API_URL } from '@/lib/api'
+import { trackEvent } from '@/lib/analytics'
 
 type Urgency = 'asap' | '3_months' | '6_months' | 'exploring'
 type CommuteFrom = 'home' | 'work' | 'both'
@@ -141,6 +142,7 @@ export default function QuizPage() {
         const err = await res.json().catch(() => ({}))
         throw new Error(err.error || 'Failed to save quiz')
       }
+      trackEvent('Quiz Complete')
       router.push('/dashboard')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong')

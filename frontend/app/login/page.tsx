@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { isPasswordValid } from '@/lib/validation'
 import { API_URL } from '@/lib/api'
+import { trackEvent } from '@/lib/analytics'
 
 type Tab = 'signin' | 'signup'
 type AuthMethod = 'password' | 'magic-link'
@@ -41,25 +42,64 @@ function LoginInner() {
     e.preventDefault()
     setLoading(true)
     setError(null)
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      setError(error.message)
+
+    // Route password sign-in through our backend so it can apply email-keyed
+    // lockout (Supabase only rate-limits per-IP). The backend forwards to
+    // Supabase's token endpoint and returns access/refresh tokens, which we
+    // install on the client via supabase.auth.setSession().
+    let r: Response
+    try {
+      r = await fetch(`${API_URL}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+    } catch {
+      setError('Could not reach the server. Check your connection and try again.')
       setLoading(false)
       return
     }
+    const body = await r.json().catch(() => ({}))
+    if (!r.ok) {
+      if (r.status === 429 && body.code === 'login_lockout') {
+        const mins = Math.ceil((body.retry_after_seconds || 60) / 60)
+        setError(`Too many failed attempts. Try again in about ${mins} minute${mins === 1 ? '' : 's'}.`)
+      } else {
+        const remainingHint =
+          typeof body.attempts_remaining === 'number' && body.attempts_remaining > 0
+            ? ` (${body.attempts_remaining} attempt${body.attempts_remaining === 1 ? '' : 's'} remaining)`
+            : ''
+        setError((body.error || 'Invalid email or password') + remainingHint)
+      }
+      setLoading(false)
+      return
+    }
+
+    // Install the session in the Supabase client so the rest of the app
+    // (SessionProvider, supabase.auth.getSession(), etc.) sees us as logged in.
+    const { data: setData, error: setErr } = await supabase.auth.setSession({
+      access_token: body.access_token,
+      refresh_token: body.refresh_token,
+    })
+    if (setErr) {
+      setError(setErr.message)
+      setLoading(false)
+      return
+    }
+
     if (explicitNext) {
       router.push(next)
       return
     }
     // No explicit redirect — route based on role
     try {
-      const token = data.session?.access_token
+      const token = setData.session?.access_token || body.access_token
       if (token) {
-        const r = await fetch(`${API_URL}/api/v1/profile`, {
+        const profileRes = await fetch(`${API_URL}/api/v1/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         })
-        if (r.ok) {
-          const profile = await r.json()
+        if (profileRes.ok) {
+          const profile = await profileRes.json()
           if (profile.role === 'provider') { router.push('/provider'); return }
           if (profile.role === 'admin') { router.push('/admin'); return }
         }
@@ -108,8 +148,12 @@ function LoginInner() {
         emailRedirectTo: redirectTo,
       },
     })
-    if (error) setError(error.message)
-    else setSuccessView('signup-confirm')
+    if (error) {
+      setError(error.message)
+    } else {
+      trackEvent('Signup', { method: 'password' })
+      setSuccessView('signup-confirm')
+    }
     setLoading(false)
   }
 
@@ -168,12 +212,12 @@ function LoginInner() {
   return (
     <div className="max-w-md mx-auto px-4 py-16">
       <h1 className="text-3xl font-bold text-gray-900 mb-2">
-        {tab === 'signin' ? 'Sign in to CompareTheNursery' : 'Create your account'}
+        {tab === 'signin' ? 'Sign in to NurseryMatch' : 'Create your account'}
       </h1>
       <p className="text-gray-600 mb-6">
         {tab === 'signin'
           ? 'Save your shortlist, sync preferences across devices, and get alerts on new matches.'
-          : 'Join CompareTheNursery to save nurseries, compare options, and get personalised alerts.'}
+          : 'Join NurseryMatch to save nurseries, compare options, and get personalised alerts.'}
       </p>
 
       {/* Confirmed email banner */}

@@ -61,7 +61,7 @@ export default function RoiCalculator() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Fill rate without CTN: <span className="font-bold text-gray-900">{fillWithout}%</span>
+              Fill rate without NurseryMatch: <span className="font-bold text-gray-900">{fillWithout}%</span>
             </label>
             <input
               type="range"
@@ -84,7 +84,7 @@ export default function RoiCalculator() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Fill rate with CTN: <span className="font-bold text-emerald-600">{fillWith}%</span>
+              Fill rate with NurseryMatch: <span className="font-bold text-emerald-600">{fillWith}%</span>
             </label>
             <input
               type="range"
