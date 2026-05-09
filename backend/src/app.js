@@ -150,7 +150,7 @@ app.use(
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, curl, etc.)
       if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, origin || '*')
+        callback(null, origin || true)
       } else {
         callback(null, false)
       }

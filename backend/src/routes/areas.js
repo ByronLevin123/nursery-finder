@@ -4,6 +4,7 @@ import { geocodePostcode } from '../services/geocoding.js'
 import { refreshDistrictPropertyData } from '../services/propertyData.js'
 import { requireRole } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
+import { escapeLike } from '../utils.js'
 
 const router = express.Router()
 
@@ -101,7 +102,7 @@ router.get('/:district/nurseries', async (req, res, next) => {
         'urn, name, provider_type, address_line1, town, postcode, local_authority, ofsted_overall_grade, last_inspection_date, inspection_report_url, inspection_date_warning, enforcement_notice, total_places, places_funded_2yr, places_funded_3_4yr, fee_avg_monthly, fee_report_count, lat, lng'
       )
       .eq('registration_status', 'Active')
-      .like('postcode', `${district}%`)
+      .like('postcode', `${escapeLike(district)}%`)
       .order('ofsted_overall_grade', { ascending: true, nullsFirst: false })
       .limit(200)
 

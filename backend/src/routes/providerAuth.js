@@ -2,12 +2,21 @@
 // POST /api/v1/provider-auth/register — creates account + claim in one step
 
 import express from 'express'
+import rateLimit from 'express-rate-limit'
 import { createClient } from '@supabase/supabase-js'
 import db from '../db.js'
 import { logger } from '../logger.js'
 import { isBusinessEmail } from '../utils/emailValidation.js'
 
 const router = express.Router()
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many registration attempts, please try again later' },
+})
 
 // Service-role client for creating users
 let adminAuth = null
@@ -18,7 +27,7 @@ if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
 }
 
 // POST /register — provider sign-up + nursery claim
-router.post('/register', async (req, res, next) => {
+router.post('/register', registerLimiter, async (req, res, next) => {
   try {
     if (!db || !adminAuth) {
       return res.status(503).json({ error: 'Service not configured' })

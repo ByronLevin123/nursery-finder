@@ -4,6 +4,7 @@ import express from 'express'
 import db from '../db.js'
 import { requireRole } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
+import { escapeLike } from '../utils.js'
 import { sendEmail, renderProviderInviteEmail, isEmailAvailable } from '../services/emailService.js'
 
 const router = express.Router()
@@ -31,10 +32,10 @@ router.post('/preview', async (req, res, next) => {
       .limit(limit)
 
     if (region) {
-      query = query.ilike('region', `%${region}%`)
+      query = query.ilike('region', `%${escapeLike(region)}%`)
     }
     if (local_authority) {
-      query = query.ilike('local_authority', `%${local_authority}%`)
+      query = query.ilike('local_authority', `%${escapeLike(local_authority)}%`)
     }
 
     // Exclude nurseries already invited

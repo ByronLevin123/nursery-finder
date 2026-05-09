@@ -250,6 +250,9 @@ router.post('/nurseries/:urn/photos', requirePaidProvider, async (req, res, next
     if (parsed.buffer.length > MAX_PHOTO_SIZE_BYTES) {
       return res.status(400).json({ error: `Image too large. Max ${MAX_PHOTO_SIZE_BYTES / 1024 / 1024}MB` })
     }
+    if (caption != null && (typeof caption !== 'string' || caption.length > 500)) {
+      return res.status(400).json({ error: 'Caption must be 500 characters or fewer' })
+    }
 
     // Check current photo count
     const { count, error: cErr } = await db
