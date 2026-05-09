@@ -44,7 +44,7 @@ router.post('/ofsted', async (req, res, next) => {
 // POST /api/v1/ingest/geocode
 router.post('/geocode', async (req, res, next) => {
   try {
-    const limit = parseInt(req.query.limit) || 500
+    const limit = Math.min(1000, Math.max(1, parseInt(req.query.limit) || 500))
     logger.info({ limit }, 'ingest: starting geocoding batch')
     const result = await geocodeNurseriesBatch(limit)
     res.json(result)
@@ -189,7 +189,7 @@ router.post('/schools', async (req, res, next) => {
 // POST /api/v1/ingest/schools-geocode — geocode schools with missing lat/lng
 router.post('/schools-geocode', async (req, res, next) => {
   try {
-    const limit = parseInt(req.query.limit) || 500
+    const limit = Math.min(1000, Math.max(1, parseInt(req.query.limit) || 500))
     logger.info({ limit }, 'ingest: starting school geocoding batch')
     const result = await geocodeSchoolsBatch(limit)
     res.json(result)

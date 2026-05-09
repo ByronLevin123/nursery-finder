@@ -48,12 +48,20 @@ export async function createCheckoutSession({ userId, email, tier, type, success
       )
   }
 
+  const frontendUrl = process.env.FRONTEND_URL || ''
+  const allowedOrigins = [frontendUrl, 'https://comparethenursery.com', 'https://www.comparethenursery.com'].filter(Boolean)
+  function isAllowedUrl(url) {
+    try { return allowedOrigins.some((o) => url.startsWith(o + '/') || url === o) } catch { return false }
+  }
+  const safeSuccessUrl = successUrl && isAllowedUrl(successUrl) ? successUrl : `${frontendUrl}/account?upgraded=1`
+  const safeCancelUrl = cancelUrl && isAllowedUrl(cancelUrl) ? cancelUrl : `${frontendUrl}/pricing`
+
   const session = await s.checkout.sessions.create({
     customer: customerId,
     mode: 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: successUrl || `${process.env.FRONTEND_URL}/account?upgraded=1`,
-    cancel_url: cancelUrl || `${process.env.FRONTEND_URL}/pricing`,
+    success_url: safeSuccessUrl,
+    cancel_url: safeCancelUrl,
     metadata: { user_id: userId, type: 'provider', tier },
   })
 

@@ -4,13 +4,18 @@ import { logger } from './logger.js'
 
 // Validate required environment variables before starting
 const REQUIRED_PRODUCTION_VARS = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_KEY']
-const RECOMMENDED_VARS = ['FRONTEND_URL', 'SENTRY_DSN', 'RESEND_API_KEY']
+const REQUIRED_PAYMENT_VARS = ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET']
+const RECOMMENDED_VARS = ['FRONTEND_URL', 'SENTRY_DSN', 'RESEND_API_KEY', 'ANTHROPIC_API_KEY']
 
 if (process.env.NODE_ENV === 'production') {
   const missing = REQUIRED_PRODUCTION_VARS.filter((v) => !process.env[v])
   if (missing.length) {
     logger.fatal({ missing }, 'Missing required environment variables — refusing to start')
     process.exit(1)
+  }
+  const missingPayment = REQUIRED_PAYMENT_VARS.filter((v) => !process.env[v])
+  if (missingPayment.length) {
+    logger.warn({ missing: missingPayment }, 'Payment environment variables not set — billing features will be unavailable')
   }
   const missingRecommended = RECOMMENDED_VARS.filter((v) => !process.env[v])
   if (missingRecommended.length) {

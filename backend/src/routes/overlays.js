@@ -63,6 +63,17 @@ router.post('/parks/:district/refresh', requireRole('admin'), async (req, res, n
 router.post('/schools/ingest', requireRole('admin'), async (req, res, next) => {
   try {
     const { csvUrl } = req.body || {}
+    if (csvUrl) {
+      try {
+        const parsed = new URL(csvUrl)
+        const allowed = ['get-information-schools.service.gov.uk', 'ea-edubase-api-prod.azurewebsites.net']
+        if (parsed.protocol !== 'https:' || !allowed.some((d) => parsed.hostname.endsWith(d))) {
+          return res.status(400).json({ error: 'CSV URL must be HTTPS from an allowed education data domain' })
+        }
+      } catch {
+        return res.status(400).json({ error: 'Invalid CSV URL' })
+      }
+    }
     logger.info({ csvUrl: csvUrl ? 'provided' : 'default' }, 'overlays: schools ingest start')
     const result = await ingestSchoolsFromCsvUrl(csvUrl)
     logger.info({ result }, 'overlays: schools ingest done')
@@ -76,7 +87,7 @@ router.post('/schools/ingest', requireRole('admin'), async (req, res, next) => {
 router.post('/schools/geocode', requireRole('admin'), async (req, res, next) => {
   try {
     logger.info('overlays: schools geocode start')
-    const limit = Number(req.body?.limit) || 500
+    const limit = Math.min(1000, Math.max(1, Number(req.body?.limit) || 500))
     const result = await geocodeSchoolsBatch(limit)
     logger.info({ result }, 'overlays: schools geocode done')
     res.json(result)

@@ -114,7 +114,12 @@ export default function NotificationBell() {
       )
     }
     if (n.link) {
-      window.location.href = n.link
+      try {
+        const parsed = new URL(n.link, window.location.origin)
+        if (parsed.origin === window.location.origin) {
+          window.location.href = n.link
+        }
+      } catch {}
     }
     setOpen(false)
   }
