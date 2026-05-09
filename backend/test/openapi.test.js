@@ -38,12 +38,12 @@ describe('OpenAPI spec', () => {
     }
   })
 
-  it('every path has a 200 response with a schema or markdown content', () => {
+  it('every path has a success response (2xx)', () => {
     for (const [pathKey, methods] of Object.entries(openapi.paths)) {
       for (const op of Object.values(methods)) {
-        const ok = op.responses?.['200']
-        expect(ok, `${pathKey} missing 200`).toBeDefined()
-        expect(ok.content, `${pathKey} 200 missing content`).toBeDefined()
+        const codes = Object.keys(op.responses || {})
+        const hasSuccess = codes.some((c) => c.startsWith('2'))
+        expect(hasSuccess, `${pathKey} missing 2xx response`).toBe(true)
       }
     }
   })

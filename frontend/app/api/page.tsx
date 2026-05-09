@@ -18,16 +18,28 @@ export const metadata: Metadata = {
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
-const ENDPOINTS: { method: string; path: string; description: string }[] = [
+const ENDPOINTS: { method: string; path: string; description: string; auth?: boolean }[] = [
   { method: 'POST', path: '/api/v1/nurseries/search', description: 'Search nurseries near a UK postcode (JSON body).' },
+  { method: 'POST', path: '/api/v1/nurseries/smart-search', description: 'Smart search with natural language query.' },
+  { method: 'POST', path: '/api/v1/nurseries/compare', description: 'Compare multiple nurseries side by side.' },
+  { method: 'GET', path: '/api/v1/nurseries/autocomplete', description: 'Autocomplete nursery names.' },
   { method: 'GET', path: '/api/v1/nurseries/{urn}', description: 'Look up a single nursery by Ofsted URN.' },
+  { method: 'GET', path: '/api/v1/nurseries/{urn}/similar', description: 'Find similar nurseries.' },
+  { method: 'GET', path: '/api/v1/nurseries/{urn}/reviews', description: 'List parent reviews for a nursery.' },
   { method: 'GET', path: '/api/v1/areas/{district}', description: 'Get the family-relocation summary for a postcode district.' },
   { method: 'GET', path: '/api/v1/areas/family-search', description: 'Find family-friendly areas near a postcode.' },
   { method: 'GET', path: '/api/v1/areas/{district}/nurseries', description: 'List all active nurseries inside a district.' },
   { method: 'GET', path: '/api/v1/properties/districts', description: 'Browse districts by affordability and family score.' },
   { method: 'GET', path: '/api/v1/overlays/schools/near', description: 'Schools near a coordinate.' },
+  { method: 'POST', path: '/api/v1/travel/time', description: 'Calculate travel time between two points.' },
+  { method: 'POST', path: '/api/v1/travel/isochrone', description: 'Generate isochrone polygon.' },
+  { method: 'GET', path: '/api/v1/nurseries/{urn}/summary', description: 'AI-generated nursery summary.' },
+  { method: 'GET', path: '/api/v1/nurseries/{urn}/review-synthesis', description: 'AI synthesis of nursery reviews.' },
+  { method: 'POST', path: '/api/v1/assistant/chat', description: 'AI move assistant chat.' },
   { method: 'GET', path: '/api/v1/public/nursery/{urn}.md', description: 'Markdown summary of a nursery (LLM-friendly).' },
   { method: 'GET', path: '/api/v1/public/area/{district}.md', description: 'Markdown summary of a postcode district.' },
+  { method: 'GET', path: '/api/v1/blog', description: 'List guides and blog posts.' },
+  { method: 'GET', path: '/api/v1/billing/tiers', description: 'Available subscription tiers and pricing.' },
 ]
 
 export default function ApiDocsPage() {
@@ -35,21 +47,36 @@ export default function ApiDocsPage() {
     <div className="max-w-4xl mx-auto px-4 py-12">
       <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Public API</h1>
       <p className="text-gray-600 mb-8">
-        Free read-only API for UK nursery, area and property data. Designed for use in LLM
-        agents, ChatGPT Custom GPTs, research projects and journalism.
+        Free API for UK nursery, area and property data. Over 100 endpoints covering
+        nurseries, areas, properties, AI features, and more. Designed for LLM agents, ChatGPT
+        Custom GPTs, research projects and journalism.
       </p>
 
-      <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5 mb-10">
-        <p className="text-sm text-indigo-900 font-medium mb-2">OpenAPI 3.1 specification</p>
-        <a
-          href={`${API}/api/openapi.json`}
-          className="text-indigo-700 font-mono text-sm break-all hover:underline"
-        >
-          {API}/api/openapi.json
-        </a>
-        <p className="text-xs text-indigo-700 mt-2">
-          Paste this URL into ChatGPT &gt; Configure &gt; Actions to ship a Custom GPT.
-        </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5">
+          <p className="text-sm text-indigo-900 font-medium mb-2">Interactive API docs</p>
+          <a
+            href={`${API}/api/docs`}
+            className="text-indigo-700 font-mono text-sm break-all hover:underline"
+          >
+            {API}/api/docs
+          </a>
+          <p className="text-xs text-indigo-700 mt-2">
+            Swagger UI — browse and try all 100+ endpoints in your browser.
+          </p>
+        </div>
+        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5">
+          <p className="text-sm text-indigo-900 font-medium mb-2">OpenAPI 3.1 specification</p>
+          <a
+            href={`${API}/api/openapi.json`}
+            className="text-indigo-700 font-mono text-sm break-all hover:underline"
+          >
+            {API}/api/openapi.json
+          </a>
+          <p className="text-xs text-indigo-700 mt-2">
+            Paste this URL into ChatGPT &gt; Configure &gt; Actions to ship a Custom GPT.
+          </p>
+        </div>
       </div>
 
       <h2 className="text-2xl font-bold text-gray-900 mb-4">Endpoints</h2>

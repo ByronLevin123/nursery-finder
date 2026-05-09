@@ -178,7 +178,10 @@ describe('POST /api/v1/enquiries', () => {
       })
     expect(res.status).toBe(201)
     expect(res.body.data.length).toBe(2)
-    expect(res.body.meta.sent).toBe(2)
+    // Both nurseries are unclaimed so they get queued, not sent
+    expect(res.body.meta.queued).toBe(2)
+    expect(res.body.meta.sent).toBe(0)
+    expect(res.body.message).toBeDefined()
   })
 
   it('rejects empty nursery_ids', async () => {
