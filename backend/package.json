@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "NurseryMatch backend API",
   "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
