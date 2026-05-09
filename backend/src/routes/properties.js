@@ -3,6 +3,7 @@ import db from '../db.js'
 import { refreshDistrictListings } from '../services/propertyDataListings.js'
 import { requireRole } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
+import { escapeLike } from '../utils.js'
 
 const router = express.Router()
 
@@ -61,7 +62,7 @@ router.get('/search', async (req, res, next) => {
       .select('name')
       .eq('registration_status', 'Active')
       .eq('ofsted_overall_grade', 'Outstanding')
-      .like('postcode', `${districtUpper}%`)
+      .like('postcode', `${escapeLike(districtUpper)}%`)
       .limit(1)
       .maybeSingle()
 

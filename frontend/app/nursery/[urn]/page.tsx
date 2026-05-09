@@ -36,6 +36,7 @@ const ProviderPhotoGallery = dynamic(() => import('@/components/ProviderPhotoGal
 const NurseryQA = dynamic(() => import('@/components/NurseryQA'), { ssr: false })
 const VisitChecklistSection = dynamic(() => import('@/components/VisitChecklistSection'), { ssr: false })
 const StreetViewPanorama = dynamic(() => import('@/components/StreetViewPanorama'), { ssr: false })
+const StickyProfileNav = dynamic(() => import('@/components/StickyProfileNav'), { ssr: false })
 
 export async function generateMetadata({ params }: { params: { urn: string } }): Promise<Metadata> {
   try {
@@ -155,6 +156,8 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         </div>
       </div>
 
+      <StickyProfileNav />
+
       <AiNurserySummary urn={nursery.urn} />
 
       {/* Insight scores */}
@@ -167,7 +170,7 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
       />
 
       {/* Details grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+      <div id="overview" className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         {nursery.address_line1 && (
           <div className="bg-gray-50 rounded-lg p-4">
             <p className="text-xs text-gray-500 uppercase font-medium mb-1">Address</p>
@@ -218,7 +221,7 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
       </div>
 
       {/* Fee section */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+      <div id="fees" className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
         <p className="font-medium text-blue-900 mb-1">💷 Fees</p>
         {nursery.fee_avg_monthly && nursery.fee_report_count >= 3 ? (
           <p className="text-sm text-blue-800">
@@ -274,8 +277,16 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
               </a>
             </p>
           )}
-          {nursery.contact_email && <p className="text-sm">{nursery.contact_email}</p>}
-          {nursery.contact_phone && <p className="text-sm">{nursery.contact_phone}</p>}
+          {nursery.contact_email && (
+            <p className="text-sm">
+              <a href={`mailto:${nursery.contact_email}`} className="text-blue-600 hover:underline">{nursery.contact_email}</a>
+            </p>
+          )}
+          {nursery.contact_phone && (
+            <p className="text-sm">
+              <a href={`tel:${nursery.contact_phone.replace(/\s/g, '')}`} className="text-blue-600 hover:underline">{nursery.contact_phone}</a>
+            </p>
+          )}
         </div>
       )}
 
@@ -386,10 +397,14 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbSchema(crumbs.map((c) => ({ name: c.name, url: c.href || `/nursery/${nursery.urn}` })))) }}
       />
 
-      <AiReviewSynthesis urn={nursery.urn} />
-      <ReviewSection urn={nursery.urn} />
+      <div id="reviews">
+        <AiReviewSynthesis urn={nursery.urn} />
+        <ReviewSection urn={nursery.urn} />
+      </div>
 
-      <NurseryQA urn={nursery.urn} isProvider={!!currentUserId && nursery.claimed_by_user_id === currentUserId} />
+      <div id="qa">
+        <NurseryQA urn={nursery.urn} isProvider={!!currentUserId && nursery.claimed_by_user_id === currentUserId} />
+      </div>
 
       {/* Photo placeholder when no provider photos */}
       {(!nursery.photos || nursery.photos.length === 0) && (

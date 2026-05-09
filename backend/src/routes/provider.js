@@ -18,14 +18,18 @@ const EDITABLE_FIELDS = [
   'contact_phone',
 ]
 
-// Fields that free-tier providers can edit (contact info only)
+// Fields that free-tier providers can edit (contact info + limited description)
 const FREE_EDITABLE_FIELDS = [
+  'description',
   'opening_hours',
   'photos',
   'website_url',
   'contact_email',
   'contact_phone',
 ]
+
+const FREE_DESCRIPTION_LIMIT = 500
+const FREE_PHOTO_LIMIT = 3
 
 function validatePatch(patch) {
   if (!patch || typeof patch !== 'object') return 'invalid body'
@@ -148,25 +152,24 @@ router.patch('/nurseries/:urn', requireAuth, async (req, res, next) => {
       return res.status(403).json({ error: 'You do not own this nursery' })
     }
 
-    // Check tier for description editing
+    // Check tier for description/photo limits
     let allowedFields = EDITABLE_FIELDS
-    if (Object.prototype.hasOwnProperty.call(req.body, 'description')) {
-      const { data: sub } = await db
-        .from('provider_subscriptions')
-        .select('tier, status')
-        .eq('user_id', req.user.id)
-        .maybeSingle()
-      const tier = sub?.tier || 'free'
-      const isActive = !sub || sub.status === 'active' || sub.status === 'trialing'
-      if (tier === 'free' || !isActive) {
-        allowedFields = FREE_EDITABLE_FIELDS
-        // Strip description from body — free users cannot edit it
-        if (Object.prototype.hasOwnProperty.call(req.body, 'description')) {
-          return res.status(403).json({
-            error: 'Custom description requires a Pro or Premium subscription',
-            upgrade_url: '/provider/billing',
-          })
-        }
+    const { data: sub } = await db
+      .from('provider_subscriptions')
+      .select('tier, status')
+      .eq('user_id', req.user.id)
+      .maybeSingle()
+    const tier = sub?.tier || 'free'
+    const isActive = !sub || sub.status === 'active' || sub.status === 'trialing'
+    const isFree = tier === 'free' || !isActive
+
+    if (isFree) {
+      allowedFields = FREE_EDITABLE_FIELDS
+      if (req.body.description != null && typeof req.body.description === 'string' && req.body.description.length > FREE_DESCRIPTION_LIMIT) {
+        return res.status(400).json({
+          error: `Free tier descriptions are limited to ${FREE_DESCRIPTION_LIMIT} characters. Upgrade for up to 5,000.`,
+          upgrade_url: '/provider/billing',
+        })
       }
     }
 
@@ -228,12 +231,32 @@ router.get('/nurseries/:urn/photos', async (req, res, next) => {
   }
 })
 
-// POST /api/v1/provider/nurseries/:urn/photos — upload a photo (paid only)
-router.post('/nurseries/:urn/photos', requirePaidProvider, async (req, res, next) => {
+// POST /api/v1/provider/nurseries/:urn/photos — upload a photo
+router.post('/nurseries/:urn/photos', requireAuth, async (req, res, next) => {
   try {
     if (!db) return res.status(503).json({ error: 'Database not configured' })
 
     const { urn } = req.params
+
+    // Verify ownership
+    const { data: nurseryOwner } = await db
+      .from('nurseries')
+      .select('claimed_by_user_id')
+      .eq('urn', urn)
+      .maybeSingle()
+    if (!nurseryOwner || nurseryOwner.claimed_by_user_id !== req.user.id) {
+      return res.status(403).json({ error: 'You do not own this nursery' })
+    }
+
+    // Determine photo limit by tier
+    const { data: photoSub } = await db
+      .from('provider_subscriptions')
+      .select('tier, status')
+      .eq('user_id', req.user.id)
+      .maybeSingle()
+    const photoTier = photoSub?.tier || 'free'
+    const photoActive = !photoSub || photoSub.status === 'active' || photoSub.status === 'trialing'
+    const photoLimit = (photoTier === 'free' || !photoActive) ? FREE_PHOTO_LIMIT : MAX_PHOTOS
     const { image, caption } = req.body
 
     if (!image || typeof image !== 'string') {
@@ -250,6 +273,9 @@ router.post('/nurseries/:urn/photos', requirePaidProvider, async (req, res, next
     if (parsed.buffer.length > MAX_PHOTO_SIZE_BYTES) {
       return res.status(400).json({ error: `Image too large. Max ${MAX_PHOTO_SIZE_BYTES / 1024 / 1024}MB` })
     }
+    if (caption != null && (typeof caption !== 'string' || caption.length > 500)) {
+      return res.status(400).json({ error: 'Caption must be 500 characters or fewer' })
+    }
 
     // Check current photo count
     const { count, error: cErr } = await db
@@ -257,8 +283,10 @@ router.post('/nurseries/:urn/photos', requirePaidProvider, async (req, res, next
       .select('id', { count: 'exact', head: true })
       .eq('nursery_urn', urn)
     if (cErr) throw cErr
-    if (count >= MAX_PHOTOS) {
-      return res.status(400).json({ error: `Maximum ${MAX_PHOTOS} photos per nursery` })
+    if (count >= photoLimit) {
+      return res.status(400).json({
+        error: `Maximum ${photoLimit} photos${photoLimit === FREE_PHOTO_LIMIT ? ' on free tier. Upgrade for up to 20.' : ' per nursery'}`,
+      })
     }
 
     // Upload to Supabase Storage

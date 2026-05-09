@@ -79,23 +79,18 @@ export default function QuizPage() {
     min_grade: '',
   })
 
-  // If not signed in, show prompt
-  if (!sessionLoading && !user) {
-    return (
-      <div className="max-w-lg mx-auto px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Sign in to take the quiz</h1>
-        <p className="text-gray-600 mb-6">
-          We need to save your preferences to give you personalised recommendations.
-        </p>
-        <Link
-          href="/login?next=/quiz"
-          className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition"
-        >
-          Sign in
-        </Link>
-      </div>
-    )
-  }
+  // Auto-submit pending quiz data when user signs in
+  useEffect(() => {
+    if (!session || typeof window === 'undefined') return
+    const pending = localStorage.getItem('quiz-pending')
+    if (!pending) return
+    localStorage.removeItem('quiz-pending')
+    fetch(`${API_URL}/api/v1/quiz/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: pending,
+    }).then(() => router.push('/dashboard')).catch(() => {})
+  }, [session]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalSteps = 5
   const progress = (step / totalSteps) * 100
@@ -113,7 +108,6 @@ export default function QuizPage() {
   }
 
   async function handleSubmit() {
-    if (!session) return
     setSubmitting(true)
     setError('')
     try {
@@ -129,6 +123,13 @@ export default function QuizPage() {
         must_haves: data.must_haves,
         min_grade: data.min_grade || null,
       }
+
+      if (!session) {
+        localStorage.setItem('quiz-pending', JSON.stringify(body))
+        setStep(6)
+        return
+      }
+
       const res = await fetch(`${API_URL}/api/v1/quiz/submit`, {
         method: 'POST',
         headers: {
@@ -385,12 +386,30 @@ export default function QuizPage() {
         </div>
       )}
 
+      {/* Step 6: Sign in prompt (anonymous users only) */}
+      {step === 6 && (
+        <div className="text-center py-8">
+          <div className="text-4xl mb-4">&#10003;</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Quiz complete!</h1>
+          <p className="text-gray-600 mb-6">
+            Sign in to save your answers and see personalised nursery recommendations.
+          </p>
+          <Link
+            href="/login?next=/quiz"
+            className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition"
+          >
+            Sign in to see matches
+          </Link>
+          <p className="text-xs text-gray-400 mt-4">Your answers are saved locally and will be submitted when you sign in.</p>
+        </div>
+      )}
+
       {error && (
         <p className="mt-4 text-sm text-red-600">{error}</p>
       )}
 
       {/* Navigation buttons */}
-      <div className="flex justify-between mt-8">
+      {step <= totalSteps && <div className="flex justify-between mt-8">
         {step > 1 ? (
           <button
             onClick={() => setStep(step - 1)}
@@ -417,7 +436,7 @@ export default function QuizPage() {
             {submitting ? 'Saving...' : 'See my matches'}
           </button>
         )}
-      </div>
+      </div>}
     </div>
   )
 }

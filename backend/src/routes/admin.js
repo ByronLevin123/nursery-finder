@@ -5,6 +5,7 @@ import express from 'express'
 import db from '../db.js'
 import { requireRole } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
+import { escapeLike } from '../utils.js'
 
 const router = express.Router()
 
@@ -188,7 +189,7 @@ router.get('/users', async (req, res, next) => {
     }
     if (search) {
       // Search by display_name (email is not in user_profiles — see note below)
-      query = query.ilike('display_name', `%${search}%`)
+      query = query.ilike('display_name', `%${escapeLike(search)}%`)
     }
 
     query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1)

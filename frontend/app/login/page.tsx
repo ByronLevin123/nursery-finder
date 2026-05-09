@@ -15,7 +15,7 @@ function LoginInner() {
   const params = useSearchParams()
   const router = useRouter()
   const explicitNext = params.get('next')
-  const next = explicitNext || '/shortlist'
+  const next = explicitNext && explicitNext.startsWith('/') && !explicitNext.startsWith('//') ? explicitNext : '/shortlist'
   const confirmed = params.get('confirmed')
 
   const [tab, setTab] = useState<Tab>('signin')

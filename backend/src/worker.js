@@ -1,6 +1,6 @@
 import 'dotenv/config'
 import cron from 'node-cron'
-import { exec } from 'child_process'
+import { execFile } from 'child_process'
 import { ingestOfstedRegister } from './services/ofstedIngest.js'
 import { geocodeNurseriesBatch } from './services/geocoding.js'
 import { ingestLandRegistryYear, refreshPropertyStats } from './services/landRegistry.js'
@@ -246,7 +246,7 @@ if (process.env.SELF_PING_URL) {
 // Weekly: regenerate sitemap (Sundays at 4am)
 cron.schedule('0 4 * * 0', async () => {
   logger.info('cron: regenerating sitemap')
-  exec('node ../../scripts/generate-sitemap.js', (err, stdout) => {
+  execFile('node', ['../../scripts/generate-sitemap.js'], (err, stdout) => {
     if (err) logger.error({ err: err.message }, 'cron: sitemap generation failed')
     else logger.info(stdout, 'cron: sitemap generated')
   })

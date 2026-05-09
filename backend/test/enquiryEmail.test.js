@@ -14,7 +14,7 @@ describe('renderEnquiryNotificationEmail', () => {
       providerUrl: 'https://example.com/provider',
     })
     expect(out.subject).toContain('Sunny Days')
-    expect(out.subject).toContain('NurseryMatch')
+    expect(out.subject).toContain('CompareTheNursery')
     expect(out.html).toContain('Sunny Days')
     expect(out.html).toContain('Alice')
     expect(out.html).toContain('18 months old')

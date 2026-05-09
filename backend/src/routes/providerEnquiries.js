@@ -5,6 +5,7 @@ import db from '../db.js'
 import { requireAuth } from '../middleware/supabaseAuth.js'
 import { notifyEnquiryStatusChange } from '../services/notificationService.js'
 import { logger } from '../logger.js'
+import { escapeLike } from '../utils.js'
 
 const router = express.Router()
 
@@ -34,12 +35,21 @@ router.get('/enquiries', requireAuth, async (req, res, next) => {
     const nurseryIds = nurseries.map((n) => n.id)
     const nurseryMap = Object.fromEntries(nurseries.map((n) => [n.id, n]))
 
-    // Get enquiries for these nurseries
-    const { data: enquiries, error: eErr } = await db
+    // Get enquiries for these nurseries (with optional filters)
+    const { status, nursery_id, search, from, to } = req.query
+    let query = db
       .from('enquiries')
       .select('*')
       .in('nursery_id', nurseryIds)
-      .order('sent_at', { ascending: false })
+
+    if (status) query = query.eq('status', status)
+    if (nursery_id && nurseryIds.includes(nursery_id)) query = query.eq('nursery_id', nursery_id)
+    if (search) query = query.ilike('child_name', `%${escapeLike(search)}%`)
+    if (from) query = query.gte('sent_at', from)
+    if (to) query = query.lte('sent_at', to)
+
+    query = query.order('sent_at', { ascending: false })
+    const { data: enquiries, error: eErr } = await query
     if (eErr) throw eErr
 
     // Enrich with nursery info and parent email

@@ -72,7 +72,10 @@ function inlineFormat(text: string): string {
   // Links: [text](url)
   result = result.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
-    '<a href="$2" class="text-blue-600 hover:underline" rel="noopener">$1</a>'
+    (_match: string, text: string, url: string) => {
+      if (!/^(https?:\/\/|\/(?!\/)|mailto:)/.test(url)) return text
+      return `<a href="${url}" class="text-blue-600 hover:underline" rel="noopener">${text}</a>`
+    }
   )
   return result
 }

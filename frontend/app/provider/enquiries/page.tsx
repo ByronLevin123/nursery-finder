@@ -49,6 +49,8 @@ export default function ProviderEnquiriesPage() {
   const [error, setError] = useState('')
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [expandedMessages, setExpandedMessages] = useState<Record<string, boolean>>({})
+  const [filterStatus, setFilterStatus] = useState('')
+  const [filterSearch, setFilterSearch] = useState('')
 
   useEffect(() => {
     if (sessionLoading) return
@@ -56,7 +58,11 @@ export default function ProviderEnquiriesPage() {
 
     async function load() {
       try {
-        const res = await fetch(`${API_URL}/api/v1/provider/enquiries`, {
+        const params = new URLSearchParams()
+        if (filterStatus) params.set('status', filterStatus)
+        if (filterSearch) params.set('search', filterSearch)
+        const qs = params.toString()
+        const res = await fetch(`${API_URL}/api/v1/provider/enquiries${qs ? `?${qs}` : ''}`, {
           headers: { Authorization: `Bearer ${session!.access_token}` },
         })
         if (!res.ok) throw new Error('Failed to load enquiries')
@@ -69,7 +75,7 @@ export default function ProviderEnquiriesPage() {
       }
     }
     load()
-  }, [session, sessionLoading, router])
+  }, [session, sessionLoading, router, filterStatus, filterSearch])
 
   async function updateStatus(id: string, status: string) {
     if (!session) return
@@ -114,6 +120,35 @@ export default function ProviderEnquiriesPage() {
     <div className="max-w-3xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Provider Enquiry Inbox</h1>
       {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 mb-4">{error}</div>}
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none"
+        >
+          <option value="">All statuses</option>
+          {Object.entries(STATUS_LABELS).map(([val, label]) => (
+            <option key={val} value={val}>{label}</option>
+          ))}
+        </select>
+        <input
+          type="text"
+          value={filterSearch}
+          onChange={(e) => setFilterSearch(e.target.value)}
+          placeholder="Search by child name..."
+          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:outline-none"
+        />
+        {(filterStatus || filterSearch) && (
+          <button
+            onClick={() => { setFilterStatus(''); setFilterSearch('') }}
+            className="px-3 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            Clear
+          </button>
+        )}
+      </div>
 
       {enquiries.length === 0 ? (
         <div className="text-center py-12">

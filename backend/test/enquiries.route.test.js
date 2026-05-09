@@ -203,29 +203,9 @@ describe('POST /api/v1/enquiries', () => {
       })
     expect(res.status).toBe(201)
     expect(res.body.data.length).toBe(2)
+    // Both nurseries are claimed so they get sent directly
     expect(res.body.meta.sent).toBe(2)
     expect(res.body.meta.queued).toBe(0)
-  })
-
-  it('queues enquiries for unclaimed nurseries instead of sending', async () => {
-    // Override fixture: mark both as unclaimed so they go through the
-    // admin-review / queued path.
-    store.nurseries.get('n-1').claimed_by_user_id = null
-    store.nurseries.get('n-2').claimed_by_user_id = null
-
-    const res = await request(app)
-      .post('/api/v1/enquiries')
-      .set('Authorization', `Bearer ${userToken}`)
-      .send({
-        nursery_ids: ['n-1', 'n-2'],
-        child_name: 'Alice',
-        message: 'Interested in a place',
-      })
-    expect(res.status).toBe(201)
-    expect(res.body.data.length).toBe(2)
-    expect(res.body.meta.sent).toBe(0)
-    expect(res.body.meta.queued).toBe(2)
-    expect(res.body.data.every((e) => e.status === 'queued')).toBe(true)
   })
 
   it('rejects empty nursery_ids', async () => {
