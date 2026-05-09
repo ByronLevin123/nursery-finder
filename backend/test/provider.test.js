@@ -138,13 +138,21 @@ describe('PATCH /api/v1/provider/nurseries/:urn', () => {
     expect(res.body.provider_updated_at).toBeTruthy()
   })
 
-  it('rejects description edit for free-tier provider', async () => {
+  it('allows short description edit for free-tier provider', async () => {
     const res = await request(app)
       .patch('/api/v1/provider/nurseries/URN1')
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({ description: 'A wonderful place' })
-    expect(res.status).toBe(403)
-    expect(res.body.error).toMatch(/subscription/i)
+    expect(res.status).toBe(200)
+  })
+
+  it('rejects long description for free-tier provider', async () => {
+    const res = await request(app)
+      .patch('/api/v1/provider/nurseries/URN1')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({ description: 'x'.repeat(501) })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/500 characters/i)
   })
 
   it('rejects unknown fields', async () => {

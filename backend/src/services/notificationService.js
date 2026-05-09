@@ -171,20 +171,50 @@ export async function notifyNewMessage(enquiryId, message, recipientId) {
     link,
   })
 
-  // Try to send email — look up recipient email
-  if (notification) {
+  if (notification && isEmailAvailable()) {
     try {
-      const { data: recipientProfile } = await db
-        .from('user_profiles')
-        .select('id')
-        .eq('id', recipientId)
+      // Look up recipient email from the enquiry
+      const { data: enquiry } = await db
+        .from('enquiries')
+        .select('user_id, nursery_id, nurseries(name, contact_email, claimed_by_user_id)')
+        .eq('id', enquiryId)
         .maybeSingle()
 
-      // We need the email — try to get it from auth.users via a service-key query
-      // Since we use the service key, we can query auth admin
-      // For now, we log that we would send email; the email address needs to be
-      // looked up from the enquiry or auth tables.
-      logger.info({ recipientId, type: 'new_message' }, 'new message notification created')
+      let recipientEmail = null
+      let nurseryName = 'a nursery'
+
+      if (enquiry) {
+        const nursery = enquiry.nurseries
+        nurseryName = nursery?.name || nurseryName
+
+        if (message.sender_role === 'parent' && nursery?.contact_email) {
+          recipientEmail = nursery.contact_email
+        } else if (message.sender_role === 'provider' && enquiry.user_id === recipientId) {
+          // Look up parent email from parent_email field on enquiry
+          const { data: fullEnquiry } = await db
+            .from('enquiries')
+            .select('parent_email')
+            .eq('id', enquiryId)
+            .maybeSingle()
+          recipientEmail = fullEnquiry?.parent_email
+        }
+      }
+
+      if (recipientEmail) {
+        const subject = `New message about ${escapeHtml(nurseryName)}`
+        const bodyHtml = `
+          <p>You have a new message in your enquiry about <strong>${escapeHtml(nurseryName)}</strong>.</p>
+          <div style="background:#f3f4f6;padding:16px;border-radius:8px;margin:16px 0;">
+            <p style="margin:0;color:#374151;">${escapeHtml(preview)}</p>
+          </div>
+          <p><a href="${escapeHtml(link)}" style="display:inline-block;padding:12px 24px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:600;">View &amp; reply</a></p>
+        `
+        await sendNotificationEmail({ to: recipientEmail, subject, preheader: preview, bodyHtml })
+        await db.from('notifications').update({ email_sent: true }).eq('id', notification.id)
+        logger.info({ recipientId, enquiryId }, 'new message email sent')
+      } else {
+        logger.info({ recipientId, type: 'new_message' }, 'notification created, no email (recipient email unknown)')
+      }
     } catch (err) {
       logger.warn({ err: err?.message }, 'notifyNewMessage email failed')
     }

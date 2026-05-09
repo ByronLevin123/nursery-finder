@@ -48,6 +48,7 @@ function SearchContent() {
   const [areas, setAreas] = useState<Map<string, AreaSummary | null>>(new Map())
   const [showExcluded, setShowExcluded] = useState(false)
   const [showMobilePrefs, setShowMobilePrefs] = useState(false)
+  const [showMobileFilters, setShowMobileFilters] = useState(false)
   const [travelEnabled, setTravelEnabled] = useState(false)
   const [travelMaxMin, setTravelMaxMin] = useState(20)
   const [travelMode, setTravelMode] = useState<TravelMode>('walk')
@@ -332,8 +333,16 @@ function SearchContent() {
             </button>
           </div>
 
+          {/* Mobile filter toggle */}
+          <button
+            onClick={() => setShowMobileFilters(v => !v)}
+            className="lg:hidden w-full py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 mb-3"
+          >
+            {showMobileFilters ? 'Hide filters' : 'Filters & options'}
+          </button>
+
           {/* Filters */}
-          <div className="space-y-3">
+          <div className={`space-y-3 ${showMobileFilters ? '' : 'hidden lg:block'}`}>
             {/* Distance */}
             <div>
               <label className="text-xs text-gray-500 font-medium">Distance: {radiusKm}km</label>
@@ -532,7 +541,7 @@ function SearchContent() {
       </div>
 
       {/* Right panel: map */}
-      <div className="w-full lg:w-2/3 h-[400px] lg:h-full sticky top-0">
+      <div className="w-full lg:w-2/3 h-[250px] lg:h-full sticky top-0">
         {results?.meta.search_lat && results?.meta.search_lng ? (
           <NurseryMap
             nurseries={results.data}
