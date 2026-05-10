@@ -246,7 +246,7 @@ export default function EnquiryModal({ nurseries, onClose, childName, childDob }
 
         <button
           onClick={handleSubmit}
-          disabled={submitting || selected.length === 0 || !turnstileToken}
+          disabled={submitting || selected.length === 0}
           className="w-full py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50"
         >
           {submitting

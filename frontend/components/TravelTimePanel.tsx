@@ -57,10 +57,10 @@ export default function TravelTimePanel({
         to = { lat: nurseryLat, lng: nurseryLng }
       }
       const r = await getTravelTime(from, to, m)
-      if (!r) setError('Could not compute travel time')
+      if (!r) setError('Could not calculate route. Try a different postcode or travel mode.')
       else setResult(r)
-    } catch (e: any) {
-      setError(e?.message || 'Travel time failed')
+    } catch {
+      setError('Travel time service temporarily unavailable. Try again in a moment.')
     } finally {
       setLoading(false)
     }

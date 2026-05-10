@@ -101,7 +101,10 @@ export default function BookVisitButton({ urn, nurseryId }: { urn: string; nurse
             ) : loading ? (
               <p className="text-center text-gray-500 py-6">Loading available slots...</p>
             ) : slots.length === 0 ? (
-              <p className="text-center text-gray-500 py-6">No available visit slots. Check back later.</p>
+              <div className="text-center py-6">
+                <p className="text-gray-500 mb-2">This nursery hasn&apos;t set up online visit booking yet.</p>
+                <p className="text-sm text-gray-400">Contact them directly to arrange a visit.</p>
+              </div>
             ) : (
               <div className="space-y-2">
                 {error && <p className="text-sm text-red-600 mb-2">{error}</p>}
