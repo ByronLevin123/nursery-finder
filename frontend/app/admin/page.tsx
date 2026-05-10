@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useSession } from '@/components/SessionProvider'
 import {
   getAuthToken,
+  API_URL,
   adminFetch,
   getAdminGrowthStats,
   getAdminDataQuality,
@@ -404,7 +405,7 @@ export default function AdminOverview() {
 
       {/* Quick actions */}
       <h3 className="text-sm font-semibold text-gray-700 mb-3">Quick Actions</h3>
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3 mb-8">
         <Link
           href="/admin/claims"
           className="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition"
@@ -424,7 +425,86 @@ export default function AdminOverview() {
           Provider Invites
         </Link>
       </div>
+
+      {/* Data ingest panel */}
+      <IngestPanel />
     </div>
+  )
+}
+
+const INGEST_STEPS = [
+  { id: 'ofsted', label: 'Ofsted Import', desc: 'Download and import the full Ofsted CSV (~27k nurseries)', path: '/api/v1/ingest/ofsted' },
+  { id: 'geocode', label: 'Geocode Nurseries', desc: 'Geocode up to 2000 nurseries via Postcodes.io', path: '/api/v1/ingest/geocode?limit=2000' },
+  { id: 'aggregate', label: 'Aggregate Areas', desc: 'Recompute nursery stats per postcode district', path: '/api/v1/ingest/aggregate-areas' },
+  { id: 'family', label: 'Family Scores', desc: 'Recompute family scores for all districts', path: '/api/v1/ingest/family-scores' },
+  { id: 'crime', label: 'Crime Data', desc: 'Import police crime data', path: '/api/v1/ingest/crime' },
+  { id: 'imd', label: 'IMD Data', desc: 'Import deprivation index data', path: '/api/v1/ingest/imd' },
+  { id: 'schools', label: 'Schools', desc: 'Import school data from CSV', path: '/api/v1/ingest/schools' },
+]
+
+function IngestPanel() {
+  const [running, setRunning] = useState<string | null>(null)
+  const [results, setResults] = useState<Record<string, { ok: boolean; data?: any; error?: string }>>({})
+
+  async function runStep(step: typeof INGEST_STEPS[0]) {
+    const token = await getAuthToken()
+    if (!token) return
+    setRunning(step.id)
+    setResults((prev) => ({ ...prev, [step.id]: undefined as any }))
+    try {
+      const res = await fetch(`${API_URL}${step.path}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || `Failed (${res.status})`)
+      setResults((prev) => ({ ...prev, [step.id]: { ok: true, data } }))
+    } catch (err: unknown) {
+      setResults((prev) => ({ ...prev, [step.id]: { ok: false, error: err instanceof Error ? err.message : 'Failed' } }))
+    } finally {
+      setRunning(null)
+    }
+  }
+
+  return (
+    <>
+      <h3 className="text-sm font-semibold text-gray-700 mb-3">Data Ingest</h3>
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 mb-8">
+        <p className="text-xs text-gray-500 mb-4">Run data pipelines manually. Ofsted import can take 10-30 minutes. Run steps in order for first-time setup.</p>
+        <div className="space-y-3">
+          {INGEST_STEPS.map((step) => {
+            const result = results[step.id]
+            return (
+              <div key={step.id} className="flex items-center justify-between gap-4 py-2 border-b border-gray-100 last:border-0">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">{step.label}</p>
+                  <p className="text-xs text-gray-500 truncate">{step.desc}</p>
+                  {result?.ok && (
+                    <p className="text-xs text-green-600 mt-1">
+                      Done: {JSON.stringify(result.data).slice(0, 120)}
+                    </p>
+                  )}
+                  {result && !result.ok && (
+                    <p className="text-xs text-red-600 mt-1">{result.error}</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => runStep(step)}
+                  disabled={running !== null}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition ${
+                    running === step.id
+                      ? 'bg-amber-100 text-amber-700 cursor-wait'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50'
+                  }`}
+                >
+                  {running === step.id ? 'Running...' : 'Run'}
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </>
   )
 }
 
