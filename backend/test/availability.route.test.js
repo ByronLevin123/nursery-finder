@@ -65,16 +65,36 @@ function makeQueryBuilder(table) {
       state.filters.push([col, 'not_is', val])
       return builder
     },
-    is() { return builder },
-    in() { return builder },
-    ilike() { return builder },
-    order() { return builder },
-    limit() { return builder },
-    like() { return builder },
-    gte() { return builder },
-    lte() { return builder },
-    single() { return builder._resolve(true, false) },
-    maybeSingle() { return builder._resolve(true, true) },
+    is() {
+      return builder
+    },
+    in() {
+      return builder
+    },
+    ilike() {
+      return builder
+    },
+    order() {
+      return builder
+    },
+    limit() {
+      return builder
+    },
+    like() {
+      return builder
+    },
+    gte() {
+      return builder
+    },
+    lte() {
+      return builder
+    },
+    single() {
+      return builder._resolve(true, false)
+    },
+    maybeSingle() {
+      return builder._resolve(true, true)
+    },
     then(onFulfilled, onRejected) {
       return builder._resolve(false, false).then(onFulfilled, onRejected)
     },
@@ -84,7 +104,9 @@ function makeQueryBuilder(table) {
       if (state.op === 'upsert') {
         const toUpsert = Array.isArray(state.upsertRow) ? state.upsertRow : [state.upsertRow]
         const upserted = toUpsert.map((r) => {
-          const existing = rows.find((e) => e.nursery_urn === r.nursery_urn && e.age_group === r.age_group)
+          const existing = rows.find(
+            (e) => e.nursery_urn === r.nursery_urn && e.age_group === r.age_group
+          )
           if (existing) {
             Object.assign(existing, r)
             return existing
@@ -112,7 +134,11 @@ function makeQueryBuilder(table) {
       if (state.op === 'insert') {
         const toInsert = Array.isArray(state.insertRow) ? state.insertRow : [state.insertRow]
         const inserted = toInsert.map((r) => {
-          const newRow = { id: `ins-${rows.length + 1}`, created_at: new Date().toISOString(), ...r }
+          const newRow = {
+            id: `ins-${rows.length + 1}`,
+            created_at: new Date().toISOString(),
+            ...r,
+          }
           rows.push(newRow)
           return newRow
         })
@@ -124,7 +150,8 @@ function makeQueryBuilder(table) {
       let result = applyFilters(rows)
       if (state.countMode) return { data: result, error: null, count: result.length }
       if (single || maybe) {
-        if (result.length === 0 && !maybe) return { data: null, error: { message: 'Row not found' } }
+        if (result.length === 0 && !maybe)
+          return { data: null, error: { message: 'Row not found' } }
         return { data: result[0] ?? null, error: null }
       }
       return { data: result, error: null }

@@ -33,7 +33,7 @@ const store = {
       registration_status: 'Active',
       ofsted_overall_grade: 'Outstanding',
       lat: 51.536,
-      lng: -0.140,
+      lng: -0.14,
       location: true,
       town: 'Camden',
     },
@@ -75,22 +75,60 @@ function makeQueryBuilder(table) {
   }
 
   const builder = {
-    select() { return builder },
-    insert(row) { state.op = 'insert'; return builder },
-    update(row) { state.op = 'update'; return builder },
-    eq(col, val) { state.filters.push([col, 'eq', val]); return builder },
-    in(col, vals) { state.filters.push([col, 'in', vals]); return builder },
-    ilike(col, val) { state.filters.push([col, 'ilike', val]); return builder },
-    not(col, _is, _null) { state.filters.push([col, 'not_is', null]); return builder },
-    or() { return builder },
-    gt() { return builder },
-    gte() { return builder },
-    order() { return builder },
-    range() { return builder },
-    limit() { return builder },
-    single() { return builder._resolve(true, false) },
-    maybeSingle() { return builder._resolve(true, true) },
-    then(resolve, reject) { return builder._resolve(false, false).then(resolve, reject) },
+    select() {
+      return builder
+    },
+    insert(row) {
+      state.op = 'insert'
+      return builder
+    },
+    update(row) {
+      state.op = 'update'
+      return builder
+    },
+    eq(col, val) {
+      state.filters.push([col, 'eq', val])
+      return builder
+    },
+    in(col, vals) {
+      state.filters.push([col, 'in', vals])
+      return builder
+    },
+    ilike(col, val) {
+      state.filters.push([col, 'ilike', val])
+      return builder
+    },
+    not(col, _is, _null) {
+      state.filters.push([col, 'not_is', null])
+      return builder
+    },
+    or() {
+      return builder
+    },
+    gt() {
+      return builder
+    },
+    gte() {
+      return builder
+    },
+    order() {
+      return builder
+    },
+    range() {
+      return builder
+    },
+    limit() {
+      return builder
+    },
+    single() {
+      return builder._resolve(true, false)
+    },
+    maybeSingle() {
+      return builder._resolve(true, true)
+    },
+    then(resolve, reject) {
+      return builder._resolve(false, false).then(resolve, reject)
+    },
     async _resolve(single, maybe) {
       if (state.op === 'insert' || state.op === 'update') {
         return { data: null, error: null }
@@ -120,7 +158,8 @@ vi.mock('../src/db.js', () => ({
           .filter((n) => n.lat != null && n.lng != null && n.registration_status === 'Active')
           .map((n) => ({
             ...n,
-            distance_km: Math.sqrt((n.lat - params.search_lat) ** 2 + (n.lng - params.search_lng) ** 2) * 111,
+            distance_km:
+              Math.sqrt((n.lat - params.search_lat) ** 2 + (n.lng - params.search_lng) ** 2) * 111,
           }))
           .filter((n) => n.distance_km <= params.radius_km)
           .sort((a, b) => a.distance_km - b.distance_km)
@@ -189,7 +228,9 @@ describe('GET /api/v1/nurseries/:urn/similar', () => {
     expect(res.status).toBe(200)
     if (res.body.data.length >= 2) {
       // EY100 is Outstanding — EY102 (Outstanding) should come before EY101 (Good) if equidistant
-      const outstandingIdx = res.body.data.findIndex((n) => n.ofsted_overall_grade === 'Outstanding')
+      const outstandingIdx = res.body.data.findIndex(
+        (n) => n.ofsted_overall_grade === 'Outstanding'
+      )
       const goodIdx = res.body.data.findIndex((n) => n.ofsted_overall_grade === 'Good')
       if (outstandingIdx >= 0 && goodIdx >= 0) {
         expect(outstandingIdx).toBeLessThan(goodIdx)

@@ -17,8 +17,20 @@ const store = {
     { id: AUTH_USER.id, role: 'customer' },
   ],
   nurseries: [
-    { urn: 'EY100', name: 'Sunshine Nursery', ofsted_overall_grade: '1', town: 'London', postcode: 'SW1A 1AA' },
-    { urn: 'EY101', name: 'Rainbow Nursery', ofsted_overall_grade: '2', town: 'Camden', postcode: 'NW1 1AA' },
+    {
+      urn: 'EY100',
+      name: 'Sunshine Nursery',
+      ofsted_overall_grade: '1',
+      town: 'London',
+      postcode: 'SW1A 1AA',
+    },
+    {
+      urn: 'EY101',
+      name: 'Rainbow Nursery',
+      ofsted_overall_grade: '2',
+      town: 'Camden',
+      postcode: 'NW1 1AA',
+    },
   ],
 }
 
@@ -40,17 +52,43 @@ function makeQueryBuilder(table) {
   }
 
   const builder = {
-    select() { return builder },
-    insert(row) { state.op = 'insert'; return builder },
-    update(row) { state.op = 'update'; return builder },
-    eq(col, val) { state.filters.push([col, 'eq', val]); return builder },
-    in(col, vals) { state.filters.push([col, 'in', vals]); return builder },
-    order() { return builder },
-    range() { return builder },
-    limit() { return builder },
-    single() { return builder._resolve(true, false) },
-    maybeSingle() { return builder._resolve(true, true) },
-    then(resolve, reject) { return builder._resolve(false, false).then(resolve, reject) },
+    select() {
+      return builder
+    },
+    insert(row) {
+      state.op = 'insert'
+      return builder
+    },
+    update(row) {
+      state.op = 'update'
+      return builder
+    },
+    eq(col, val) {
+      state.filters.push([col, 'eq', val])
+      return builder
+    },
+    in(col, vals) {
+      state.filters.push([col, 'in', vals])
+      return builder
+    },
+    order() {
+      return builder
+    },
+    range() {
+      return builder
+    },
+    limit() {
+      return builder
+    },
+    single() {
+      return builder._resolve(true, false)
+    },
+    maybeSingle() {
+      return builder._resolve(true, true)
+    },
+    then(resolve, reject) {
+      return builder._resolve(false, false).then(resolve, reject)
+    },
     async _resolve(single, maybe) {
       if (state.op === 'insert' || state.op === 'update') {
         return { data: null, error: null }

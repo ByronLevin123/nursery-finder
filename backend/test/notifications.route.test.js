@@ -28,9 +28,7 @@ function makeQueryBuilder(table) {
         return true
       })
     )
-    result = result.filter((r) =>
-      state.isFilters.every(([col, val]) => r[col] === val)
-    )
+    result = result.filter((r) => state.isFilters.every(([col, val]) => r[col] === val))
     return result
   }
 
@@ -61,14 +59,30 @@ function makeQueryBuilder(table) {
       state.isFilters.push([col, val])
       return builder
     },
-    not() { return builder },
-    ilike() { return builder },
-    like() { return builder },
-    in() { return builder },
-    gte() { return builder },
-    lte() { return builder },
-    order() { return builder },
-    limit() { return builder },
+    not() {
+      return builder
+    },
+    ilike() {
+      return builder
+    },
+    like() {
+      return builder
+    },
+    in() {
+      return builder
+    },
+    gte() {
+      return builder
+    },
+    lte() {
+      return builder
+    },
+    order() {
+      return builder
+    },
+    limit() {
+      return builder
+    },
     single() {
       state.singleMode = true
       return builder._resolve(true, false)
@@ -91,9 +105,7 @@ function makeQueryBuilder(table) {
             return true
           })
         )
-        matching = matching.filter((r) =>
-          state.isFilters.every(([col, val]) => r[col] === val)
-        )
+        matching = matching.filter((r) => state.isFilters.every(([col, val]) => r[col] === val))
         const updated = matching.map((r) => {
           const merged = { ...r, ...state.updateRow }
           const idx = rows.indexOf(r)

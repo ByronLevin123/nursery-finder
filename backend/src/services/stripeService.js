@@ -38,7 +38,10 @@ export async function createCheckoutSession({ userId, email, tier, type, success
 
   let customerId = existing?.stripe_customer_id
   if (!customerId) {
-    const customer = await s.customers.create({ email, metadata: { user_id: userId, type: 'provider' } })
+    const customer = await s.customers.create({
+      email,
+      metadata: { user_id: userId, type: 'provider' },
+    })
     customerId = customer.id
     await db
       .from('provider_subscriptions')
@@ -49,11 +52,20 @@ export async function createCheckoutSession({ userId, email, tier, type, success
   }
 
   const frontendUrl = process.env.FRONTEND_URL || ''
-  const allowedOrigins = [frontendUrl, 'https://comparethenursery.com', 'https://www.comparethenursery.com'].filter(Boolean)
+  const allowedOrigins = [
+    frontendUrl,
+    'https://comparethenursery.com',
+    'https://www.comparethenursery.com',
+  ].filter(Boolean)
   function isAllowedUrl(url) {
-    try { return allowedOrigins.some((o) => url.startsWith(o + '/') || url === o) } catch { return false }
+    try {
+      return allowedOrigins.some((o) => url.startsWith(o + '/') || url === o)
+    } catch {
+      return false
+    }
   }
-  const safeSuccessUrl = successUrl && isAllowedUrl(successUrl) ? successUrl : `${frontendUrl}/account?upgraded=1`
+  const safeSuccessUrl =
+    successUrl && isAllowedUrl(successUrl) ? successUrl : `${frontendUrl}/account?upgraded=1`
   const safeCancelUrl = cancelUrl && isAllowedUrl(cancelUrl) ? cancelUrl : `${frontendUrl}/pricing`
 
   const session = await s.checkout.sessions.create({
@@ -149,9 +161,7 @@ export async function handleWebhook(rawBody, signature) {
               ? 'active'
               : 'past_due',
           cancel_at_period_end: subscription.cancel_at_period_end,
-          current_period_start: new Date(
-            subscription.current_period_start * 1000
-          ).toISOString(),
+          current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
           current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
           updated_at: new Date().toISOString(),
         })

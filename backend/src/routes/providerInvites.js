@@ -54,9 +54,7 @@ router.post('/preview', async (req, res, next) => {
     // Exclude nurseries already invited
     // We fetch already-invited URNs and filter client-side since Supabase JS
     // does not support NOT IN subqueries cleanly.
-    const { data: alreadyInvited } = await db
-      .from('provider_invites')
-      .select('urn')
+    const { data: alreadyInvited } = await db.from('provider_invites').select('urn')
 
     const invitedUrns = new Set((alreadyInvited || []).map((r) => r.urn))
 
@@ -128,20 +126,14 @@ router.post('/send', inviteSendLimiter, async (req, res, next) => {
 
         sent++
       } catch (err) {
-        logger.warn(
-          { err: err?.message, urn: nursery.urn },
-          'provider invite email failed'
-        )
+        logger.warn({ err: err?.message, urn: nursery.urn }, 'provider invite email failed')
         failed++
       }
     })
 
     await Promise.allSettled(sendPromises)
 
-    logger.info(
-      { sent, failed, skipped, by: req.user.id },
-      'provider invite batch complete'
-    )
+    logger.info({ sent, failed, skipped, by: req.user.id }, 'provider invite batch complete')
     return res.json({ sent, failed, skipped })
   } catch (err) {
     logger.error({ err: err?.message }, 'provider invite send failed')

@@ -31,7 +31,10 @@ describe('GET /api/v1/health', () => {
     expect(['unconfigured', 'ok', 'error']).toContain(res.body.checks.resend.status)
     expect(['unconfigured', 'ok', 'error']).toContain(res.body.checks.stripe.status)
     // Optional deps without keys must NOT flip overall status to error.
-    if (res.body.checks.resend.status === 'unconfigured' && res.body.checks.database.status !== 'error') {
+    if (
+      res.body.checks.resend.status === 'unconfigured' &&
+      res.body.checks.database.status !== 'error'
+    ) {
       expect(res.body.status).toBe('ok')
     }
   })

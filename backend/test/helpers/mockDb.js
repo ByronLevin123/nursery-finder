@@ -59,27 +59,43 @@ export function createMockDb(initialTables = {}) {
     function matchFilter(row, [col, op, val]) {
       const rv = row[col]
       switch (op) {
-        case 'eq': return rv === val
-        case 'neq': return rv !== val
-        case 'gt': return rv > val
-        case 'gte': return rv >= val
-        case 'lt': return rv < val
-        case 'lte': return rv <= val
-        case 'like': return typeof rv === 'string' && new RegExp('^' + val.replace(/%/g, '.*').replace(/_/g, '.') + '$').test(rv)
-        case 'ilike': return typeof rv === 'string' && new RegExp('^' + val.replace(/%/g, '.*').replace(/_/g, '.') + '$', 'i').test(rv)
-        case 'in': return Array.isArray(val) && val.includes(rv)
-        case 'is': return rv === val
-        case 'not': return rv !== val
-        default: return true
+        case 'eq':
+          return rv === val
+        case 'neq':
+          return rv !== val
+        case 'gt':
+          return rv > val
+        case 'gte':
+          return rv >= val
+        case 'lt':
+          return rv < val
+        case 'lte':
+          return rv <= val
+        case 'like':
+          return (
+            typeof rv === 'string' &&
+            new RegExp('^' + val.replace(/%/g, '.*').replace(/_/g, '.') + '$').test(rv)
+          )
+        case 'ilike':
+          return (
+            typeof rv === 'string' &&
+            new RegExp('^' + val.replace(/%/g, '.*').replace(/_/g, '.') + '$', 'i').test(rv)
+          )
+        case 'in':
+          return Array.isArray(val) && val.includes(rv)
+        case 'is':
+          return rv === val
+        case 'not':
+          return rv !== val
+        default:
+          return true
       }
     }
 
     function applyFilters(rows) {
       let result = rows.filter((r) => state.filters.every((f) => matchFilter(r, f)))
       if (state.orFilters && state.orFilters.length > 0) {
-        result = result.filter((r) =>
-          state.orFilters.some((f) => matchFilter(r, f))
-        )
+        result = result.filter((r) => state.orFilters.some((f) => matchFilter(r, f)))
       }
       return result
     }
@@ -88,17 +104,19 @@ export function createMockDb(initialTables = {}) {
       if (!state.orderBy) return rows
       const { col, asc } = state.orderBy
       return [...rows].sort((a, b) => {
-        const av = a[col], bv = b[col]
+        const av = a[col],
+          bv = b[col]
         if (av == null && bv == null) return 0
         if (av == null) return 1
         if (bv == null) return -1
-        return asc ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1)
+        return asc ? (av > bv ? 1 : -1) : av < bv ? 1 : -1
       })
     }
 
     function applyRange(rows) {
       if (state.limitVal != null) return rows.slice(0, state.limitVal)
-      if (state.rangeFrom != null) return rows.slice(state.rangeFrom, (state.rangeTo ?? rows.length - 1) + 1)
+      if (state.rangeFrom != null)
+        return rows.slice(state.rangeFrom, (state.rangeTo ?? rows.length - 1) + 1)
       return rows
     }
 
@@ -129,17 +147,50 @@ export function createMockDb(initialTables = {}) {
         state.op = 'delete'
         return builder
       },
-      eq(col, val) { state.filters.push([col, 'eq', val]); return builder },
-      neq(col, val) { state.filters.push([col, 'neq', val]); return builder },
-      gt(col, val) { state.filters.push([col, 'gt', val]); return builder },
-      gte(col, val) { state.filters.push([col, 'gte', val]); return builder },
-      lt(col, val) { state.filters.push([col, 'lt', val]); return builder },
-      lte(col, val) { state.filters.push([col, 'lte', val]); return builder },
-      like(col, val) { state.filters.push([col, 'like', val]); return builder },
-      ilike(col, val) { state.filters.push([col, 'ilike', val]); return builder },
-      in(col, vals) { state.filters.push([col, 'in', vals]); return builder },
-      is(col, val) { state.filters.push([col, 'is', val]); return builder },
-      not(col, op, val) { state.filters.push([col, 'not', val]); return builder },
+      eq(col, val) {
+        state.filters.push([col, 'eq', val])
+        return builder
+      },
+      neq(col, val) {
+        state.filters.push([col, 'neq', val])
+        return builder
+      },
+      gt(col, val) {
+        state.filters.push([col, 'gt', val])
+        return builder
+      },
+      gte(col, val) {
+        state.filters.push([col, 'gte', val])
+        return builder
+      },
+      lt(col, val) {
+        state.filters.push([col, 'lt', val])
+        return builder
+      },
+      lte(col, val) {
+        state.filters.push([col, 'lte', val])
+        return builder
+      },
+      like(col, val) {
+        state.filters.push([col, 'like', val])
+        return builder
+      },
+      ilike(col, val) {
+        state.filters.push([col, 'ilike', val])
+        return builder
+      },
+      in(col, vals) {
+        state.filters.push([col, 'in', vals])
+        return builder
+      },
+      is(col, val) {
+        state.filters.push([col, 'is', val])
+        return builder
+      },
+      not(col, op, val) {
+        state.filters.push([col, 'not', val])
+        return builder
+      },
       or(filter) {
         // Parse Supabase or-filter strings: "col.op.val,col.op.val"
         if (typeof filter === 'string') {
@@ -156,17 +207,35 @@ export function createMockDb(initialTables = {}) {
         }
         return builder
       },
-      filter(col, op, val) { state.filters.push([col, op, val]); return builder },
+      filter(col, op, val) {
+        state.filters.push([col, op, val])
+        return builder
+      },
       order(col, opts) {
         state.orderBy = { col, asc: opts?.ascending !== false }
         return builder
       },
-      limit(n) { state.limitVal = n; return builder },
-      range(from, to) { state.rangeFrom = from; state.rangeTo = to; return builder },
-      textSearch(col, query) { state.textSearchCol = col; state.textSearchQuery = query; return builder },
+      limit(n) {
+        state.limitVal = n
+        return builder
+      },
+      range(from, to) {
+        state.rangeFrom = from
+        state.rangeTo = to
+        return builder
+      },
+      textSearch(col, query) {
+        state.textSearchCol = col
+        state.textSearchQuery = query
+        return builder
+      },
 
-      single() { return builder._resolve(true, false) },
-      maybeSingle() { return builder._resolve(true, true) },
+      single() {
+        return builder._resolve(true, false)
+      },
+      maybeSingle() {
+        return builder._resolve(true, true)
+      },
       then(onFulfilled, onRejected) {
         return builder._resolve(false, false).then(onFulfilled, onRejected)
       },

@@ -246,7 +246,9 @@ app.use((req, _res, next) => {
     .update({ last_active_at: new Date().toISOString() })
     .eq('id', req.user.id)
     .then(() => {})
-    .catch((err) => { logger.warn({ err: err?.message, userId: req.user.id }, 'last_active_at update failed') })
+    .catch((err) => {
+      logger.warn({ err: err?.message, userId: req.user.id }, 'last_active_at update failed')
+    })
   return next()
 })
 
@@ -300,10 +302,14 @@ app.get('/api/openapi.json', (req, res, next) => {
 })
 
 // Swagger UI — interactive API docs
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openapi, {
-  customSiteTitle: 'CompareTheNursery API Docs',
-  customCss: '.swagger-ui .topbar { display: none }',
-}))
+app.use(
+  '/api/docs',
+  swaggerUi.serve,
+  swaggerUi.setup(openapi, {
+    customSiteTitle: 'CompareTheNursery API Docs',
+    customCss: '.swagger-ui .topbar { display: none }',
+  })
+)
 
 // AI routes — mounted at /api/v1 so router defines its own subpaths
 app.use('/api/v1', aiRouter)

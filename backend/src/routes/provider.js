@@ -122,7 +122,7 @@ router.get('/features', requireAuth, async (req, res, next) => {
       can_edit_description: limits?.custom_description || false,
       can_upload_photos: limits?.photo_gallery || false,
       can_manage_fees: limits?.fee_management || false,
-      photo_limit: (limits?.photo_gallery) ? 20 : 0,
+      photo_limit: limits?.photo_gallery ? 20 : 0,
       featured_listing: limits?.featured_listing || false,
       analytics_advanced: limits?.analytics_advanced || false,
       priority_search: limits?.priority_search || false,
@@ -165,7 +165,11 @@ router.patch('/nurseries/:urn', requireAuth, async (req, res, next) => {
 
     if (isFree) {
       allowedFields = FREE_EDITABLE_FIELDS
-      if (req.body.description != null && typeof req.body.description === 'string' && req.body.description.length > FREE_DESCRIPTION_LIMIT) {
+      if (
+        req.body.description != null &&
+        typeof req.body.description === 'string' &&
+        req.body.description.length > FREE_DESCRIPTION_LIMIT
+      ) {
         return res.status(400).json({
           error: `Free tier descriptions are limited to ${FREE_DESCRIPTION_LIMIT} characters. Upgrade for up to 5,000.`,
           upgrade_url: '/provider/billing',
@@ -256,7 +260,7 @@ router.post('/nurseries/:urn/photos', requireAuth, async (req, res, next) => {
       .maybeSingle()
     const photoTier = photoSub?.tier || 'free'
     const photoActive = !photoSub || photoSub.status === 'active' || photoSub.status === 'trialing'
-    const photoLimit = (photoTier === 'free' || !photoActive) ? FREE_PHOTO_LIMIT : MAX_PHOTOS
+    const photoLimit = photoTier === 'free' || !photoActive ? FREE_PHOTO_LIMIT : MAX_PHOTOS
     const { image, caption } = req.body
 
     if (!image || typeof image !== 'string') {
@@ -265,13 +269,19 @@ router.post('/nurseries/:urn/photos', requireAuth, async (req, res, next) => {
 
     const parsed = parseBase64Image(image)
     if (!parsed) {
-      return res.status(400).json({ error: 'Invalid image format. Use data:image/{type};base64,{data}' })
+      return res
+        .status(400)
+        .json({ error: 'Invalid image format. Use data:image/{type};base64,{data}' })
     }
     if (!ALLOWED_IMAGE_TYPES.includes(parsed.mimeType)) {
-      return res.status(400).json({ error: `Unsupported image type: ${parsed.mimeType}. Allowed: ${ALLOWED_IMAGE_TYPES.join(', ')}` })
+      return res.status(400).json({
+        error: `Unsupported image type: ${parsed.mimeType}. Allowed: ${ALLOWED_IMAGE_TYPES.join(', ')}`,
+      })
     }
     if (parsed.buffer.length > MAX_PHOTO_SIZE_BYTES) {
-      return res.status(400).json({ error: `Image too large. Max ${MAX_PHOTO_SIZE_BYTES / 1024 / 1024}MB` })
+      return res
+        .status(400)
+        .json({ error: `Image too large. Max ${MAX_PHOTO_SIZE_BYTES / 1024 / 1024}MB` })
     }
     if (caption != null && (typeof caption !== 'string' || caption.length > 500)) {
       return res.status(400).json({ error: 'Caption must be 500 characters or fewer' })
@@ -347,18 +357,16 @@ router.delete('/nurseries/:urn/photos/:photoId', requirePaidProvider, async (req
     if (!photo) return res.status(404).json({ error: 'Photo not found' })
 
     // Delete from storage
-    const { error: storageErr } = await db.storage
-      .from(STORAGE_BUCKET)
-      .remove([photo.storage_path])
+    const { error: storageErr } = await db.storage.from(STORAGE_BUCKET).remove([photo.storage_path])
     if (storageErr) {
-      logger.warn({ err: storageErr.message, storagePath: photo.storage_path }, 'Storage delete failed (proceeding with DB delete)')
+      logger.warn(
+        { err: storageErr.message, storagePath: photo.storage_path },
+        'Storage delete failed (proceeding with DB delete)'
+      )
     }
 
     // Delete from DB
-    const { error: delErr } = await db
-      .from('nursery_photos')
-      .delete()
-      .eq('id', photoId)
+    const { error: delErr } = await db.from('nursery_photos').delete().eq('id', photoId)
     if (delErr) throw delErr
 
     logger.info({ userId: req.user.id, urn, photoId }, 'Photo deleted')
@@ -385,11 +393,7 @@ router.patch('/nurseries/:urn/photos/reorder', requirePaidProvider, async (req, 
 
     // Update display_order for each photo
     const updates = order.map((id, idx) =>
-      db
-        .from('nursery_photos')
-        .update({ display_order: idx })
-        .eq('id', id)
-        .eq('nursery_urn', urn)
+      db.from('nursery_photos').update({ display_order: idx }).eq('id', id).eq('nursery_urn', urn)
     )
     await Promise.all(updates)
 
@@ -447,12 +451,21 @@ router.put('/nurseries/:urn/availability', requireAuth, async (req, res, next) =
     // Validate each row
     for (const row of rows) {
       if (!row.age_group || !VALID_AGE_GROUPS.includes(row.age_group)) {
-        return res.status(400).json({ error: `Invalid age_group: ${row.age_group}. Must be one of: ${VALID_AGE_GROUPS.join(', ')}` })
+        return res.status(400).json({
+          error: `Invalid age_group: ${row.age_group}. Must be one of: ${VALID_AGE_GROUPS.join(', ')}`,
+        })
       }
-      if (row.spots_available == null || typeof row.spots_available !== 'number' || row.spots_available < 0) {
+      if (
+        row.spots_available == null ||
+        typeof row.spots_available !== 'number' ||
+        row.spots_available < 0
+      ) {
         return res.status(400).json({ error: 'spots_available must be a non-negative number' })
       }
-      if (row.waitlist_length != null && (typeof row.waitlist_length !== 'number' || row.waitlist_length < 0)) {
+      if (
+        row.waitlist_length != null &&
+        (typeof row.waitlist_length !== 'number' || row.waitlist_length < 0)
+      ) {
         return res.status(400).json({ error: 'waitlist_length must be a non-negative number' })
       }
     }
@@ -497,7 +510,10 @@ router.put('/nurseries/:urn/availability', requireAuth, async (req, res, next) =
       })
       .eq('urn', urn)
     if (updateErr) {
-      logger.warn({ err: updateErr.message, urn }, 'Failed to update denormalised availability fields')
+      logger.warn(
+        { err: updateErr.message, urn },
+        'Failed to update denormalised availability fields'
+      )
     }
 
     logger.info(
@@ -577,15 +593,18 @@ router.patch('/nurseries/:urn/fees/:feeId', requirePaidProvider, async (req, res
 
     const update = {}
     if (age_group !== undefined) {
-      if (typeof age_group !== 'string') return res.status(400).json({ error: 'age_group must be a string' })
+      if (typeof age_group !== 'string')
+        return res.status(400).json({ error: 'age_group must be a string' })
       update.age_group = age_group
     }
     if (session_type !== undefined) {
-      if (typeof session_type !== 'string') return res.status(400).json({ error: 'session_type must be a string' })
+      if (typeof session_type !== 'string')
+        return res.status(400).json({ error: 'session_type must be a string' })
       update.session_type = session_type
     }
     if (price_gbp !== undefined) {
-      if (typeof price_gbp !== 'number' || price_gbp < 0) return res.status(400).json({ error: 'price_gbp must be a non-negative number' })
+      if (typeof price_gbp !== 'number' || price_gbp < 0)
+        return res.status(400).json({ error: 'price_gbp must be a non-negative number' })
       update.price_gbp = price_gbp
     }
     if (notes !== undefined) update.notes = notes
@@ -618,11 +637,7 @@ router.delete('/nurseries/:urn/fees/:feeId', requirePaidProvider, async (req, re
 
     const { urn, feeId } = req.params
 
-    const { error } = await db
-      .from('nursery_fees')
-      .delete()
-      .eq('id', feeId)
-      .eq('nursery_urn', urn)
+    const { error } = await db.from('nursery_fees').delete().eq('id', feeId).eq('nursery_urn', urn)
     if (error) throw error
 
     logger.info({ userId: req.user.id, urn, feeId }, 'Fee row deleted')

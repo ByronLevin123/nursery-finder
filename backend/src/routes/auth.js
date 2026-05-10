@@ -100,17 +100,14 @@ router.post('/login', async (req, res, next) => {
       return res.status(503).json({ error: 'Auth not configured' })
     }
 
-    const upstream = await fetch(
-      `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
-      {
-        method: 'POST',
-        headers: {
-          apikey: SUPABASE_ANON_KEY,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      }
-    )
+    const upstream = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    })
 
     if (upstream.ok) {
       recordSuccess(email)

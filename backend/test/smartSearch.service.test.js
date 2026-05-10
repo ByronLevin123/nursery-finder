@@ -35,7 +35,7 @@ const NURSERIES = [
     ofsted_overall_grade: 'Good',
     featured: true,
     lat: 51.54,
-    lng: -0.10,
+    lng: -0.1,
     spots_available: 0,
     google_rating: 3.8,
     provider_type: 'Nursery',
@@ -165,8 +165,20 @@ describe('smartSearch()', () => {
   describe('postcode mode', () => {
     it('calls RPC and returns sorted results for a valid postcode', async () => {
       const rpcResults = [
-        { urn: 'EY100', name: 'Sunshine Nursery', distance_km: 1.2, featured: false, ofsted_overall_grade: 'Outstanding' },
-        { urn: 'EY101', name: 'Rainbow Nursery', distance_km: 0.5, featured: true, ofsted_overall_grade: 'Good' },
+        {
+          urn: 'EY100',
+          name: 'Sunshine Nursery',
+          distance_km: 1.2,
+          featured: false,
+          ofsted_overall_grade: 'Outstanding',
+        },
+        {
+          urn: 'EY101',
+          name: 'Rainbow Nursery',
+          distance_km: 0.5,
+          featured: true,
+          ofsted_overall_grade: 'Good',
+        },
       ]
       rpcHandlers.search_nurseries_near = vi.fn(async () => ({
         data: rpcResults,
@@ -258,7 +270,14 @@ describe('smartSearch()', () => {
     it('falls back to fuzzy search when text and place search return nothing', async () => {
       rpcHandlers.fuzzy_search_nurseries = vi.fn(async () => ({
         data: [
-          { urn: 'EY100', name: 'Sunshine Nursery', match_score: 0.6, matched_field: 'Sunshine', lat: 51.5, lng: -0.1 },
+          {
+            urn: 'EY100',
+            name: 'Sunshine Nursery',
+            match_score: 0.6,
+            matched_field: 'Sunshine',
+            lat: 51.5,
+            lng: -0.1,
+          },
         ],
         error: null,
       }))

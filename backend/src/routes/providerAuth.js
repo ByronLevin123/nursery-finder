@@ -49,7 +49,8 @@ router.post('/register', registerLimiter, async (req, res, next) => {
     // Require business email for providers
     if (!isBusinessEmail(email)) {
       return res.status(400).json({
-        error: 'Please use a business email address. Personal email domains (Gmail, Hotmail, Yahoo, etc.) are not accepted for provider accounts.',
+        error:
+          'Please use a business email address. Personal email domains (Gmail, Hotmail, Yahoo, etc.) are not accepted for provider accounts.',
       })
     }
 
@@ -75,7 +76,9 @@ router.post('/register', registerLimiter, async (req, res, next) => {
 
     // Check if nursery is already claimed
     if (nursery.claimed_by_user_id) {
-      return res.status(409).json({ error: 'This nursery has already been claimed by another provider' })
+      return res
+        .status(409)
+        .json({ error: 'This nursery has already been claimed by another provider' })
     }
 
     // Check for existing pending claim
@@ -88,9 +91,10 @@ router.post('/register', registerLimiter, async (req, res, next) => {
 
     if (existingClaim) {
       return res.status(409).json({
-        error: existingClaim.status === 'approved'
-          ? 'This nursery has already been claimed'
-          : 'There is already a pending claim for this nursery',
+        error:
+          existingClaim.status === 'approved'
+            ? 'This nursery has already been claimed'
+            : 'There is already a pending claim for this nursery',
       })
     }
 
@@ -108,11 +112,13 @@ router.post('/register', registerLimiter, async (req, res, next) => {
     if (existingProfile) {
       if (existingProfile.role === 'provider') {
         return res.status(409).json({
-          error: 'An account with this email already exists as a provider. Please sign in and use the claim flow.',
+          error:
+            'An account with this email already exists as a provider. Please sign in and use the claim flow.',
         })
       }
       return res.status(409).json({
-        error: 'An account with this email already exists. Please sign in at /login and claim your nursery from there.',
+        error:
+          'An account with this email already exists. Please sign in at /login and claim your nursery from there.',
       })
     }
 
@@ -194,7 +200,8 @@ router.post('/register', registerLimiter, async (req, res, next) => {
       success: true,
       claim_id: claim.id,
       is_new_user: isNewUser,
-      message: 'Registration successful. Check your email to verify your account. Once verified, sign in with your email and password. Your claim will be reviewed within 24 hours.',
+      message:
+        'Registration successful. Check your email to verify your account. Once verified, sign in with your email and password. Your claim will be reviewed within 24 hours.',
     })
   } catch (err) {
     logger.error({ err: err.message }, 'providerAuth: registration failed')

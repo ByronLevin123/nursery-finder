@@ -85,15 +85,16 @@ export async function processOfstedChangeNotifications() {
         .maybeSingle()
 
       if (!nursery) {
-        logger.warn({ urn: change.nursery_urn }, 'ofstedChangeNotifier: nursery not found, skipping')
+        logger.warn(
+          { urn: change.nursery_urn },
+          'ofstedChangeNotifier: nursery not found, skipping'
+        )
         skipped++
         await markNotified(change.id)
         continue
       }
 
-      const postcodeDistrict = nursery.postcode
-        ? nursery.postcode.split(' ')[0]
-        : null
+      const postcodeDistrict = nursery.postcode ? nursery.postcode.split(' ')[0] : null
 
       // Track users we have already emailed for this change to avoid duplicates
       const notifiedUserIds = new Set()
@@ -108,7 +109,8 @@ export async function processOfstedChangeNotifications() {
       if (claims && claims.length > 0) {
         for (const claim of claims) {
           try {
-            const email = claim.claimer_email || (claim.user_id ? await getUserEmail(claim.user_id) : null)
+            const email =
+              claim.claimer_email || (claim.user_id ? await getUserEmail(claim.user_id) : null)
             if (!email) {
               skipped++
               continue
@@ -234,19 +236,13 @@ export async function processOfstedChangeNotifications() {
     }
   }
 
-  logger.info(
-    { sent, skipped, errors, changes: changes.length },
-    'ofstedChangeNotifier: complete'
-  )
+  logger.info({ sent, skipped, errors, changes: changes.length }, 'ofstedChangeNotifier: complete')
   return { sent, skipped, errors, changes: changes.length }
 }
 
 async function markNotified(changeId) {
   try {
-    await db
-      .from('ofsted_changes')
-      .update({ notified: true })
-      .eq('id', changeId)
+    await db.from('ofsted_changes').update({ notified: true }).eq('id', changeId)
   } catch (err) {
     logger.warn({ err: err?.message, changeId }, 'ofstedChangeNotifier: failed to mark notified')
   }

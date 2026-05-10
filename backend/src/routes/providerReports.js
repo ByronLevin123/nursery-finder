@@ -57,7 +57,13 @@ router.get('/reports', requireAuth, async (req, res, next) => {
       summary.compares += r.compares || 0
       summary.shortlists += r.shortlists || 0
 
-      const existing = dateMap.get(r.report_date) || { date: r.report_date, views: 0, enquiries: 0, compares: 0, shortlists: 0 }
+      const existing = dateMap.get(r.report_date) || {
+        date: r.report_date,
+        views: 0,
+        enquiries: 0,
+        compares: 0,
+        shortlists: 0,
+      }
       existing.views += r.views || 0
       existing.enquiries += r.enquiries || 0
       existing.compares += r.compares || 0
@@ -66,9 +72,8 @@ router.get('/reports', requireAuth, async (req, res, next) => {
     }
 
     const timeseries = Array.from(dateMap.values()).sort((a, b) => a.date.localeCompare(b.date))
-    const conversion_rate = summary.views > 0
-      ? Math.round((summary.enquiries / summary.views) * 10000) / 100
-      : 0
+    const conversion_rate =
+      summary.views > 0 ? Math.round((summary.enquiries / summary.views) * 10000) / 100 : 0
 
     res.json({ summary, timeseries, conversion_rate })
   } catch (err) {
@@ -113,7 +118,9 @@ router.get('/reports/export', requireAuth, async (req, res, next) => {
 
     const rows = ['date,urn,views,enquiries,compares,shortlists']
     for (const r of reports || []) {
-      rows.push(`${r.report_date},${r.urn},${r.views || 0},${r.enquiries || 0},${r.compares || 0},${r.shortlists || 0}`)
+      rows.push(
+        `${r.report_date},${r.urn},${r.views || 0},${r.enquiries || 0},${r.compares || 0},${r.shortlists || 0}`
+      )
     }
 
     res.setHeader('Content-Type', 'text/csv')

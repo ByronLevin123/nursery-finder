@@ -88,10 +88,14 @@ describe('POST /api/v1/auth/login', () => {
       await request(app).post('/api/v1/auth/login').send({ email: 'A@B.com', password: 'x' })
     }
     // Same email lower-cased should be locked
-    const r = await request(app).post('/api/v1/auth/login').send({ email: 'a@b.com', password: 'x' })
+    const r = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: 'a@b.com', password: 'x' })
     expect(r.status).toBe(429)
     // Different email is independent
-    const r2 = await request(app).post('/api/v1/auth/login').send({ email: 'c@d.com', password: 'x' })
+    const r2 = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: 'c@d.com', password: 'x' })
     expect(r2.status).toBe(401) // only one failure, not locked
   })
 
@@ -102,12 +106,20 @@ describe('POST /api/v1/auth/login', () => {
       await request(app).post('/api/v1/auth/login').send({ email: 'a@b.com', password: 'x' })
     }
     // Now succeed
-    mockSupabase(200, { access_token: 'at', refresh_token: 'rt', user: { id: 'u1', email: 'a@b.com' } })
-    const ok = await request(app).post('/api/v1/auth/login').send({ email: 'a@b.com', password: 'right' })
+    mockSupabase(200, {
+      access_token: 'at',
+      refresh_token: 'rt',
+      user: { id: 'u1', email: 'a@b.com' },
+    })
+    const ok = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: 'a@b.com', password: 'right' })
     expect(ok.status).toBe(200)
     // Subsequent failures restart the counter
     mockSupabase(400, { error_description: 'bad' })
-    const fail = await request(app).post('/api/v1/auth/login').send({ email: 'a@b.com', password: 'x' })
+    const fail = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: 'a@b.com', password: 'x' })
     expect(fail.body.attempts_remaining).toBe(4)
   })
 })

@@ -71,13 +71,27 @@ function makeQueryBuilder(table) {
       state.filters.push([col, 'not_is', val])
       return builder
     },
-    is() { return builder },
-    in() { return builder },
-    ilike() { return builder },
-    order() { return builder },
-    limit() { return builder },
-    single() { return builder._resolve(true, false) },
-    maybeSingle() { return builder._resolve(true, true) },
+    is() {
+      return builder
+    },
+    in() {
+      return builder
+    },
+    ilike() {
+      return builder
+    },
+    order() {
+      return builder
+    },
+    limit() {
+      return builder
+    },
+    single() {
+      return builder._resolve(true, false)
+    },
+    maybeSingle() {
+      return builder._resolve(true, true)
+    },
     then(onFulfilled, onRejected) {
       return builder._resolve(false, false).then(onFulfilled, onRejected)
     },
@@ -91,7 +105,8 @@ function makeQueryBuilder(table) {
       // select
       let result = applyFilters(rows)
       if (single || maybe) {
-        if (result.length === 0 && !maybe) return { data: null, error: { message: 'Row not found' } }
+        if (result.length === 0 && !maybe)
+          return { data: null, error: { message: 'Row not found' } }
         return { data: result[0] ?? null, error: null }
       }
       return { data: result, error: null, count: result.length }

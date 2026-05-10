@@ -82,7 +82,10 @@ export async function geocodeNurseriesBatch(limit = 500) {
       const results = response.data.result
 
       if (!results) {
-        logger.error({ status: response.status, body: JSON.stringify(response.data).slice(0, 500) }, 'geocoding: unexpected API response')
+        logger.error(
+          { status: response.status, body: JSON.stringify(response.data).slice(0, 500) },
+          'geocoding: unexpected API response'
+        )
         totalFailed += chunk.length
         continue
       }

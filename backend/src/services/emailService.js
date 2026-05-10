@@ -213,9 +213,10 @@ export function renderShortlistEmail({ nurseries = [], userName } = {}) {
 
   const html = shell({
     title: subject,
-    preheader: count > 0
-      ? `${count} ${count === 1 ? 'nursery' : 'nurseries'} on your shortlist.`
-      : 'Your saved nurseries in one place.',
+    preheader:
+      count > 0
+        ? `${count} ${count === 1 ? 'nursery' : 'nurseries'} on your shortlist.`
+        : 'Your saved nurseries in one place.',
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
       <p style="margin:0 0 16px 0;">Here is the nursery shortlist you saved on NurseryMatch.</p>
@@ -253,9 +254,10 @@ export function renderComparisonEmail({ nurseries = [], userName } = {}) {
 
   const html = shell({
     title: subject,
-    preheader: count > 0
-      ? `Side-by-side comparison of ${count} ${count === 1 ? 'nursery' : 'nurseries'}.`
-      : 'Your NurseryMatch comparison.',
+    preheader:
+      count > 0
+        ? `Side-by-side comparison of ${count} ${count === 1 ? 'nursery' : 'nurseries'}.`
+        : 'Your NurseryMatch comparison.',
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
       <p style="margin:0 0 16px 0;">Here is the side-by-side nursery comparison you put together on NurseryMatch.</p>
@@ -314,9 +316,10 @@ export function renderDigestEmail({ savedSearches = [], newMatches = {}, userNam
 
   const html = shell({
     title: subject,
-    preheader: totalMatches > 0
-      ? `${totalMatches} new ${totalMatches === 1 ? 'match' : 'matches'} across your saved searches.`
-      : 'Updates from your saved searches.',
+    preheader:
+      totalMatches > 0
+        ? `${totalMatches} new ${totalMatches === 1 ? 'match' : 'matches'} across your saved searches.`
+        : 'Updates from your saved searches.',
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
       <p style="margin:0 0 16px 0;">Here is your saved-search digest from NurseryMatch.</p>

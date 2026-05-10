@@ -16,7 +16,9 @@ beforeEach(() => {
 
 describe('POST /api/v1/newsletter/subscribe', () => {
   it('rejects an invalid email with 400', async () => {
-    const res = await request(app).post('/api/v1/newsletter/subscribe').send({ email: 'not-an-email' })
+    const res = await request(app)
+      .post('/api/v1/newsletter/subscribe')
+      .send({ email: 'not-an-email' })
     expect(res.status).toBe(400)
   })
 

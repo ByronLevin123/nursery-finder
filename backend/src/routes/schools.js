@@ -25,9 +25,8 @@ router.get('/near', async (req, res, next) => {
     }
 
     const radiusKm = Math.min(10, Math.max(0.1, parseFloat(radius_km) || 3))
-    const phaseFilter = phase && ['Primary', 'Secondary', 'All-through'].includes(phase)
-      ? phase
-      : null
+    const phaseFilter =
+      phase && ['Primary', 'Secondary', 'All-through'].includes(phase) ? phase : null
 
     const { data, error } = await db.rpc('search_schools_near', {
       search_lat: latNum,
@@ -39,7 +38,13 @@ router.get('/near', async (req, res, next) => {
     if (error) throw error
 
     logger.info(
-      { lat: latNum, lng: lngNum, radius_km: radiusKm, phase: phaseFilter, results: (data || []).length },
+      {
+        lat: latNum,
+        lng: lngNum,
+        radius_km: radiusKm,
+        phase: phaseFilter,
+        results: (data || []).length,
+      },
       'schools near lookup'
     )
 
@@ -52,11 +57,7 @@ router.get('/near', async (req, res, next) => {
 // GET /api/v1/schools/:urn
 router.get('/:urn', async (req, res, next) => {
   try {
-    const { data, error } = await db
-      .from('schools')
-      .select('*')
-      .eq('urn', req.params.urn)
-      .single()
+    const { data, error } = await db.from('schools').select('*').eq('urn', req.params.urn).single()
 
     if (error || !data) {
       return res.status(404).json({ error: 'School not found' })
