@@ -11,6 +11,7 @@ const CATEGORIES = [
   'baby_gear',
   'dance',
   'sports',
+  'soft_play',
   'arts',
   'language',
   'childcare',
