@@ -52,7 +52,7 @@ export default function ApiDocsPage() {
         Custom GPTs, research projects and journalism.
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
         <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5">
           <p className="text-sm text-indigo-900 font-medium mb-2">Interactive API docs</p>
           <a
@@ -77,6 +77,15 @@ export default function ApiDocsPage() {
             Paste this URL into ChatGPT &gt; Configure &gt; Actions to ship a Custom GPT.
           </p>
         </div>
+        <Link href="/api/recipes" className="bg-purple-50 border border-purple-200 rounded-xl p-5 hover:bg-purple-100 transition block">
+          <p className="text-sm text-purple-900 font-medium mb-2">Integration recipes</p>
+          <p className="text-purple-700 text-sm">
+            Copy-paste code for Zoopla, Rightmove, property sites, and parenting blogs.
+          </p>
+          <p className="text-xs text-purple-600 mt-2 font-medium">
+            5 recipes + embeddable widget &rarr;
+          </p>
+        </Link>
       </div>
 
       <h2 className="text-2xl font-bold text-gray-900 mb-4">Endpoints</h2>
