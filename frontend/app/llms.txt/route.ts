@@ -5,7 +5,7 @@ export const runtime = 'edge'
 export const revalidate = 86400
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://nurserymatch.com'
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+const API = process.env.NEXT_PUBLIC_API_URL || ''
 
 const BODY = `# NurseryMatch
 > Free UK nursery comparison + family relocation tool. Ofsted-rated nurseries, area family scores, sold prices, schools, parks.
