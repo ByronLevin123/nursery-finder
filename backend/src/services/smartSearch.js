@@ -142,7 +142,10 @@ export async function smartSearch({
         const placeLat = place.latitude
         const placeLng = place.longitude
         if (placeLat && placeLng) {
-          logger.info({ query: cleaned, place: place.name_1, lat: placeLat, lng: placeLng }, 'text search empty, resolved as place name')
+          logger.info(
+            { query: cleaned, place: place.name_1, lat: placeLat, lng: placeLng },
+            'text search empty, resolved as place name'
+          )
           const { data: placeNurseries, error: placeErr } = await db.rpc('search_nurseries_near', {
             search_lat: placeLat,
             search_lng: placeLng,

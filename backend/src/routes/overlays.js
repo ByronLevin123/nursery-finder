@@ -66,9 +66,14 @@ router.post('/schools/ingest', requireRole('admin'), async (req, res, next) => {
     if (csvUrl) {
       try {
         const parsed = new URL(csvUrl)
-        const allowed = ['get-information-schools.service.gov.uk', 'ea-edubase-api-prod.azurewebsites.net']
+        const allowed = [
+          'get-information-schools.service.gov.uk',
+          'ea-edubase-api-prod.azurewebsites.net',
+        ]
         if (parsed.protocol !== 'https:' || !allowed.some((d) => parsed.hostname.endsWith(d))) {
-          return res.status(400).json({ error: 'CSV URL must be HTTPS from an allowed education data domain' })
+          return res
+            .status(400)
+            .json({ error: 'CSV URL must be HTTPS from an allowed education data domain' })
         }
       } catch {
         return res.status(400).json({ error: 'Invalid CSV URL' })

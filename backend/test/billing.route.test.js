@@ -9,9 +9,7 @@ const AUTH_USER = { id: 'user-billing-1', email: 'parent@example.com' }
 
 // ---------- in-memory store ----------
 const store = {
-  user_profiles: [
-    { id: AUTH_USER.id, role: 'customer' },
-  ],
+  user_profiles: [{ id: AUTH_USER.id, role: 'customer' }],
   tier_limits: [
     { tier: 'free', max_photos: 0, analytics: false },
     { tier: 'pro', max_photos: 10, analytics: true },
@@ -36,16 +34,39 @@ function makeQueryBuilder(table) {
   }
 
   const builder = {
-    select() { return builder },
-    insert(row) { state.op = 'insert'; return builder },
-    update(row) { state.op = 'update'; return builder },
-    eq(col, val) { state.filters.push([col, 'eq', val]); return builder },
-    order() { return builder },
-    range() { return builder },
-    limit() { return builder },
-    single() { return builder._resolve(true, false) },
-    maybeSingle() { return builder._resolve(true, true) },
-    then(resolve, reject) { return builder._resolve(false, false).then(resolve, reject) },
+    select() {
+      return builder
+    },
+    insert(row) {
+      state.op = 'insert'
+      return builder
+    },
+    update(row) {
+      state.op = 'update'
+      return builder
+    },
+    eq(col, val) {
+      state.filters.push([col, 'eq', val])
+      return builder
+    },
+    order() {
+      return builder
+    },
+    range() {
+      return builder
+    },
+    limit() {
+      return builder
+    },
+    single() {
+      return builder._resolve(true, false)
+    },
+    maybeSingle() {
+      return builder._resolve(true, true)
+    },
+    then(resolve, reject) {
+      return builder._resolve(false, false).then(resolve, reject)
+    },
     async _resolve(single, maybe) {
       if (state.op === 'insert' || state.op === 'update') {
         return { data: null, error: null }
@@ -78,8 +99,12 @@ vi.mock('@supabase/supabase-js', async () => ({
   }),
 }))
 
-const mockCreateCheckoutSession = vi.fn(async () => ({ url: 'https://checkout.stripe.com/session-123' }))
-const mockCreatePortalSession = vi.fn(async () => ({ url: 'https://billing.stripe.com/portal-123' }))
+const mockCreateCheckoutSession = vi.fn(async () => ({
+  url: 'https://checkout.stripe.com/session-123',
+}))
+const mockCreatePortalSession = vi.fn(async () => ({
+  url: 'https://billing.stripe.com/portal-123',
+}))
 const mockHandleWebhook = vi.fn(async () => ({ received: true }))
 const mockGetProviderSubscription = vi.fn(async () => null)
 const mockGetParentSubscription = vi.fn(async () => null)

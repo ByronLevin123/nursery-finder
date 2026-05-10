@@ -57,17 +57,39 @@ function makeQueryBuilder(table) {
       state.filters.push([col, 'eq', val])
       return builder
     },
-    not() { return builder },
-    is() { return builder },
-    in() { return builder },
-    ilike() { return builder },
-    like() { return builder },
-    gte() { return builder },
-    lte() { return builder },
-    order() { return builder },
-    limit() { return builder },
-    single() { return builder._resolve(true, false) },
-    maybeSingle() { return builder._resolve(true, true) },
+    not() {
+      return builder
+    },
+    is() {
+      return builder
+    },
+    in() {
+      return builder
+    },
+    ilike() {
+      return builder
+    },
+    like() {
+      return builder
+    },
+    gte() {
+      return builder
+    },
+    lte() {
+      return builder
+    },
+    order() {
+      return builder
+    },
+    limit() {
+      return builder
+    },
+    single() {
+      return builder._resolve(true, false)
+    },
+    maybeSingle() {
+      return builder._resolve(true, true)
+    },
     then(onFulfilled, onRejected) {
       return builder._resolve(false, false).then(onFulfilled, onRejected)
     },
@@ -77,7 +99,11 @@ function makeQueryBuilder(table) {
       if (state.op === 'insert') {
         const toInsert = Array.isArray(state.insertRow) ? state.insertRow : [state.insertRow]
         const inserted = toInsert.map((r) => {
-          const newRow = { id: `fee-${rows.length + 1}`, created_at: new Date().toISOString(), ...r }
+          const newRow = {
+            id: `fee-${rows.length + 1}`,
+            created_at: new Date().toISOString(),
+            ...r,
+          }
           rows.push(newRow)
           return newRow
         })
@@ -110,7 +136,8 @@ function makeQueryBuilder(table) {
       let result = applyFilters(rows)
       if (state.countMode) return { data: result, error: null, count: result.length }
       if (single || maybe) {
-        if (result.length === 0 && !maybe) return { data: null, error: { message: 'Row not found' } }
+        if (result.length === 0 && !maybe)
+          return { data: null, error: { message: 'Row not found' } }
         return { data: result[0] ?? null, error: null }
       }
       return { data: result, error: null }
@@ -172,14 +199,12 @@ const TEST_URN = 'EY700'
 
 describe('POST /api/v1/nurseries/fees — anonymous fee submission', () => {
   it('submits a fee using nursery_urn column (bug fix verification)', async () => {
-    const res = await request(app)
-      .post('/api/v1/nurseries/fees')
-      .send({
-        nursery_urn: TEST_URN,
-        fee_per_month: 1200,
-        hours_per_week: 30,
-        age_group: 'Under 2',
-      })
+    const res = await request(app).post('/api/v1/nurseries/fees').send({
+      nursery_urn: TEST_URN,
+      fee_per_month: 1200,
+      hours_per_week: 30,
+      age_group: 'Under 2',
+    })
     expect(res.status).toBe(200)
     expect(res.body.success).toBe(true)
     // Verify the fee was stored with nursery_urn (not urn or nursery_id)
@@ -188,17 +213,13 @@ describe('POST /api/v1/nurseries/fees — anonymous fee submission', () => {
   })
 
   it('rejects missing nursery_urn', async () => {
-    const res = await request(app)
-      .post('/api/v1/nurseries/fees')
-      .send({ fee_per_month: 1200 })
+    const res = await request(app).post('/api/v1/nurseries/fees').send({ fee_per_month: 1200 })
     expect(res.status).toBe(400)
     expect(res.body.error).toContain('nursery_urn')
   })
 
   it('rejects missing fee_per_month', async () => {
-    const res = await request(app)
-      .post('/api/v1/nurseries/fees')
-      .send({ nursery_urn: TEST_URN })
+    const res = await request(app).post('/api/v1/nurseries/fees').send({ nursery_urn: TEST_URN })
     expect(res.status).toBe(400)
   })
 
@@ -220,20 +241,28 @@ describe('POST /api/v1/nurseries/fees — anonymous fee submission', () => {
   it('updates average fee on nurseries table when 3+ fee reports exist', async () => {
     // Seed 2 existing fees
     store.nursery_fees.push(
-      { id: 'f-1', nursery_urn: TEST_URN, fee_per_month: 1000, created_at: new Date().toISOString() },
-      { id: 'f-2', nursery_urn: TEST_URN, fee_per_month: 1200, created_at: new Date().toISOString() }
+      {
+        id: 'f-1',
+        nursery_urn: TEST_URN,
+        fee_per_month: 1000,
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: 'f-2',
+        nursery_urn: TEST_URN,
+        fee_per_month: 1200,
+        created_at: new Date().toISOString(),
+      }
     )
     // Seed the nursery so the update can target it
     store.nurseries.push({ urn: TEST_URN, name: 'Test Nursery' })
 
-    const res = await request(app)
-      .post('/api/v1/nurseries/fees')
-      .send({
-        nursery_urn: TEST_URN,
-        fee_per_month: 1100,
-        hours_per_week: 25,
-        age_group: '2-3 years',
-      })
+    const res = await request(app).post('/api/v1/nurseries/fees').send({
+      nursery_urn: TEST_URN,
+      fee_per_month: 1100,
+      hours_per_week: 25,
+      age_group: '2-3 years',
+    })
     expect(res.status).toBe(200)
     expect(res.body.success).toBe(true)
     // After 3 fees, the nursery should have been updated

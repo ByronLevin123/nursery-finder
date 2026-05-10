@@ -58,16 +58,36 @@ function makeQueryBuilder(table) {
       state.filters.push([col, 'in', vals])
       return builder
     },
-    not() { return builder },
-    is() { return builder },
-    ilike() { return builder },
-    like() { return builder },
-    gte() { return builder },
-    lte() { return builder },
-    order() { return builder },
-    limit() { return builder },
-    single() { return builder._resolve(true, false) },
-    maybeSingle() { return builder._resolve(true, true) },
+    not() {
+      return builder
+    },
+    is() {
+      return builder
+    },
+    ilike() {
+      return builder
+    },
+    like() {
+      return builder
+    },
+    gte() {
+      return builder
+    },
+    lte() {
+      return builder
+    },
+    order() {
+      return builder
+    },
+    limit() {
+      return builder
+    },
+    single() {
+      return builder._resolve(true, false)
+    },
+    maybeSingle() {
+      return builder._resolve(true, true)
+    },
     then(onFulfilled, onRejected) {
       return builder._resolve(false, false).then(onFulfilled, onRejected)
     },
@@ -94,7 +114,8 @@ function makeQueryBuilder(table) {
           return merged
         })
         if (single || maybe) {
-          if (updated.length === 0 && !maybe) return { data: null, error: { message: 'Row not found' } }
+          if (updated.length === 0 && !maybe)
+            return { data: null, error: { message: 'Row not found' } }
           return { data: updated[0] ?? null, error: null }
         }
         return { data: updated, error: null }
@@ -103,7 +124,8 @@ function makeQueryBuilder(table) {
       // select
       let result = applyFilters(rows)
       if (single || maybe) {
-        if (result.length === 0 && !maybe) return { data: null, error: { message: 'Row not found' } }
+        if (result.length === 0 && !maybe)
+          return { data: null, error: { message: 'Row not found' } }
         return { data: result[0] ?? null, error: null }
       }
       return { data: result, error: null }
@@ -191,9 +213,7 @@ const validClaimBody = {
 
 describe('POST /api/v1/claims — submit a claim', () => {
   it('returns 401 without auth token', async () => {
-    const res = await request(app)
-      .post('/api/v1/claims')
-      .send(validClaimBody)
+    const res = await request(app).post('/api/v1/claims').send(validClaimBody)
     expect(res.status).toBe(401)
   })
 

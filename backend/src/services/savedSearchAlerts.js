@@ -129,7 +129,8 @@ export async function processSavedSearchAlerts() {
           }
 
           const radiusKm = search.radius_km || (search.criteria && search.criteria.radius_km) || 5
-          const gradeFilter = search.grade_filter || (search.criteria && search.criteria.grade_filter) || null
+          const gradeFilter =
+            search.grade_filter || (search.criteria && search.criteria.grade_filter) || null
 
           // Query nurseries near this search
           const { data: nurseries, error: nursErr } = await db.rpc('search_nurseries_near', {
@@ -251,10 +252,7 @@ export async function processSavedSearchAlerts() {
     }
   }
 
-  logger.info(
-    { sent, skipped, errors, totalUsers: byUser.size },
-    'savedSearchAlerts: complete'
-  )
+  logger.info({ sent, skipped, errors, totalUsers: byUser.size }, 'savedSearchAlerts: complete')
   return { sent, skipped, errors }
 }
 

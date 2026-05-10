@@ -184,9 +184,10 @@ export function renderWeeklyDigestEmail({ nurseries = [], userName, postcode } =
 
   const html = shell({
     title: subject,
-    preheader: count > 0
-      ? `${count} ${count === 1 ? 'nursery' : 'nurseries'} added or updated near ${postcode || 'you'}.`
-      : 'Your weekly nursery update from NurseryMatch.',
+    preheader:
+      count > 0
+        ? `${count} ${count === 1 ? 'nursery' : 'nurseries'} added or updated near ${postcode || 'you'}.`
+        : 'Your weekly nursery update from NurseryMatch.',
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
       <p style="margin:0 0 16px 0;">Here are the nurseries added or updated near ${escapeHtml(postcode || 'you')} in the last 7 days.</p>
@@ -226,9 +227,10 @@ export function renderReengagementEmail({ userName, postcode, newCount = 0 } = {
 
   const html = shell({
     title: subject,
-    preheader: newCount > 0
-      ? `${newCount} new nurseries to explore near ${postcode || 'you'} since your last visit.`
-      : 'New nurseries, reviews and features since you were last here.',
+    preheader:
+      newCount > 0
+        ? `${newCount} new nurseries to explore near ${postcode || 'you'} since your last visit.`
+        : 'New nurseries, reviews and features since you were last here.',
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
       <p style="margin:0 0 16px 0;">
@@ -316,17 +318,16 @@ export function renderSavedSearchAlertEmail({ searchResults = [], userName } = {
     totalNew > 0
       ? `${totalNew} new ${totalNew === 1 ? 'nursery' : 'nurseries'} matching your saved searches`
       : 'Saved search update from NurseryMatch'
-  const preheader = totalNew > 0
-    ? `Matches in areas you're watching. See them before they fill up.`
-    : 'Weekly check-in on your saved searches.'
+  const preheader =
+    totalNew > 0
+      ? `Matches in areas you're watching. See them before they fill up.`
+      : 'Weekly check-in on your saved searches.'
 
   const sections = searchResults
     .map((r) => {
       const searchName = escapeHtml(r.search?.name || r.search?.postcode || 'Saved search')
       const postcode = escapeHtml(r.search?.postcode || '')
-      const heading = postcode && r.search?.name
-        ? `${searchName} (${postcode})`
-        : searchName
+      const heading = postcode && r.search?.name ? `${searchName} (${postcode})` : searchName
 
       const rows = (r.nurseries || []).slice(0, 5).map(nurseryRowHtml).join('')
 
@@ -469,9 +470,10 @@ export function renderProviderEnquiryDigestEmail({
 
   const html = shell({
     title: subject,
-    preheader: count > 0
-      ? `Respond within 24 hours to maximise your booking rate.`
-      : 'Weekly summary of parent enquiries.',
+    preheader:
+      count > 0
+        ? `Respond within 24 hours to maximise your booking rate.`
+        : 'Weekly summary of parent enquiries.',
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
       <p style="margin:0 0 16px 0;">
@@ -510,7 +512,8 @@ export function renderEnhancedWeeklyDigestEmail({
   const greeting = userName ? `Hi ${escapeHtml(userName)},` : 'Hi,'
   const subject = 'Your weekly nursery digest'
   const safePostcode = escapeHtml(postcode || 'your area')
-  const totalUpdates = newNurseries.length + ofstedChanges.length + newAnswers.length + (newReviewCount > 0 ? 1 : 0)
+  const totalUpdates =
+    newNurseries.length + ofstedChanges.length + newAnswers.length + (newReviewCount > 0 ? 1 : 0)
 
   // Build sections
   const sections = []
@@ -529,13 +532,15 @@ export function renderEnhancedWeeklyDigestEmail({
 
   // Ofsted changes on shortlisted nurseries
   if (ofstedChanges.length > 0) {
-    const changeRows = ofstedChanges.slice(0, 5).map((c) => {
-      const name = escapeHtml(c.name || 'Nursery')
-      const prev = escapeHtml(c.previous_grade || '?')
-      const next = escapeHtml(c.new_grade || '?')
-      const urn = c.urn ? escapeHtml(c.urn) : ''
-      const link = urn ? `${FRONTEND_URL}/nursery/${urn}` : '#'
-      return `
+    const changeRows = ofstedChanges
+      .slice(0, 5)
+      .map((c) => {
+        const name = escapeHtml(c.name || 'Nursery')
+        const prev = escapeHtml(c.previous_grade || '?')
+        const next = escapeHtml(c.new_grade || '?')
+        const urn = c.urn ? escapeHtml(c.urn) : ''
+        const link = urn ? `${FRONTEND_URL}/nursery/${urn}` : '#'
+        return `
         <tr>
           <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;">
             <a href="${link}" style="font-weight:600;color:#111827;text-decoration:none;">${name}</a>
@@ -546,7 +551,8 @@ export function renderEnhancedWeeklyDigestEmail({
             </div>
           </td>
         </tr>`
-    }).join('')
+      })
+      .join('')
 
     sections.push(`
       <div style="margin:0 0 20px 0;">
@@ -559,19 +565,22 @@ export function renderEnhancedWeeklyDigestEmail({
 
   // New answers to questions
   if (newAnswers.length > 0) {
-    const answerRows = newAnswers.slice(0, 5).map((a) => {
-      const nurseryName = escapeHtml(a.nursery_name || 'Nursery')
-      const question = escapeHtml(a.question || '')
-      const urn = a.urn ? escapeHtml(a.urn) : ''
-      const link = urn ? `${FRONTEND_URL}/nursery/${urn}#qa` : '#'
-      return `
+    const answerRows = newAnswers
+      .slice(0, 5)
+      .map((a) => {
+        const nurseryName = escapeHtml(a.nursery_name || 'Nursery')
+        const question = escapeHtml(a.question || '')
+        const urn = a.urn ? escapeHtml(a.urn) : ''
+        const link = urn ? `${FRONTEND_URL}/nursery/${urn}#qa` : '#'
+        return `
         <tr>
           <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;">
             <a href="${link}" style="font-weight:600;color:#111827;text-decoration:none;">${nurseryName}</a>
             <div style="font-size:13px;color:#4b5563;">New answer to: "${question.slice(0, 80)}${question.length > 80 ? '...' : ''}"</div>
           </td>
         </tr>`
-    }).join('')
+      })
+      .join('')
 
     sections.push(`
       <div style="margin:0 0 20px 0;">
@@ -600,9 +609,10 @@ export function renderEnhancedWeeklyDigestEmail({
 
   const html = shell({
     title: subject,
-    preheader: totalUpdates > 0
-      ? `New nurseries, Ofsted changes and reviews near ${postcode || 'you'}.`
-      : `Weekly check-in from NurseryMatch.`,
+    preheader:
+      totalUpdates > 0
+        ? `New nurseries, Ofsted changes and reviews near ${postcode || 'you'}.`
+        : `Weekly check-in from NurseryMatch.`,
     bodyHtml: `
       <p style="margin:0 0 12px 0;">${greeting}</p>
       <p style="margin:0 0 16px 0;">Here is your weekly digest of nursery updates.</p>
@@ -624,7 +634,9 @@ export function renderEnhancedWeeklyDigestEmail({
   if (ofstedChanges.length > 0) {
     textLines.push('## Ofsted rating changes')
     ofstedChanges.slice(0, 5).forEach((c) => {
-      textLines.push(`- ${c.name || 'Nursery'}: ${c.previous_grade || '?'} -> ${c.new_grade || '?'}`)
+      textLines.push(
+        `- ${c.name || 'Nursery'}: ${c.previous_grade || '?'} -> ${c.new_grade || '?'}`
+      )
     })
     textLines.push('')
   }
@@ -636,7 +648,9 @@ export function renderEnhancedWeeklyDigestEmail({
     textLines.push('')
   }
   if (newReviewCount > 0) {
-    textLines.push(`## ${newReviewCount} new review${newReviewCount === 1 ? '' : 's'} on shortlisted nurseries`)
+    textLines.push(
+      `## ${newReviewCount} new review${newReviewCount === 1 ? '' : 's'} on shortlisted nurseries`
+    )
     textLines.push('')
   }
   if (!hasContent) {
@@ -644,7 +658,9 @@ export function renderEnhancedWeeklyDigestEmail({
     textLines.push('')
   }
 
-  textLines.push(`Search nurseries: ${FRONTEND_URL}/search?postcode=${encodeURIComponent(postcode || '')}`)
+  textLines.push(
+    `Search nurseries: ${FRONTEND_URL}/search?postcode=${encodeURIComponent(postcode || '')}`
+  )
   textLines.push('')
   textLines.push(`Manage preferences: ${UNSUBSCRIBE_URL}`)
 
@@ -714,7 +730,12 @@ export function renderProviderWelcomeEmail({ providerName, nurseryName } = {}) {
 
 // ---------- 12. Provider payment confirmation ----------
 
-export function renderProviderPaymentConfirmationEmail({ providerName, tier, amount, nextBillingDate } = {}) {
+export function renderProviderPaymentConfirmationEmail({
+  providerName,
+  tier,
+  amount,
+  nextBillingDate,
+} = {}) {
   const greeting = providerName ? `Hi ${escapeHtml(providerName)},` : 'Hi,'
   const safeTier = escapeHtml(tier || 'Pro')
   const safeAmount = escapeHtml(amount || '£0')

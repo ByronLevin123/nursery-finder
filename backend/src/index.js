@@ -15,7 +15,10 @@ if (process.env.NODE_ENV === 'production') {
   }
   const missingPayment = REQUIRED_PAYMENT_VARS.filter((v) => !process.env[v])
   if (missingPayment.length) {
-    logger.warn({ missing: missingPayment }, 'Payment environment variables not set — billing features will be unavailable')
+    logger.warn(
+      { missing: missingPayment },
+      'Payment environment variables not set — billing features will be unavailable'
+    )
   }
   const missingRecommended = RECOMMENDED_VARS.filter((v) => !process.env[v])
   if (missingRecommended.length) {

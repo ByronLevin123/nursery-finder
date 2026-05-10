@@ -7,10 +7,34 @@ import { describe, it, expect, vi, beforeAll } from 'vitest'
 const store = {
   user_profiles: [],
   nurseries: [
-    { urn: 'EY100', name: 'Sunshine Nursery', registration_status: 'Active', town: 'Camden', location: true },
-    { urn: 'EY101', name: 'Rainbow Nursery', registration_status: 'Active', town: 'Camden', location: true },
-    { urn: 'EY102', name: 'Star Nursery', registration_status: 'Active', town: 'Islington', location: true },
-    { urn: 'EY103', name: 'Closed Nursery', registration_status: 'Inactive', town: 'Camden', location: true },
+    {
+      urn: 'EY100',
+      name: 'Sunshine Nursery',
+      registration_status: 'Active',
+      town: 'Camden',
+      location: true,
+    },
+    {
+      urn: 'EY101',
+      name: 'Rainbow Nursery',
+      registration_status: 'Active',
+      town: 'Camden',
+      location: true,
+    },
+    {
+      urn: 'EY102',
+      name: 'Star Nursery',
+      registration_status: 'Active',
+      town: 'Islington',
+      location: true,
+    },
+    {
+      urn: 'EY103',
+      name: 'Closed Nursery',
+      registration_status: 'Inactive',
+      town: 'Camden',
+      location: true,
+    },
   ],
   postcode_areas: [
     { postcode_district: 'NW1', nursery_count_total: 25 },
@@ -40,16 +64,41 @@ function makeQueryBuilder(table) {
   }
 
   const builder = {
-    select() { return builder },
-    eq(col, val) { state.filters.push([col, 'eq', val]); return builder },
-    gt(col, val) { state.filters.push([col, 'gt', val]); return builder },
-    not(col, _is, _null) { state.filters.push([col, 'not_is', null]); return builder },
-    order() { return builder },
-    range(from, to) { state.rangeFrom = from; state.rangeTo = to; return builder },
-    limit() { return builder },
-    single() { return builder._resolve(true, false) },
-    maybeSingle() { return builder._resolve(true, true) },
-    then(resolve, reject) { return builder._resolve(false, false).then(resolve, reject) },
+    select() {
+      return builder
+    },
+    eq(col, val) {
+      state.filters.push([col, 'eq', val])
+      return builder
+    },
+    gt(col, val) {
+      state.filters.push([col, 'gt', val])
+      return builder
+    },
+    not(col, _is, _null) {
+      state.filters.push([col, 'not_is', null])
+      return builder
+    },
+    order() {
+      return builder
+    },
+    range(from, to) {
+      state.rangeFrom = from
+      state.rangeTo = to
+      return builder
+    },
+    limit() {
+      return builder
+    },
+    single() {
+      return builder._resolve(true, false)
+    },
+    maybeSingle() {
+      return builder._resolve(true, true)
+    },
+    then(resolve, reject) {
+      return builder._resolve(false, false).then(resolve, reject)
+    },
     async _resolve(single, maybe) {
       const source = store[table] || []
       let rows = applyFilters(source)

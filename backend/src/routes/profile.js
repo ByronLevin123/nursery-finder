@@ -140,18 +140,27 @@ router.get('/export', requireAuth, async (req, res, next) => {
     const userId = req.user.id
 
     // Gather all user data in parallel
-    const [profileRes, claimsRes, reviewsRes, searchesRes, enquiriesRes, visitsRes, messagesRes, notificationsRes, notifPrefsRes] =
-      await Promise.all([
-        db.from('user_profiles').select('*').eq('id', userId).maybeSingle(),
-        db.from('nursery_claims').select('*').eq('user_id', userId),
-        db.from('nursery_reviews').select('*').eq('user_id', userId),
-        db.from('saved_searches').select('*').eq('user_id', userId),
-        db.from('enquiries').select('*').eq('user_id', userId),
-        db.from('visit_bookings').select('*').eq('user_id', userId),
-        db.from('messages').select('*').eq('sender_id', userId),
-        db.from('notifications').select('*').eq('user_id', userId),
-        db.from('notification_preferences').select('*').eq('user_id', userId).maybeSingle(),
-      ])
+    const [
+      profileRes,
+      claimsRes,
+      reviewsRes,
+      searchesRes,
+      enquiriesRes,
+      visitsRes,
+      messagesRes,
+      notificationsRes,
+      notifPrefsRes,
+    ] = await Promise.all([
+      db.from('user_profiles').select('*').eq('id', userId).maybeSingle(),
+      db.from('nursery_claims').select('*').eq('user_id', userId),
+      db.from('nursery_reviews').select('*').eq('user_id', userId),
+      db.from('saved_searches').select('*').eq('user_id', userId),
+      db.from('enquiries').select('*').eq('user_id', userId),
+      db.from('visit_bookings').select('*').eq('user_id', userId),
+      db.from('messages').select('*').eq('sender_id', userId),
+      db.from('notifications').select('*').eq('user_id', userId),
+      db.from('notification_preferences').select('*').eq('user_id', userId).maybeSingle(),
+    ])
 
     const exportData = {
       exported_at: new Date().toISOString(),

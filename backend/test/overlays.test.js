@@ -32,7 +32,7 @@ const store = {
       phase: 'Secondary',
       postcode: 'SW1A 1AB',
       lat: 51.502,
-      lng: -0.1420,
+      lng: -0.142,
       ofsted_grade: '2',
       last_inspection_date: '2023-06-15',
     },
@@ -61,21 +61,62 @@ function makeQueryBuilder(table) {
   }
 
   const builder = {
-    select() { return builder },
-    insert(row) { state.op = 'insert'; state.insertRow = row; return builder },
-    update(row) { state.op = 'update'; state.updateRow = row; return builder },
-    delete() { state.op = 'delete'; return builder },
-    eq(col, val) { state.filters.push([col, 'eq', val]); return builder },
-    gte(col, val) { state.filters.push([col, 'gte', val]); return builder },
-    lte(col, val) { state.filters.push([col, 'lte', val]); return builder },
-    not(col, _is, _null) { state.filters.push([col, 'not_is', null]); return builder },
-    in(col, vals) { state.filters.push([col, 'in', vals]); return builder },
-    order() { return builder },
-    range() { return builder },
-    limit(n) { state.limitN = n; return builder },
-    single() { return builder._resolve(true, false) },
-    maybeSingle() { return builder._resolve(true, true) },
-    then(resolve, reject) { return builder._resolve(false, false).then(resolve, reject) },
+    select() {
+      return builder
+    },
+    insert(row) {
+      state.op = 'insert'
+      state.insertRow = row
+      return builder
+    },
+    update(row) {
+      state.op = 'update'
+      state.updateRow = row
+      return builder
+    },
+    delete() {
+      state.op = 'delete'
+      return builder
+    },
+    eq(col, val) {
+      state.filters.push([col, 'eq', val])
+      return builder
+    },
+    gte(col, val) {
+      state.filters.push([col, 'gte', val])
+      return builder
+    },
+    lte(col, val) {
+      state.filters.push([col, 'lte', val])
+      return builder
+    },
+    not(col, _is, _null) {
+      state.filters.push([col, 'not_is', null])
+      return builder
+    },
+    in(col, vals) {
+      state.filters.push([col, 'in', vals])
+      return builder
+    },
+    order() {
+      return builder
+    },
+    range() {
+      return builder
+    },
+    limit(n) {
+      state.limitN = n
+      return builder
+    },
+    single() {
+      return builder._resolve(true, false)
+    },
+    maybeSingle() {
+      return builder._resolve(true, true)
+    },
+    then(resolve, reject) {
+      return builder._resolve(false, false).then(resolve, reject)
+    },
     async _resolve(single, maybe) {
       if (state.op === 'insert' || state.op === 'update' || state.op === 'delete') {
         return { data: null, error: null }

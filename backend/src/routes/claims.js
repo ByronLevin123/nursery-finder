@@ -60,41 +60,47 @@ function validateClaimBody(body) {
 }
 
 // POST /api/v1/claims — submit a new claim
-router.post('/', requireAuth, requireVerifiedEmail, claimSubmissionLimiter, async (req, res, next) => {
-  try {
-    if (!db) return res.status(503).json({ error: 'Database not configured' })
-    const err = validateClaimBody(req.body)
-    if (err) return res.status(400).json({ error: err })
+router.post(
+  '/',
+  requireAuth,
+  requireVerifiedEmail,
+  claimSubmissionLimiter,
+  async (req, res, next) => {
+    try {
+      if (!db) return res.status(503).json({ error: 'Database not configured' })
+      const err = validateClaimBody(req.body)
+      if (err) return res.status(400).json({ error: err })
 
-    // Verify URN exists
-    const { data: nursery, error: nErr } = await db
-      .from('nurseries')
-      .select('urn, name')
-      .eq('urn', req.body.urn)
-      .maybeSingle()
-    if (nErr) throw nErr
-    if (!nursery) return res.status(404).json({ error: 'Nursery not found' })
+      // Verify URN exists
+      const { data: nursery, error: nErr } = await db
+        .from('nurseries')
+        .select('urn, name')
+        .eq('urn', req.body.urn)
+        .maybeSingle()
+      if (nErr) throw nErr
+      if (!nursery) return res.status(404).json({ error: 'Nursery not found' })
 
-    const row = {
-      urn: req.body.urn,
-      user_id: req.user.id,
-      claimer_name: req.body.claimer_name,
-      claimer_role: req.body.claimer_role || null,
-      claimer_email: req.body.claimer_email,
-      claimer_phone: req.body.claimer_phone || null,
-      evidence_notes: req.body.evidence_notes || null,
-      status: 'pending',
+      const row = {
+        urn: req.body.urn,
+        user_id: req.user.id,
+        claimer_name: req.body.claimer_name,
+        claimer_role: req.body.claimer_role || null,
+        claimer_email: req.body.claimer_email,
+        claimer_phone: req.body.claimer_phone || null,
+        evidence_notes: req.body.evidence_notes || null,
+        status: 'pending',
+      }
+
+      const { data, error } = await db.from('nursery_claims').insert(row).select().single()
+      if (error) throw error
+
+      logger.info({ userId: req.user.id, urn: row.urn, claimId: data.id }, 'claim submitted')
+      return res.status(201).json(data)
+    } catch (err) {
+      next(err)
     }
-
-    const { data, error } = await db.from('nursery_claims').insert(row).select().single()
-    if (error) throw error
-
-    logger.info({ userId: req.user.id, urn: row.urn, claimId: data.id }, 'claim submitted')
-    return res.status(201).json(data)
-  } catch (err) {
-    next(err)
   }
-})
+)
 
 // GET /api/v1/claims/mine — user's own claims
 router.get('/mine', requireAuth, async (req, res, next) => {
@@ -116,10 +122,7 @@ router.get('/mine', requireAuth, async (req, res, next) => {
 router.get('/', requireRole('admin'), async (req, res, next) => {
   try {
     if (!db) return res.status(503).json({ error: 'Database not configured' })
-    let q = db
-      .from('nursery_claims')
-      .select('*')
-      .order('created_at', { ascending: false })
+    let q = db.from('nursery_claims').select('*').order('created_at', { ascending: false })
     if (req.query.status) q = q.eq('status', req.query.status)
     const { data, error } = await q
     if (error) throw error

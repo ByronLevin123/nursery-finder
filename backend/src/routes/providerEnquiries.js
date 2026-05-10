@@ -37,10 +37,7 @@ router.get('/enquiries', requireAuth, async (req, res, next) => {
 
     // Get enquiries for these nurseries (with optional filters)
     const { status, nursery_id, search, from, to } = req.query
-    let query = db
-      .from('enquiries')
-      .select('*')
-      .in('nursery_id', nurseryIds)
+    let query = db.from('enquiries').select('*').in('nursery_id', nurseryIds)
 
     if (status) query = query.eq('status', status)
     if (nursery_id && nurseryIds.includes(nursery_id)) query = query.eq('nursery_id', nursery_id)

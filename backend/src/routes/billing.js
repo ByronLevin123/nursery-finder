@@ -56,7 +56,9 @@ router.post('/checkout', requireAuth, stripeGuard, async (req, res, next) => {
       return res.status(400).json({ error: 'tier is required' })
     }
     if (type && type !== 'provider') {
-      return res.status(400).json({ error: 'Only provider subscriptions are supported. Parents use everything free.' })
+      return res
+        .status(400)
+        .json({ error: 'Only provider subscriptions are supported. Parents use everything free.' })
     }
     if (!['pro', 'premium'].includes(tier)) {
       return res.status(400).json({ error: 'tier must be pro or premium' })

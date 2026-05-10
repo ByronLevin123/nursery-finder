@@ -29,7 +29,10 @@ async function checkDatabase() {
   if (!db) return { status: 'unconfigured', message: 'SUPABASE_URL/SERVICE_KEY not set' }
   try {
     const { count } = await withTimeout(
-      db.from('nurseries').select('*', { count: 'exact', head: true }).eq('registration_status', 'Active'),
+      db
+        .from('nurseries')
+        .select('*', { count: 'exact', head: true })
+        .eq('registration_status', 'Active'),
       'database'
     )
     const { count: geocoded } = await withTimeout(

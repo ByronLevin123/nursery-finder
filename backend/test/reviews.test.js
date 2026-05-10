@@ -219,7 +219,10 @@ describe('POST /api/v1/nurseries/:urn/reviews', () => {
   })
 
   it('accepts a valid review and strips ip_hash from the response', async () => {
-    const res = await request(app).post('/api/v1/nurseries/EY100/reviews').set('Authorization', `Bearer ${validToken}`).send(validReview)
+    const res = await request(app)
+      .post('/api/v1/nurseries/EY100/reviews')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send(validReview)
     expect(res.status).toBe(201)
     expect(res.body).toMatchObject({
       urn: 'EY100',
@@ -252,19 +255,31 @@ describe('POST /api/v1/nurseries/:urn/reviews', () => {
   })
 
   it('rejects a duplicate review for the same nursery from the same ip', async () => {
-    const first = await request(app).post('/api/v1/nurseries/EY103/reviews').set('Authorization', `Bearer ${validToken}`).send(validReview)
+    const first = await request(app)
+      .post('/api/v1/nurseries/EY103/reviews')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send(validReview)
     expect(first.status).toBe(201)
 
-    const dup = await request(app).post('/api/v1/nurseries/EY103/reviews').set('Authorization', `Bearer ${validToken}`).send(validReview)
+    const dup = await request(app)
+      .post('/api/v1/nurseries/EY103/reviews')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send(validReview)
     expect(dup.status).toBe(409)
   })
 
   it('rate limits a 4th review from the same ip in 24h', async () => {
     for (let i = 0; i < 3; i++) {
-      const res = await request(app).post(`/api/v1/nurseries/EY20${i}/reviews`).set('Authorization', `Bearer ${validToken}`).send(validReview)
+      const res = await request(app)
+        .post(`/api/v1/nurseries/EY20${i}/reviews`)
+        .set('Authorization', `Bearer ${validToken}`)
+        .send(validReview)
       expect(res.status).toBe(201)
     }
-    const fourth = await request(app).post('/api/v1/nurseries/EY299/reviews').set('Authorization', `Bearer ${validToken}`).send(validReview)
+    const fourth = await request(app)
+      .post('/api/v1/nurseries/EY299/reviews')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send(validReview)
     expect(fourth.status).toBe(429)
   })
 })

@@ -35,151 +35,157 @@ router.post(
   enquiryLimiter,
   verifyTurnstile,
   async (req, res, next) => {
-  try {
-    if (!db) return res.status(503).json({ error: 'Database not configured' })
+    try {
+      if (!db) return res.status(503).json({ error: 'Database not configured' })
 
-    const { nursery_ids, child_name, child_dob, preferred_start, session_preference, message } =
-      req.body
+      const { nursery_ids, child_name, child_dob, preferred_start, session_preference, message } =
+        req.body
 
-    if (!Array.isArray(nursery_ids) || nursery_ids.length === 0) {
-      return res.status(400).json({ error: 'nursery_ids must be a non-empty array' })
-    }
-    if (nursery_ids.length > 10) {
-      return res.status(400).json({ error: 'Maximum 10 nurseries per enquiry batch' })
-    }
+      if (!Array.isArray(nursery_ids) || nursery_ids.length === 0) {
+        return res.status(400).json({ error: 'nursery_ids must be a non-empty array' })
+      }
+      if (nursery_ids.length > 10) {
+        return res.status(400).json({ error: 'Maximum 10 nurseries per enquiry batch' })
+      }
 
-    // Fetch nurseries to verify they exist and get contact details
-    const { data: nurseries, error: nErr } = await db
-      .from('nurseries')
-      .select(
-        'id, urn, name, contact_email, email, claimed_by_user_id, nursery_claims(claimer_email)'
+      // Fetch nurseries to verify they exist and get contact details
+      const { data: nurseries, error: nErr } = await db
+        .from('nurseries')
+        .select(
+          'id, urn, name, contact_email, email, claimed_by_user_id, nursery_claims(claimer_email)'
+        )
+        .in('id', nursery_ids)
+      if (nErr) throw nErr
+
+      if (!nurseries || nurseries.length === 0) {
+        return res.status(404).json({ error: 'No matching nurseries found' })
+      }
+
+      const created = []
+      const queued = []
+      for (const nursery of nurseries) {
+        const isClaimed = !!nursery.claimed_by_user_id
+        const row = {
+          user_id: req.user.id,
+          nursery_id: nursery.id,
+          child_name: child_name || null,
+          child_dob: child_dob || null,
+          preferred_start: preferred_start || null,
+          session_preference: session_preference || null,
+          message: message || null,
+          status: isClaimed ? 'sent' : 'queued',
+          requires_admin_review: !isClaimed,
+        }
+
+        const { data: enquiry, error: insertErr } = await db
+          .from('enquiries')
+          .insert(row)
+          .select()
+          .single()
+
+        if (insertErr) {
+          logger.warn({ error: insertErr.message, nurseryId: nursery.id }, 'enquiry insert failed')
+          continue
+        }
+
+        const enriched = { ...enquiry, nursery_name: nursery.name, nursery_urn: nursery.urn }
+        created.push(enriched)
+
+        if (!isClaimed) {
+          queued.push(enriched)
+          // Notify admin users about the queued enquiry
+          try {
+            const { data: admins } = await db.from('user_profiles').select('id').eq('role', 'admin')
+            if (admins && admins.length > 0) {
+              const notifs = admins.map((a) => ({
+                user_id: a.id,
+                type: 'admin_enquiry_queued',
+                title: `Enquiry queued for unclaimed nursery`,
+                body: `A parent enquired about ${nursery.name} (URN ${nursery.urn}) which hasn't been claimed yet.`,
+                data: { enquiry_id: enquiry.id, nursery_id: nursery.id, nursery_urn: nursery.urn },
+              }))
+              await db.from('notifications').insert(notifs)
+            }
+          } catch (notifErr) {
+            logger.warn(
+              { err: notifErr.message, nurseryId: nursery.id },
+              'admin notification insert failed'
+            )
+          }
+          logger.info({ nurseryId: nursery.id }, 'enquiry queued for admin — nursery unclaimed')
+          continue
+        }
+
+        // Claimed nursery — email the provider
+        const claimerEmail =
+          Array.isArray(nursery.nursery_claims) && nursery.nursery_claims.length > 0
+            ? nursery.nursery_claims[0].claimer_email
+            : null
+        const contactEmail = claimerEmail || nursery.contact_email || nursery.email
+        if (contactEmail && isEmailAvailable()) {
+          try {
+            let childAgeMonths = null
+            if (child_dob) {
+              const dob = new Date(child_dob)
+              const now = new Date()
+              childAgeMonths =
+                (now.getFullYear() - dob.getFullYear()) * 12 + (now.getMonth() - dob.getMonth())
+              if (childAgeMonths < 0) childAgeMonths = null
+            }
+
+            const frontendUrl = process.env.FRONTEND_URL || 'https://nurserymatch.com'
+            const rendered = renderEnquiryNotificationEmail({
+              nurseryName: nursery.name,
+              parentName: req.user.email,
+              childName: child_name,
+              childAgeMonths,
+              preferredStart: preferred_start,
+              sessionPreference: session_preference,
+              message,
+              providerUrl: `${frontendUrl}/provider`,
+            })
+
+            await sendEmail({
+              to: contactEmail,
+              subject: rendered.subject,
+              html: rendered.html,
+              text: rendered.text,
+              replyTo: req.user.email,
+            })
+            logger.info({ nurseryId: nursery.id }, 'enquiry notification email sent')
+          } catch (emailErr) {
+            logger.warn({ err: emailErr.message, nurseryId: nursery.id }, 'enquiry email failed')
+          }
+        }
+      }
+
+      logger.info(
+        {
+          userId: req.user.id,
+          count: created.length,
+          queued: queued.length,
+          nurseries: nursery_ids.length,
+        },
+        'enquiries submitted'
       )
-      .in('id', nursery_ids)
-    if (nErr) throw nErr
 
-    if (!nurseries || nurseries.length === 0) {
-      return res.status(404).json({ error: 'No matching nurseries found' })
+      return res.status(201).json({
+        data: created,
+        meta: {
+          sent: created.length - queued.length,
+          queued: queued.length,
+          requested: nursery_ids.length,
+        },
+        message:
+          queued.length > 0
+            ? `${queued.length} ${queued.length === 1 ? "nursery hasn't" : "nurseries haven't"} joined yet — we've queued your ${queued.length === 1 ? 'enquiry' : 'enquiries'} and our team will follow up.`
+            : undefined,
+      })
+    } catch (err) {
+      next(err)
     }
-
-    const created = []
-    const queued = []
-    for (const nursery of nurseries) {
-      const isClaimed = !!nursery.claimed_by_user_id
-      const row = {
-        user_id: req.user.id,
-        nursery_id: nursery.id,
-        child_name: child_name || null,
-        child_dob: child_dob || null,
-        preferred_start: preferred_start || null,
-        session_preference: session_preference || null,
-        message: message || null,
-        status: isClaimed ? 'sent' : 'queued',
-        requires_admin_review: !isClaimed,
-      }
-
-      const { data: enquiry, error: insertErr } = await db
-        .from('enquiries')
-        .insert(row)
-        .select()
-        .single()
-
-      if (insertErr) {
-        logger.warn({ error: insertErr.message, nurseryId: nursery.id }, 'enquiry insert failed')
-        continue
-      }
-
-      const enriched = { ...enquiry, nursery_name: nursery.name, nursery_urn: nursery.urn }
-      created.push(enriched)
-
-      if (!isClaimed) {
-        queued.push(enriched)
-        // Notify admin users about the queued enquiry
-        try {
-          const { data: admins } = await db
-            .from('user_profiles')
-            .select('id')
-            .eq('role', 'admin')
-          if (admins && admins.length > 0) {
-            const notifs = admins.map((a) => ({
-              user_id: a.id,
-              type: 'admin_enquiry_queued',
-              title: `Enquiry queued for unclaimed nursery`,
-              body: `A parent enquired about ${nursery.name} (URN ${nursery.urn}) which hasn't been claimed yet.`,
-              data: { enquiry_id: enquiry.id, nursery_id: nursery.id, nursery_urn: nursery.urn },
-            }))
-            await db.from('notifications').insert(notifs)
-          }
-        } catch (notifErr) {
-          logger.warn({ err: notifErr.message, nurseryId: nursery.id }, 'admin notification insert failed')
-        }
-        logger.info({ nurseryId: nursery.id }, 'enquiry queued for admin — nursery unclaimed')
-        continue
-      }
-
-      // Claimed nursery — email the provider
-      const claimerEmail =
-        Array.isArray(nursery.nursery_claims) && nursery.nursery_claims.length > 0
-          ? nursery.nursery_claims[0].claimer_email
-          : null
-      const contactEmail = claimerEmail || nursery.contact_email || nursery.email
-      if (contactEmail && isEmailAvailable()) {
-        try {
-          let childAgeMonths = null
-          if (child_dob) {
-            const dob = new Date(child_dob)
-            const now = new Date()
-            childAgeMonths =
-              (now.getFullYear() - dob.getFullYear()) * 12 + (now.getMonth() - dob.getMonth())
-            if (childAgeMonths < 0) childAgeMonths = null
-          }
-
-          const frontendUrl = process.env.FRONTEND_URL || 'https://nurserymatch.com'
-          const rendered = renderEnquiryNotificationEmail({
-            nurseryName: nursery.name,
-            parentName: req.user.email,
-            childName: child_name,
-            childAgeMonths,
-            preferredStart: preferred_start,
-            sessionPreference: session_preference,
-            message,
-            providerUrl: `${frontendUrl}/provider`,
-          })
-
-          await sendEmail({
-            to: contactEmail,
-            subject: rendered.subject,
-            html: rendered.html,
-            text: rendered.text,
-            replyTo: req.user.email,
-          })
-          logger.info({ nurseryId: nursery.id }, 'enquiry notification email sent')
-        } catch (emailErr) {
-          logger.warn({ err: emailErr.message, nurseryId: nursery.id }, 'enquiry email failed')
-        }
-      }
-    }
-
-    logger.info(
-      { userId: req.user.id, count: created.length, queued: queued.length, nurseries: nursery_ids.length },
-      'enquiries submitted'
-    )
-
-    return res.status(201).json({
-      data: created,
-      meta: {
-        sent: created.length - queued.length,
-        queued: queued.length,
-        requested: nursery_ids.length,
-      },
-      message:
-        queued.length > 0
-          ? `${queued.length} ${queued.length === 1 ? 'nursery hasn\'t' : 'nurseries haven\'t'} joined yet — we've queued your ${queued.length === 1 ? 'enquiry' : 'enquiries'} and our team will follow up.`
-          : undefined,
-    })
-  } catch (err) {
-    next(err)
   }
-})
+)
 
 // GET /api/v1/enquiries/mine — list user's enquiries with nursery info
 router.get('/mine', requireAuth, async (req, res, next) => {

@@ -177,7 +177,10 @@ export async function recomputeAllDimensionScores() {
 
     const [areaResult, avResult, staffResult] = await Promise.all([
       districts.length > 0
-        ? db.from('postcode_areas').select('postcode_district, avg_sale_price_all').in('postcode_district', districts)
+        ? db
+            .from('postcode_areas')
+            .select('postcode_district, avg_sale_price_all')
+            .in('postcode_district', districts)
         : { data: [] },
       db.from('nursery_availability').select('*').in('nursery_id', ids),
       db.from('nursery_staff').select('*').in('nursery_id', ids),

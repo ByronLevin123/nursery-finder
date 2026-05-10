@@ -42,7 +42,8 @@ async function findPlaceId(nursery) {
     headers: {
       'Content-Type': 'application/json',
       'X-Goog-Api-Key': API_KEY,
-      'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.photos',
+      'X-Goog-FieldMask':
+        'places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.photos',
     },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(15000),
@@ -90,7 +91,10 @@ async function getPhotoUrl(photoName, maxWidth = 800) {
  * @param {boolean} options.photosEnabled - Also fetch and store photos (default true)
  * @returns {{ matched: number, updated: number, failed: number, skipped: number, photos: number }}
  */
-export async function syncGooglePlacesData(limit = 100, { staleDays = 90, photosEnabled = true } = {}) {
+export async function syncGooglePlacesData(
+  limit = 100,
+  { staleDays = 90, photosEnabled = true } = {}
+) {
   if (!API_KEY) {
     throw new Error('GOOGLE_PLACES_API_KEY not set')
   }
@@ -139,10 +143,7 @@ export async function syncGooglePlacesData(limit = 100, { staleDays = 90, photos
         skipped++
         logger.debug({ urn: nursery.urn, name: nursery.name }, 'google-places: no match found')
         // Mark as attempted so we don't retry endlessly
-        await db
-          .from('nurseries')
-          .update({ google_place_id: 'NOT_FOUND' })
-          .eq('id', nursery.id)
+        await db.from('nurseries').update({ google_place_id: 'NOT_FOUND' }).eq('id', nursery.id)
         continue
       }
 
@@ -185,25 +186,29 @@ export async function syncGooglePlacesData(limit = 100, { staleDays = 90, photos
               .limit(1)
 
             if (!existingPhotos || existingPhotos.length === 0) {
-              const { error: photoErr } = await db
-                .from('nursery_photos')
-                .insert({
-                  nursery_urn: nursery.urn,
-                  storage_path: `google/${placeId}/0.jpg`,
-                  public_url: photoUrl,
-                  display_order: 0,
-                  caption: `Photo of ${nursery.name}`,
-                })
+              const { error: photoErr } = await db.from('nursery_photos').insert({
+                nursery_urn: nursery.urn,
+                storage_path: `google/${placeId}/0.jpg`,
+                public_url: photoUrl,
+                display_order: 0,
+                caption: `Photo of ${nursery.name}`,
+              })
 
               if (!photoErr) {
                 photosAdded++
               } else {
-                logger.warn({ urn: nursery.urn, err: photoErr.message }, 'google-places: photo insert failed')
+                logger.warn(
+                  { urn: nursery.urn, err: photoErr.message },
+                  'google-places: photo insert failed'
+                )
               }
             }
           }
         } catch (photoErr) {
-          logger.warn({ urn: nursery.urn, err: photoErr.message }, 'google-places: photo fetch failed')
+          logger.warn(
+            { urn: nursery.urn, err: photoErr.message },
+            'google-places: photo fetch failed'
+          )
         }
       }
 

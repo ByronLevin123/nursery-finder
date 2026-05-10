@@ -54,7 +54,8 @@ router.post('/:id/impression', async (req, res, next) => {
     if (!db) return res.status(503).json({ error: 'Database not configured' })
 
     const { id } = req.params
-    await db.rpc('increment_promotion_counter', { promo_id: id, counter_name: 'impression_count' })
+    await db
+      .rpc('increment_promotion_counter', { promo_id: id, counter_name: 'impression_count' })
       .catch(() => {
         // Fallback: direct update if RPC doesn't exist
         return db
@@ -92,11 +93,7 @@ router.post('/:id/click', async (req, res, next) => {
 
     const { id } = req.params
 
-    const { data } = await db
-      .from('promotions')
-      .select('click_count')
-      .eq('id', id)
-      .maybeSingle()
+    const { data } = await db.from('promotions').select('click_count').eq('id', id).maybeSingle()
 
     if (data) {
       const { error } = await db
@@ -157,9 +154,18 @@ adminPromotionsRouter.post('/', requireRole('admin'), async (req, res, next) => 
     if (!db) return res.status(503).json({ error: 'Database not configured' })
 
     const {
-      title, description, image_url, link_url, category,
-      lat, lng, postcode_district, radius_km,
-      start_date, end_date, active,
+      title,
+      description,
+      image_url,
+      link_url,
+      category,
+      lat,
+      lng,
+      postcode_district,
+      radius_km,
+      start_date,
+      end_date,
+      active,
     } = req.body
 
     if (!title || !link_url || !category) {
@@ -167,11 +173,22 @@ adminPromotionsRouter.post('/', requireRole('admin'), async (req, res, next) => 
     }
 
     const validCategories = [
-      'swimming', 'music', 'tutoring', 'baby_gear', 'dance',
-      'sports', 'arts', 'language', 'childcare', 'health', 'other',
+      'swimming',
+      'music',
+      'tutoring',
+      'baby_gear',
+      'dance',
+      'sports',
+      'arts',
+      'language',
+      'childcare',
+      'health',
+      'other',
     ]
     if (!validCategories.includes(category)) {
-      return res.status(400).json({ error: `Invalid category. Must be one of: ${validCategories.join(', ')}` })
+      return res
+        .status(400)
+        .json({ error: `Invalid category. Must be one of: ${validCategories.join(', ')}` })
     }
 
     const { data, error } = await db

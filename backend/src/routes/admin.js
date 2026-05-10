@@ -272,10 +272,7 @@ router.get('/claims', async (req, res, next) => {
     const urns = [...new Set((data || []).map((r) => r.urn).filter(Boolean))]
     let nurseryNames = {}
     if (urns.length > 0) {
-      const { data: nurseries } = await db
-        .from('nurseries')
-        .select('urn, name')
-        .in('urn', urns)
+      const { data: nurseries } = await db.from('nurseries').select('urn, name').in('urn', urns)
       if (nurseries) {
         nurseryNames = Object.fromEntries(nurseries.map((n) => [n.urn, n.name]))
       }
@@ -401,9 +398,12 @@ router.get('/reviews', async (req, res, next) => {
       logger.warn({ err: error.message }, 'reviews join failed, falling back to simple query')
       let fallbackQuery = db
         .from('nursery_reviews')
-        .select('id, urn, author_display_name, rating, title, body, status, admin_note, moderated_at, created_at', {
-          count: 'exact',
-        })
+        .select(
+          'id, urn, author_display_name, rating, title, body, status, admin_note, moderated_at, created_at',
+          {
+            count: 'exact',
+          }
+        )
       if (status) {
         fallbackQuery = fallbackQuery.eq('status', status)
       }
@@ -595,10 +595,9 @@ router.get('/bookings', async (req, res, next) => {
 
     let query = db
       .from('visit_bookings')
-      .select(
-        'id, user_id, nursery_id, slot_date, slot_time, status, notes, created_at',
-        { count: 'exact' }
-      )
+      .select('id, user_id, nursery_id, slot_date, slot_time, status, notes, created_at', {
+        count: 'exact',
+      })
 
     if (status) query = query.eq('status', status)
     if (nursery_id) query = query.eq('nursery_id', nursery_id)
@@ -674,10 +673,7 @@ router.get('/subscriptions', async (req, res, next) => {
 
     const { data, error, count } = await db
       .from('provider_subscriptions')
-      .select(
-        'id, user_id, tier, status, current_period_end, created_at',
-        { count: 'exact' }
-      )
+      .select('id, user_id, tier, status, current_period_end, created_at', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
@@ -804,14 +800,38 @@ router.get('/stats/growth', async (req, res, next) => {
       claimsWeek,
       claimsMonth,
     ] = await Promise.all([
-      db.from('nurseries').select('id', { count: 'exact', head: true }).gte('created_at', oneWeekAgo),
-      db.from('nurseries').select('id', { count: 'exact', head: true }).gte('created_at', oneMonthAgo),
-      db.from('user_profiles').select('id', { count: 'exact', head: true }).gte('created_at', oneWeekAgo),
-      db.from('user_profiles').select('id', { count: 'exact', head: true }).gte('created_at', oneMonthAgo),
-      db.from('nursery_reviews').select('id', { count: 'exact', head: true }).gte('created_at', oneWeekAgo),
-      db.from('nursery_reviews').select('id', { count: 'exact', head: true }).gte('created_at', oneMonthAgo),
-      db.from('nursery_claims').select('id', { count: 'exact', head: true }).gte('created_at', oneWeekAgo),
-      db.from('nursery_claims').select('id', { count: 'exact', head: true }).gte('created_at', oneMonthAgo),
+      db
+        .from('nurseries')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', oneWeekAgo),
+      db
+        .from('nurseries')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', oneMonthAgo),
+      db
+        .from('user_profiles')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', oneWeekAgo),
+      db
+        .from('user_profiles')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', oneMonthAgo),
+      db
+        .from('nursery_reviews')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', oneWeekAgo),
+      db
+        .from('nursery_reviews')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', oneMonthAgo),
+      db
+        .from('nursery_claims')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', oneWeekAgo),
+      db
+        .from('nursery_claims')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', oneMonthAgo),
     ])
 
     const growth = {
@@ -848,16 +868,20 @@ router.get('/stats/data-quality', async (req, res, next) => {
   try {
     if (!db) return res.status(503).json({ error: 'Database not configured' })
 
-    const [
-      noLocation,
-      noGrade,
-      staleInspection,
-      pendingReviews,
-    ] = await Promise.all([
+    const [noLocation, noGrade, staleInspection, pendingReviews] = await Promise.all([
       db.from('nurseries').select('id', { count: 'exact', head: true }).is('lat', null),
-      db.from('nurseries').select('id', { count: 'exact', head: true }).is('ofsted_overall_grade', null),
-      db.from('nurseries').select('id', { count: 'exact', head: true }).eq('inspection_date_warning', true),
-      db.from('nursery_reviews').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+      db
+        .from('nurseries')
+        .select('id', { count: 'exact', head: true })
+        .is('ofsted_overall_grade', null),
+      db
+        .from('nurseries')
+        .select('id', { count: 'exact', head: true })
+        .eq('inspection_date_warning', true),
+      db
+        .from('nursery_reviews')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending'),
     ])
 
     const quality = {
@@ -934,32 +958,68 @@ router.get('/analytics', async (req, res, next) => {
       db.from('user_profiles').select('id', { count: 'exact', head: true }),
       db.from('nursery_reviews').select('id', { count: 'exact', head: true }),
       db.from('nursery_claims').select('id', { count: 'exact', head: true }),
-      db.from('nursery_claims').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-      db.from('nursery_claims').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
-      db.from('nursery_claims').select('id', { count: 'exact', head: true }).eq('status', 'rejected'),
+      db
+        .from('nursery_claims')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending'),
+      db
+        .from('nursery_claims')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'approved'),
+      db
+        .from('nursery_claims')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'rejected'),
       db.from('user_profiles').select('id', { count: 'exact', head: true }).eq('role', 'provider'),
 
       // Growth — users
-      db.from('user_profiles').select('id', { count: 'exact', head: true }).gte('created_at', oneWeekAgo),
-      db.from('user_profiles').select('id', { count: 'exact', head: true }).gte('created_at', oneMonthAgo),
+      db
+        .from('user_profiles')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', oneWeekAgo),
+      db
+        .from('user_profiles')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', oneMonthAgo),
 
       // Growth — reviews
-      db.from('nursery_reviews').select('id', { count: 'exact', head: true }).gte('created_at', oneWeekAgo),
-      db.from('nursery_reviews').select('id', { count: 'exact', head: true }).gte('created_at', oneMonthAgo),
+      db
+        .from('nursery_reviews')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', oneWeekAgo),
+      db
+        .from('nursery_reviews')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', oneMonthAgo),
 
       // Growth — claims
-      db.from('nursery_claims').select('id', { count: 'exact', head: true }).gte('created_at', oneWeekAgo),
-      db.from('nursery_claims').select('id', { count: 'exact', head: true }).gte('created_at', oneMonthAgo),
+      db
+        .from('nursery_claims')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', oneWeekAgo),
+      db
+        .from('nursery_claims')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', oneMonthAgo),
 
       // Data quality — nurseries without geocoding (lat/lng is null)
       db.from('nurseries').select('id', { count: 'exact', head: true }).is('lat', null),
       // Stale inspections (>4 years) — use the boolean flag
-      db.from('nurseries').select('id', { count: 'exact', head: true }).eq('inspection_date_warning', true),
+      db
+        .from('nurseries')
+        .select('id', { count: 'exact', head: true })
+        .eq('inspection_date_warning', true),
       // Enforcement notices
-      db.from('nurseries').select('id', { count: 'exact', head: true }).eq('enforcement_notice', true),
+      db
+        .from('nurseries')
+        .select('id', { count: 'exact', head: true })
+        .eq('enforcement_notice', true),
 
       // Provider stats — paid (have active subscription)
-      db.from('provider_subscriptions').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+      db
+        .from('provider_subscriptions')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'active'),
       // Free providers — providers without active subscription (we count provider role users)
       db.from('user_profiles').select('id', { count: 'exact', head: true }).eq('role', 'provider'),
       // Photos uploaded
@@ -968,8 +1028,14 @@ router.get('/analytics', async (req, res, next) => {
       db.from('nursery_fees').select('id', { count: 'exact', head: true }),
 
       // Email stats
-      db.from('email_log').select('id', { count: 'exact', head: true }).gte('created_at', oneWeekAgo),
-      db.from('email_log').select('id', { count: 'exact', head: true }).gte('created_at', oneMonthAgo),
+      db
+        .from('email_log')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', oneWeekAgo),
+      db
+        .from('email_log')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', oneMonthAgo),
       // Top email templates this month
       db.from('email_log').select('template').gte('created_at', oneMonthAgo).limit(500),
     ])
@@ -1153,10 +1219,19 @@ router.get('/reports', async (req, res, next) => {
 
     // Live claim pipeline counts
     const [pendingClaims, approvedClaims, payingProviders] = await Promise.all([
-      db.from('nursery_claims').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-      db.from('nursery_claims').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
-      db.from('provider_subscriptions').select('id', { count: 'exact', head: true })
-        .neq('tier', 'free').eq('status', 'active'),
+      db
+        .from('nursery_claims')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending'),
+      db
+        .from('nursery_claims')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'approved'),
+      db
+        .from('provider_subscriptions')
+        .select('id', { count: 'exact', head: true })
+        .neq('tier', 'free')
+        .eq('status', 'active'),
     ])
 
     res.json({
@@ -1195,22 +1270,35 @@ router.get('/reports/export', async (req, res, next) => {
 
     if (error) throw error
 
-    const headers = ['date', 'total_users', 'new_users', 'total_providers', 'total_nurseries', 'claimed_nurseries', 'active_subscriptions', 'mrr_gbp', 'total_enquiries', 'new_enquiries']
+    const headers = [
+      'date',
+      'total_users',
+      'new_users',
+      'total_providers',
+      'total_nurseries',
+      'claimed_nurseries',
+      'active_subscriptions',
+      'mrr_gbp',
+      'total_enquiries',
+      'new_enquiries',
+    ]
     const rows = [headers.join(',')]
 
     for (const r of reports || []) {
-      rows.push([
-        r.report_date,
-        r.total_users || 0,
-        r.new_users || 0,
-        r.total_providers || 0,
-        r.total_nurseries || 0,
-        r.claimed_nurseries || 0,
-        r.active_subscriptions || 0,
-        r.mrr_gbp || 0,
-        r.total_enquiries || 0,
-        r.new_enquiries || 0,
-      ].join(','))
+      rows.push(
+        [
+          r.report_date,
+          r.total_users || 0,
+          r.new_users || 0,
+          r.total_providers || 0,
+          r.total_nurseries || 0,
+          r.claimed_nurseries || 0,
+          r.active_subscriptions || 0,
+          r.mrr_gbp || 0,
+          r.total_enquiries || 0,
+          r.new_enquiries || 0,
+        ].join(',')
+      )
     }
 
     res.setHeader('Content-Type', 'text/csv')
@@ -1229,34 +1317,68 @@ router.post('/reports/snapshot', async (req, res, next) => {
   try {
     if (!db) return res.status(503).json({ error: 'Database not configured' })
 
-    const [users, newUsers, providers, nurseries, claimed, activeSubs, enquiries, newEnquiries] = await Promise.all([
-      db.from('user_profiles').select('id', { count: 'exact', head: true }),
-      db.from('user_profiles').select('id', { count: 'exact', head: true }).gte('created_at', new Date(Date.now() - 86400000).toISOString()),
-      db.from('user_profiles').select('id', { count: 'exact', head: true }).eq('role', 'provider'),
-      db.from('nurseries').select('id', { count: 'exact', head: true }),
-      db.from('nurseries').select('id', { count: 'exact', head: true }).not('claimed_by_user_id', 'is', null),
-      db.from('provider_subscriptions').select('id', { count: 'exact', head: true }).eq('status', 'active').neq('tier', 'free'),
-      db.from('enquiries').select('id', { count: 'exact', head: true }),
-      db.from('enquiries').select('id', { count: 'exact', head: true }).gte('sent_at', new Date(Date.now() - 86400000).toISOString()),
-    ])
+    const [users, newUsers, providers, nurseries, claimed, activeSubs, enquiries, newEnquiries] =
+      await Promise.all([
+        db.from('user_profiles').select('id', { count: 'exact', head: true }),
+        db
+          .from('user_profiles')
+          .select('id', { count: 'exact', head: true })
+          .gte('created_at', new Date(Date.now() - 86400000).toISOString()),
+        db
+          .from('user_profiles')
+          .select('id', { count: 'exact', head: true })
+          .eq('role', 'provider'),
+        db.from('nurseries').select('id', { count: 'exact', head: true }),
+        db
+          .from('nurseries')
+          .select('id', { count: 'exact', head: true })
+          .not('claimed_by_user_id', 'is', null),
+        db
+          .from('provider_subscriptions')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'active')
+          .neq('tier', 'free'),
+        db.from('enquiries').select('id', { count: 'exact', head: true }),
+        db
+          .from('enquiries')
+          .select('id', { count: 'exact', head: true })
+          .gte('sent_at', new Date(Date.now() - 86400000).toISOString()),
+      ])
 
-    const proCount = (await db.from('provider_subscriptions').select('id', { count: 'exact', head: true }).eq('tier', 'pro').eq('status', 'active')).count ?? 0
-    const premiumCount = (await db.from('provider_subscriptions').select('id', { count: 'exact', head: true }).eq('tier', 'premium').eq('status', 'active')).count ?? 0
+    const proCount =
+      (
+        await db
+          .from('provider_subscriptions')
+          .select('id', { count: 'exact', head: true })
+          .eq('tier', 'pro')
+          .eq('status', 'active')
+      ).count ?? 0
+    const premiumCount =
+      (
+        await db
+          .from('provider_subscriptions')
+          .select('id', { count: 'exact', head: true })
+          .eq('tier', 'premium')
+          .eq('status', 'active')
+      ).count ?? 0
     const mrr = proCount * 29 + premiumCount * 79
 
     const today = new Date().toISOString().split('T')[0]
-    const { error } = await db.from('admin_reports_cache').upsert({
-      report_date: today,
-      total_users: users.count ?? 0,
-      new_users: newUsers.count ?? 0,
-      total_providers: providers.count ?? 0,
-      total_nurseries: nurseries.count ?? 0,
-      claimed_nurseries: claimed.count ?? 0,
-      active_subscriptions: activeSubs.count ?? 0,
-      mrr_gbp: mrr,
-      total_enquiries: enquiries.count ?? 0,
-      new_enquiries: newEnquiries.count ?? 0,
-    }, { onConflict: 'report_date' })
+    const { error } = await db.from('admin_reports_cache').upsert(
+      {
+        report_date: today,
+        total_users: users.count ?? 0,
+        new_users: newUsers.count ?? 0,
+        total_providers: providers.count ?? 0,
+        total_nurseries: nurseries.count ?? 0,
+        claimed_nurseries: claimed.count ?? 0,
+        active_subscriptions: activeSubs.count ?? 0,
+        mrr_gbp: mrr,
+        total_enquiries: enquiries.count ?? 0,
+        new_enquiries: newEnquiries.count ?? 0,
+      },
+      { onConflict: 'report_date' }
+    )
 
     if (error) throw error
     logger.info({ date: today }, 'admin reports snapshot taken')

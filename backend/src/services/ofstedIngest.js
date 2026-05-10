@@ -149,7 +149,12 @@ export async function ingestOfstedRegister() {
                 new_grade: record.ofsted_overall_grade,
               })
               logger.info(
-                { urn: record.urn, name: record.name, previousGrade, newGrade: record.ofsted_overall_grade },
+                {
+                  urn: record.urn,
+                  name: record.name,
+                  previousGrade,
+                  newGrade: record.ofsted_overall_grade,
+                },
                 'ofsted: grade change detected'
               )
             }
@@ -166,7 +171,10 @@ export async function ingestOfstedRegister() {
         }
       }
     } catch (detectErr) {
-      logger.warn({ err: detectErr?.message, batchStart: i }, 'ofsted: grade change detection failed, continuing with upsert')
+      logger.warn(
+        { err: detectErr?.message, batchStart: i },
+        'ofsted: grade change detection failed, continuing with upsert'
+      )
     }
 
     const { error } = await db.from('nurseries').upsert(batch, {
@@ -187,6 +195,9 @@ export async function ingestOfstedRegister() {
   }
 
   const duration = Date.now() - startTime
-  logger.info({ imported, skipped, errors, gradeChanges, duration_ms: duration }, 'ofsted: ingest complete')
+  logger.info(
+    { imported, skipped, errors, gradeChanges, duration_ms: duration },
+    'ofsted: ingest complete'
+  )
   return { imported, skipped, errors, gradeChanges, duration_ms: duration }
 }

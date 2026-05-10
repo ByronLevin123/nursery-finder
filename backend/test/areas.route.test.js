@@ -111,23 +111,68 @@ function makeQueryBuilder(table) {
   }
 
   const builder = {
-    select() { return builder },
-    insert(row) { state.op = 'insert'; return builder },
-    update(row) { state.op = 'update'; return builder },
-    delete() { state.op = 'delete'; return builder },
-    eq(col, val) { state.filters.push([col, 'eq', val]); return builder },
-    gte(col, val) { state.filters.push([col, 'gte', val]); return builder },
-    gt(col, val) { state.filters.push([col, 'gt', val]); return builder },
-    lte(col, val) { state.filters.push([col, 'lte', val]); return builder },
-    like(col, val) { state.filters.push([col, 'like', val]); return builder },
-    not(col, _is, _null) { state.filters.push([col, 'not_is', null]); return builder },
-    in(col, vals) { state.filters.push([col, 'in', vals]); return builder },
-    order() { return builder },
-    range() { return builder },
-    limit(n) { state.limitN = n; return builder },
-    single() { return builder._resolve(true, false) },
-    maybeSingle() { return builder._resolve(true, true) },
-    then(resolve, reject) { return builder._resolve(false, false).then(resolve, reject) },
+    select() {
+      return builder
+    },
+    insert(row) {
+      state.op = 'insert'
+      return builder
+    },
+    update(row) {
+      state.op = 'update'
+      return builder
+    },
+    delete() {
+      state.op = 'delete'
+      return builder
+    },
+    eq(col, val) {
+      state.filters.push([col, 'eq', val])
+      return builder
+    },
+    gte(col, val) {
+      state.filters.push([col, 'gte', val])
+      return builder
+    },
+    gt(col, val) {
+      state.filters.push([col, 'gt', val])
+      return builder
+    },
+    lte(col, val) {
+      state.filters.push([col, 'lte', val])
+      return builder
+    },
+    like(col, val) {
+      state.filters.push([col, 'like', val])
+      return builder
+    },
+    not(col, _is, _null) {
+      state.filters.push([col, 'not_is', null])
+      return builder
+    },
+    in(col, vals) {
+      state.filters.push([col, 'in', vals])
+      return builder
+    },
+    order() {
+      return builder
+    },
+    range() {
+      return builder
+    },
+    limit(n) {
+      state.limitN = n
+      return builder
+    },
+    single() {
+      return builder._resolve(true, false)
+    },
+    maybeSingle() {
+      return builder._resolve(true, true)
+    },
+    then(resolve, reject) {
+      return builder._resolve(false, false).then(resolve, reject)
+    },
     async _resolve(single, maybe) {
       if (state.op === 'insert' || state.op === 'update' || state.op === 'delete') {
         return { data: null, error: null }
@@ -233,9 +278,7 @@ describe('GET /api/v1/areas/:district/nurseries', () => {
 
 describe('POST /api/v1/areas/:district/refresh-property-data', () => {
   it('returns 401 without auth', async () => {
-    const res = await request(app)
-      .post('/api/v1/areas/NW1/refresh-property-data')
-      .send({})
+    const res = await request(app).post('/api/v1/areas/NW1/refresh-property-data').send({})
     expect(res.status).toBe(401)
   })
 

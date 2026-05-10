@@ -15,10 +15,10 @@ const GEOCODE_DELAY_MS = 500
 
 // Ofsted rating mapping from numeric codes
 const RATING_MAP = {
-  '1': 'Outstanding',
-  '2': 'Good',
-  '3': 'Requires Improvement',
-  '4': 'Inadequate',
+  1: 'Outstanding',
+  2: 'Good',
+  3: 'Requires Improvement',
+  4: 'Inadequate',
 }
 
 function mapCsvRow(row) {
@@ -32,7 +32,12 @@ function mapCsvRow(row) {
   const type = (row['TypeOfEstablishment (name)'] || row['Type'] || row['type'] || '').trim()
 
   // Map Ofsted rating — could be numeric or text
-  let ofstedRating = (row['OfstedRating (name)'] || row['OfstedRating'] || row['ofsted_rating'] || '').trim()
+  let ofstedRating = (
+    row['OfstedRating (name)'] ||
+    row['OfstedRating'] ||
+    row['ofsted_rating'] ||
+    ''
+  ).trim()
   if (RATING_MAP[ofstedRating]) ofstedRating = RATING_MAP[ofstedRating]
   if (!['Outstanding', 'Good', 'Requires Improvement', 'Inadequate'].includes(ofstedRating)) {
     ofstedRating = null
@@ -40,11 +45,13 @@ function mapCsvRow(row) {
 
   const lastInspection = (row['OfstedLastInsp'] || row['last_inspection_date'] || '').trim() || null
 
-  const address = [
-    row['Street'],
-    row['Locality'],
-    row['Address3'],
-  ].filter(Boolean).map(s => s.trim()).join(', ') || (row['address'] || '').trim() || null
+  const address =
+    [row['Street'], row['Locality'], row['Address3']]
+      .filter(Boolean)
+      .map((s) => s.trim())
+      .join(', ') ||
+    (row['address'] || '').trim() ||
+    null
 
   const town = (row['Town'] || row['town'] || '').trim() || null
   const postcode = (row['Postcode'] || row['postcode'] || '').trim().toUpperCase() || null

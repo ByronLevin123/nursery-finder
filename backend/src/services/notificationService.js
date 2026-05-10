@@ -141,7 +141,12 @@ export async function notifyEnquiryStatusChange(enquiry, oldStatus, newStatus) {
             .from('notifications')
             .update({ email_sent: true })
             .eq('id', notification.id)
-            .catch((err) => { logger.warn({ err: err?.message, notificationId: notification.id }, 'Failed to mark notification email_sent') })
+            .catch((err) => {
+              logger.warn(
+                { err: err?.message, notificationId: notification.id },
+                'Failed to mark notification email_sent'
+              )
+            })
         }
       }
     } catch (err) {
@@ -213,7 +218,10 @@ export async function notifyNewMessage(enquiryId, message, recipientId) {
         await db.from('notifications').update({ email_sent: true }).eq('id', notification.id)
         logger.info({ recipientId, enquiryId }, 'new message email sent')
       } else {
-        logger.info({ recipientId, type: 'new_message' }, 'notification created, no email (recipient email unknown)')
+        logger.info(
+          { recipientId, type: 'new_message' },
+          'notification created, no email (recipient email unknown)'
+        )
       }
     } catch (err) {
       logger.warn({ err: err?.message }, 'notifyNewMessage email failed')
@@ -267,7 +275,12 @@ export async function notifyVisitReminder(booking) {
         .from('notifications')
         .update({ email_sent: true })
         .eq('id', notification.id)
-        .catch((err) => { logger.warn({ err: err?.message, notificationId: notification.id }, 'Failed to mark notification email_sent') })
+        .catch((err) => {
+          logger.warn(
+            { err: err?.message, notificationId: notification.id },
+            'Failed to mark notification email_sent'
+          )
+        })
     }
   }
 

@@ -34,8 +34,14 @@ router.post('/subscribe', subscribeLimiter, async (req, res, next) => {
     // Either env var missing → log and accept the signup so the UX stays
     // smooth. Real subscribe will land once both are configured.
     if (!apiKey || !audienceId) {
-      logger.info({ email_redacted: email.replace(/^([^@]{2}).+@/, '$1***@') }, 'newsletter signup queued (Resend not configured)')
-      return res.status(202).json({ status: 'queued', message: 'Subscription accepted; you will be added to our list.' })
+      logger.info(
+        { email_redacted: email.replace(/^([^@]{2}).+@/, '$1***@') },
+        'newsletter signup queued (Resend not configured)'
+      )
+      return res.status(202).json({
+        status: 'queued',
+        message: 'Subscription accepted; you will be added to our list.',
+      })
     }
 
     const upstream = await fetch(
@@ -57,11 +63,19 @@ router.post('/subscribe', subscribeLimiter, async (req, res, next) => {
 
     if (!upstream.ok) {
       const body = await upstream.text().catch(() => '')
-      logger.warn({ status: upstream.status, body: body.slice(0, 200) }, 'newsletter subscribe upstream error')
-      return res.status(502).json({ error: 'Could not subscribe right now. Please try again later.' })
+      logger.warn(
+        { status: upstream.status, body: body.slice(0, 200) },
+        'newsletter subscribe upstream error'
+      )
+      return res
+        .status(502)
+        .json({ error: 'Could not subscribe right now. Please try again later.' })
     }
 
-    logger.info({ email_redacted: email.replace(/^([^@]{2}).+@/, '$1***@') }, 'newsletter subscribe ok')
+    logger.info(
+      { email_redacted: email.replace(/^([^@]{2}).+@/, '$1***@') },
+      'newsletter subscribe ok'
+    )
     return res.json({ status: 'subscribed' })
   } catch (err) {
     return next(err)
