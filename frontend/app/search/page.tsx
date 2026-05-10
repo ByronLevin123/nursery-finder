@@ -291,7 +291,7 @@ function SearchContent() {
     <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] relative">
       {/* Mobile List/Map toggle */}
       {results && (
-        <div className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
+        <div className="lg:hidden fixed bottom-20 left-1/2 -translate-x-1/2 z-40">
           <div className="flex bg-white rounded-full shadow-lg border border-gray-200 p-1">
             <button
               onClick={() => setMobileView('list')}
