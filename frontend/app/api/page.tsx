@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Public API',
@@ -141,10 +142,56 @@ curl ${API}/api/v1/public/area/SW11.md`}
       </ul>
 
       <h2 className="text-2xl font-bold text-gray-900 mb-4">LLM-friendly discovery</h2>
-      <p className="text-gray-700 mb-2">
+      <p className="text-gray-700 mb-8">
         We publish <code>/llms.txt</code> and <code>/llms-full.txt</code> for AI crawlers, and
         markdown variants of every nursery and area page under <code>/api/v1/public/*.md</code>.
       </p>
+
+      <h2 className="text-2xl font-bold text-gray-900 mb-4">Useful links</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-10">
+        <a href={`${API}/api/docs`} className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+          <span className="text-2xl">&#128196;</span>
+          <div>
+            <p className="text-sm font-medium text-gray-900">Swagger UI</p>
+            <p className="text-xs text-gray-500">Browse and try all endpoints live</p>
+          </div>
+        </a>
+        <a href={`${API}/api/openapi.json`} className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+          <span className="text-2xl">&#128203;</span>
+          <div>
+            <p className="text-sm font-medium text-gray-900">OpenAPI spec</p>
+            <p className="text-xs text-gray-500">Machine-readable API definition (JSON)</p>
+          </div>
+        </a>
+        <Link href="/api/recipes" className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+          <span className="text-2xl">&#129523;</span>
+          <div>
+            <p className="text-sm font-medium text-gray-900">Integration recipes</p>
+            <p className="text-xs text-gray-500">Code examples for Zoopla, Rightmove, blogs</p>
+          </div>
+        </Link>
+        <a href="/embed.js" className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+          <span className="text-2xl">&#128187;</span>
+          <div>
+            <p className="text-sm font-medium text-gray-900">Embeddable widget</p>
+            <p className="text-xs text-gray-500">Drop-in nursery search for any website</p>
+          </div>
+        </a>
+        <a href="/llms.txt" className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+          <span className="text-2xl">&#129302;</span>
+          <div>
+            <p className="text-sm font-medium text-gray-900">llms.txt</p>
+            <p className="text-xs text-gray-500">AI crawler discovery file</p>
+          </div>
+        </a>
+        <Link href="/privacy" className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+          <span className="text-2xl">&#128274;</span>
+          <div>
+            <p className="text-sm font-medium text-gray-900">Privacy policy</p>
+            <p className="text-xs text-gray-500">How we handle data</p>
+          </div>
+        </Link>
+      </div>
     </div>
   )
 }
