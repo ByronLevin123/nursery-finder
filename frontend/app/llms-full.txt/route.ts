@@ -2,7 +2,7 @@
 
 export const revalidate = 3600
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+const API = process.env.NEXT_PUBLIC_API_URL || ''
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://nurserymatch.com'
 
 const HEADER = `# NurseryMatch — Full LLM Summary

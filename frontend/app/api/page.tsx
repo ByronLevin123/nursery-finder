@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   },
 }
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+const API = process.env.NEXT_PUBLIC_API_URL || ''
 
 const ENDPOINTS: { method: string; path: string; description: string; auth?: boolean }[] = [
   { method: 'POST', path: '/api/v1/nurseries/search', description: 'Search nurseries near a UK postcode (JSON body).' },
