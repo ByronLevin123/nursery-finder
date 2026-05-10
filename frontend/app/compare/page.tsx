@@ -244,8 +244,53 @@ function CompareContent() {
         </div>
       )}
 
-      {/* Comparison Table — horizontal scroll on mobile, sticky first column */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto print:hidden">
+      {/* Mobile: card layout */}
+      <div className="md:hidden space-y-4 print:hidden">
+        {nurseries.map((n) => (
+          <div key={n.urn} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+            <div className="flex justify-between items-start mb-3">
+              <div>
+                <a href={`/nursery/${n.urn}`} className="font-semibold text-gray-900 hover:text-blue-600">{n.name}</a>
+                <p className="text-xs text-gray-500">{n.town}</p>
+              </div>
+              <button onClick={() => handleRemove(n.urn)} className="text-xs text-red-500 hover:text-red-700">Remove</button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="bg-gray-50 rounded-lg p-2">
+                <p className="text-xs text-gray-500">Ofsted</p>
+                <p className="font-semibold text-gray-900">{n.ofsted_overall_grade || 'N/A'}</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-2">
+                <p className="text-xs text-gray-500">Places</p>
+                <p className="font-semibold text-gray-900">{n.total_places || 'N/A'}</p>
+              </div>
+              {n.fee_avg_monthly && (
+                <div className="bg-gray-50 rounded-lg p-2">
+                  <p className="text-xs text-gray-500">Avg fee</p>
+                  <p className="font-semibold text-gray-900">&pound;{n.fee_avg_monthly}/mo</p>
+                </div>
+              )}
+              {(n.distance_km != null) && (
+                <div className="bg-gray-50 rounded-lg p-2">
+                  <p className="text-xs text-gray-500">Distance</p>
+                  <p className="font-semibold text-gray-900">{n.distance_km.toFixed(1)} km</p>
+                </div>
+              )}
+              <div className="bg-gray-50 rounded-lg p-2">
+                <p className="text-xs text-gray-500">2yr funded</p>
+                <p className="font-semibold text-gray-900">{n.places_funded_2yr && n.places_funded_2yr > 0 ? 'Yes' : 'No'}</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-2">
+                <p className="text-xs text-gray-500">3-4yr funded</p>
+                <p className="font-semibold text-gray-900">{n.places_funded_3_4yr && n.places_funded_3_4yr > 0 ? 'Yes' : 'No'}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: horizontal scroll table */}
+      <div className="hidden md:block bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto print:hidden">
         <ComparisonTable nurseries={nurseries} onRemove={handleRemove} />
       </div>
 

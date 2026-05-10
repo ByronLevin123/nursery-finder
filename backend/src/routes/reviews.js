@@ -3,7 +3,7 @@ import crypto from 'crypto'
 import rateLimit from 'express-rate-limit'
 import db from '../db.js'
 import { extractCategoryScores } from '../services/reviewNlp.js'
-import { requireAuth, requireVerifiedEmail } from '../middleware/supabaseAuth.js'
+import { optionalAuth } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
 
 const router = express.Router()
@@ -52,135 +52,130 @@ function isIsoDate(s) {
 }
 
 // POST /api/v1/nurseries/:urn/reviews
-router.post(
-  '/:urn/reviews',
-  requireAuth,
-  requireVerifiedEmail,
-  reviewSubmissionLimiter,
-  async (req, res, next) => {
-    try {
-      const { urn } = req.params
-      const {
-        rating,
-        title,
-        body,
-        would_recommend,
-        child_age_months,
-        attended_from,
-        attended_to,
-        author_display_name,
-      } = req.body || {}
+router.post('/:urn/reviews', optionalAuth, reviewSubmissionLimiter, async (req, res, next) => {
+  try {
+    const { urn } = req.params
+    const {
+      rating,
+      title,
+      body,
+      would_recommend,
+      child_age_months,
+      attended_from,
+      attended_to,
+      author_display_name,
+    } = req.body || {}
 
-      // Validation
-      if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-        return res.status(400).json({ error: 'rating must be an integer between 1 and 5' })
-      }
-      if (typeof title !== 'string' || title.length < 3 || title.length > 120) {
-        return res.status(400).json({ error: 'title must be between 3 and 120 characters' })
-      }
-      if (typeof body !== 'string' || body.length < 20 || body.length > 4000) {
-        return res.status(400).json({ error: 'body must be between 20 and 4000 characters' })
-      }
-      if (typeof would_recommend !== 'boolean') {
-        return res.status(400).json({ error: 'would_recommend must be a boolean' })
-      }
-      if (
-        child_age_months !== undefined &&
-        child_age_months !== null &&
-        (!Number.isInteger(child_age_months) || child_age_months < 0 || child_age_months > 72)
-      ) {
-        return res.status(400).json({ error: 'child_age_months must be between 0 and 72' })
-      }
-      if (attended_from != null && !isIsoDate(attended_from)) {
-        return res.status(400).json({ error: 'attended_from must be an ISO date' })
-      }
-      if (attended_to != null && !isIsoDate(attended_to)) {
-        return res.status(400).json({ error: 'attended_to must be an ISO date' })
-      }
-      if (
-        author_display_name != null &&
-        (typeof author_display_name !== 'string' || author_display_name.length > 60)
-      ) {
-        return res.status(400).json({ error: 'author_display_name must be 60 characters or fewer' })
-      }
-
-      const ip_hash = hashIp(req.ip || '0.0.0.0')
-
-      // Duplicate check — same user + same urn (primary), or same ip + same urn (secondary)
-      const { data: existing, error: existingErr } = await db
-        .from('nursery_reviews')
-        .select('id')
-        .eq('urn', urn)
-        .or(`user_id.eq.${req.user.id},ip_hash.eq.${ip_hash}`)
-        .limit(1)
-      if (existingErr) throw existingErr
-      if (existing && existing.length > 0) {
-        return res.status(409).json({ error: 'You have already reviewed this nursery' })
-      }
-
-      // Rate limit — max 3 reviews per ip in 24h
-      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-      const { data: recent, error: recentErr } = await db
-        .from('nursery_reviews')
-        .select('id')
-        .eq('ip_hash', ip_hash)
-        .gte('created_at', since)
-      if (recentErr) throw recentErr
-      if (recent && recent.length >= 3) {
-        return res
-          .status(429)
-          .json({ error: 'Too many reviews from your network in the last 24 hours' })
-      }
-
-      // Spam heuristics — flag (not reject) as 'pending'
-      const tooManyUrls = countUrls(title) > 3 || countUrls(body) > 3
-      const tooFewWords = uniqueWordCount(body) < 3
-      const status = tooManyUrls || tooFewWords ? 'pending' : 'published'
-
-      const insertRow = {
-        urn,
-        rating,
-        title,
-        body,
-        would_recommend,
-        child_age_months: child_age_months ?? null,
-        attended_from: attended_from ?? null,
-        attended_to: attended_to ?? null,
-        author_display_name: author_display_name ?? null,
-        user_id: req.user.id,
-        ip_hash,
-        status,
-      }
-
-      const { data: inserted, error: insertErr } = await db
-        .from('nursery_reviews')
-        .insert(insertRow)
-        .select()
-        .single()
-      if (insertErr) throw insertErr
-
-      logger.info({ urn, status }, 'review submitted')
-
-      // NLP category extraction — non-blocking, failure must not block review
-      try {
-        const categoryScores = await extractCategoryScores(body)
-        if (categoryScores && inserted.id) {
-          await db
-            .from('nursery_reviews')
-            .update({ category_scores: categoryScores })
-            .eq('id', inserted.id)
-          inserted.category_scores = categoryScores
-        }
-      } catch (nlpErr) {
-        logger.warn({ err: nlpErr.message, reviewId: inserted.id }, 'review NLP failed')
-      }
-
-      res.status(201).json(stripIpHash(inserted))
-    } catch (err) {
-      next(err)
+    // Validation
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      return res.status(400).json({ error: 'rating must be an integer between 1 and 5' })
     }
+    if (typeof title !== 'string' || title.length < 3 || title.length > 120) {
+      return res.status(400).json({ error: 'title must be between 3 and 120 characters' })
+    }
+    if (typeof body !== 'string' || body.length < 20 || body.length > 4000) {
+      return res.status(400).json({ error: 'body must be between 20 and 4000 characters' })
+    }
+    if (typeof would_recommend !== 'boolean') {
+      return res.status(400).json({ error: 'would_recommend must be a boolean' })
+    }
+    if (
+      child_age_months !== undefined &&
+      child_age_months !== null &&
+      (!Number.isInteger(child_age_months) || child_age_months < 0 || child_age_months > 72)
+    ) {
+      return res.status(400).json({ error: 'child_age_months must be between 0 and 72' })
+    }
+    if (attended_from != null && !isIsoDate(attended_from)) {
+      return res.status(400).json({ error: 'attended_from must be an ISO date' })
+    }
+    if (attended_to != null && !isIsoDate(attended_to)) {
+      return res.status(400).json({ error: 'attended_to must be an ISO date' })
+    }
+    if (
+      author_display_name != null &&
+      (typeof author_display_name !== 'string' || author_display_name.length > 60)
+    ) {
+      return res.status(400).json({ error: 'author_display_name must be 60 characters or fewer' })
+    }
+
+    const ip_hash = hashIp(req.ip || '0.0.0.0')
+
+    // Duplicate check — same user + same urn (if authenticated), or same ip + same urn
+    let dupQuery = db.from('nursery_reviews').select('id').eq('urn', urn)
+    if (req.user) {
+      dupQuery = dupQuery.or(`user_id.eq.${req.user.id},ip_hash.eq.${ip_hash}`)
+    } else {
+      dupQuery = dupQuery.eq('ip_hash', ip_hash)
+    }
+    const { data: existing, error: existingErr } = await dupQuery.limit(1)
+    if (existingErr) throw existingErr
+    if (existing && existing.length > 0) {
+      return res.status(409).json({ error: 'You have already reviewed this nursery' })
+    }
+
+    // Rate limit — max 3 reviews per ip in 24h
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    const { data: recent, error: recentErr } = await db
+      .from('nursery_reviews')
+      .select('id')
+      .eq('ip_hash', ip_hash)
+      .gte('created_at', since)
+    if (recentErr) throw recentErr
+    if (recent && recent.length >= 3) {
+      return res
+        .status(429)
+        .json({ error: 'Too many reviews from your network in the last 24 hours' })
+    }
+
+    // Spam heuristics — flag (not reject) as 'pending'
+    const tooManyUrls = countUrls(title) > 3 || countUrls(body) > 3
+    const tooFewWords = uniqueWordCount(body) < 3
+    const status = tooManyUrls || tooFewWords ? 'pending' : 'published'
+
+    const insertRow = {
+      urn,
+      rating,
+      title,
+      body,
+      would_recommend,
+      child_age_months: child_age_months ?? null,
+      attended_from: attended_from ?? null,
+      attended_to: attended_to ?? null,
+      author_display_name: author_display_name ?? null,
+      user_id: req.user?.id || null,
+      ip_hash,
+      status,
+    }
+
+    const { data: inserted, error: insertErr } = await db
+      .from('nursery_reviews')
+      .insert(insertRow)
+      .select()
+      .single()
+    if (insertErr) throw insertErr
+
+    logger.info({ urn, status }, 'review submitted')
+
+    // NLP category extraction — non-blocking, failure must not block review
+    try {
+      const categoryScores = await extractCategoryScores(body)
+      if (categoryScores && inserted.id) {
+        await db
+          .from('nursery_reviews')
+          .update({ category_scores: categoryScores })
+          .eq('id', inserted.id)
+        inserted.category_scores = categoryScores
+      }
+    } catch (nlpErr) {
+      logger.warn({ err: nlpErr.message, reviewId: inserted.id }, 'review NLP failed')
+    }
+
+    res.status(201).json(stripIpHash(inserted))
+  } catch (err) {
+    next(err)
   }
-)
+})
 
 // GET /api/v1/nurseries/:urn/reviews
 router.get('/:urn/reviews', async (req, res, next) => {
