@@ -50,6 +50,7 @@ function SearchContent() {
   const [showExcluded, setShowExcluded] = useState(false)
   const [showMobilePrefs, setShowMobilePrefs] = useState(false)
   const [showMobileFilters, setShowMobileFilters] = useState(false)
+  const [mobileView, setMobileView] = useState<'list' | 'map'>('list')
   const [travelEnabled, setTravelEnabled] = useState(false)
   const [travelMaxMin, setTravelMaxMin] = useState(20)
   const [travelMode, setTravelMode] = useState<TravelMode>('walk')
@@ -287,9 +288,33 @@ function SearchContent() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)]">
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] relative">
+      {/* Mobile List/Map toggle */}
+      {results && (
+        <div className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
+          <div className="flex bg-white rounded-full shadow-lg border border-gray-200 p-1">
+            <button
+              onClick={() => setMobileView('list')}
+              className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+                mobileView === 'list' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              List
+            </button>
+            <button
+              onClick={() => setMobileView('map')}
+              className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+                mobileView === 'map' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Map
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Left panel: filters + results */}
-      <div className="w-full lg:w-1/3 overflow-y-auto border-r border-gray-200 bg-white lg:h-full">
+      <div className={`w-full lg:w-1/3 overflow-y-auto border-r border-gray-200 bg-white lg:h-full ${mobileView === 'map' ? 'hidden lg:block' : ''}`}>
         <div className="p-4 border-b border-gray-200">
           {/* Search bar with autocomplete */}
           <div className="flex gap-2 mb-4" ref={searchWrapperRef}>
@@ -559,7 +584,7 @@ function SearchContent() {
       </div>
 
       {/* Right panel: map */}
-      <div className="w-full lg:w-2/3 h-[250px] lg:h-full sticky top-0">
+      <div className={`w-full lg:w-2/3 lg:h-full sticky top-0 ${mobileView === 'map' ? 'h-[calc(100vh-64px)]' : 'hidden lg:block'}`}>
         {results?.meta.search_lat && results?.meta.search_lng ? (
           <NurseryMap
             nurseries={results.data}

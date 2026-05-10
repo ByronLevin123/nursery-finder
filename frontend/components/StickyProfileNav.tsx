@@ -33,7 +33,7 @@ export default function StickyProfileNav() {
   }, [])
 
   return (
-    <nav className="sticky top-[56px] z-30 bg-white border-b border-gray-200 -mx-4 px-4 mb-6">
+    <nav className="hidden md:block sticky top-[56px] z-30 bg-white border-b border-gray-200 -mx-4 px-4 mb-6">
       <div className="flex gap-6 overflow-x-auto">
         {SECTIONS.map((s) => (
           <a
