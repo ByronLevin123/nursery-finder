@@ -356,7 +356,7 @@ export function renderEnquiryNotificationEmail({
   providerUrl = '/provider',
 } = {}) {
   const safeName = escapeHtml(nurseryName)
-  const subject = `New enquiry for ${safeName} via CompareTheNursery`
+  const subject = `New enquiry for ${safeName} via NurseryMatch`
 
   const detailRows = []
   if (parentName) detailRows.push(`<strong>Parent:</strong> ${escapeHtml(parentName)}`)
@@ -451,7 +451,7 @@ export function renderProviderInviteEmail(nursery = {}) {
   const frontendUrl = process.env.FRONTEND_URL || 'https://nurserymatch.com'
   const claimUrl = `${frontendUrl}/claim?urn=${urn}`
   const safeClaimUrl = escapeHtml(claimUrl)
-  const subject = `${escapeHtml(nursery.name || 'Your nursery')} — claim your free listing on CompareTheNursery`
+  const subject = `${escapeHtml(nursery.name || 'Your nursery')} — claim your free listing on NurseryMatch`
 
   const html = shell({
     title: subject,
