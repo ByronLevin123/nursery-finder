@@ -306,7 +306,7 @@ app.use(
   '/api/docs',
   swaggerUi.serve,
   swaggerUi.setup(openapi, {
-    customSiteTitle: 'CompareTheNursery API Docs',
+    customSiteTitle: 'NurseryMatch API Docs',
     customCss: '.swagger-ui .topbar { display: none }',
   })
 )

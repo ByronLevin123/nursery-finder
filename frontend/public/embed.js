@@ -6,7 +6,7 @@
   var limit = parseInt(container.getAttribute('data-limit') || '5', 10);
   var radius = parseFloat(container.getAttribute('data-radius') || '3');
   var apiBase = container.getAttribute('data-api') || 'https://nursery-finder-6u7r.onrender.com';
-  var siteBase = container.getAttribute('data-site') || 'https://comparethenursery.com';
+  var siteBase = container.getAttribute('data-site') || 'https://nurserymatch.com';
 
   if (!postcode) {
     container.innerHTML = '<p style="color:#999;font-size:13px;">Set data-postcode on the widget container.</p>';
@@ -56,7 +56,7 @@
       });
 
       html += '<p style="font-size:11px;color:#9ca3af;margin:8px 0 0 0;">';
-      html += 'Powered by <a href="' + siteBase + '" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:none;">CompareTheNursery</a>';
+      html += 'Powered by <a href="' + siteBase + '" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:none;">NurseryMatch</a>';
       html += ' &middot; Contains Ofsted data &copy; Crown copyright';
       html += '</p>';
       html += '</div>';

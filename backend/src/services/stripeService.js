@@ -54,8 +54,8 @@ export async function createCheckoutSession({ userId, email, tier, type, success
   const frontendUrl = process.env.FRONTEND_URL || ''
   const allowedOrigins = [
     frontendUrl,
-    'https://comparethenursery.com',
-    'https://www.comparethenursery.com',
+    'https://nurserymatch.com',
+    'https://www.nurserymatch.com',
   ].filter(Boolean)
   function isAllowedUrl(url) {
     try {

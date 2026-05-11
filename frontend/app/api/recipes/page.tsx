@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'API Integration Recipes | CompareTheNursery',
+  title: 'API Integration Recipes | NurseryMatch',
   description: 'Copy-paste code recipes to embed nursery data into property sites, parenting blogs, and comparison platforms.',
   alternates: { canonical: '/api/recipes' },
 }
@@ -105,7 +105,7 @@ badge.innerHTML = \`
      data-limit="5"
      data-radius="3">
 </div>
-<script src="${API || 'https://comparethenursery.com'}/embed.js"></script>
+<script src="${API || 'https://nurserymatch.com'}/embed.js"></script>
 
 <!-- The widget will render a styled list of nearby nurseries
      with Ofsted grades, fees, and links to full profiles.
@@ -146,7 +146,7 @@ data.forEach(nursery => {
     <strong>\${nursery.name}</strong><br>
     Ofsted: \${nursery.ofsted_overall_grade || 'Not yet inspected'}<br>
     \${nursery.distance_km ? nursery.distance_km.toFixed(1) + 'km away' : ''}
-    <br><a href="https://comparethenursery.com/nursery/\${nursery.urn}" target="_blank">
+    <br><a href="https://nurserymatch.com/nursery/\${nursery.urn}" target="_blank">
       View full profile
     </a>
   \`)
