@@ -440,6 +440,7 @@ const INGEST_STEPS = [
   { id: 'crime', label: 'Crime Data', desc: 'Import police crime data', path: '/api/v1/ingest/crime' },
   { id: 'imd', label: 'IMD Data', desc: 'Import deprivation index data', path: '/api/v1/ingest/imd' },
   { id: 'schools', label: 'Schools', desc: 'Import school data from CSV', path: '/api/v1/ingest/schools' },
+  { id: 'google', label: 'Google Places Sync', desc: 'Fetch Google ratings + photos for 100 nurseries', path: '/api/v1/ingest/google-places' },
   { id: 'snapshot', label: 'Snapshot Reports', desc: 'Capture today\'s metrics for the reports timeseries', path: '/api/v1/admin/reports/snapshot' },
 ]
 
