@@ -335,26 +335,50 @@ function SearchContent() {
                 autoComplete="off"
               />
               {showSuggestions && (suggestions.length > 0 || sugLoading) && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden max-h-[320px] overflow-y-auto">
                   {sugLoading && suggestions.length === 0 && (
                     <div className="px-3 py-2 text-xs text-gray-400">Searching...</div>
                   )}
-                  {suggestions.map((s, i) => (
-                    <button
-                      key={`${s.type}-${s.urn || s.postcode}-${i}`}
-                      type="button"
-                      onClick={() => selectSuggestion(s)}
-                      className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 border-b border-gray-50 last:border-0"
-                    >
-                      <span className="text-gray-400 text-xs">
-                        {s.type === 'nursery' ? '\uD83C\uDFEB' : '\uD83D\uDCCD'}
-                      </span>
-                      <span className="text-sm text-gray-800 truncate">{s.label}</span>
-                      <span className="text-xs text-gray-400 ml-auto flex-shrink-0">
-                        {s.type === 'nursery' ? 'Nursery' : 'Area'}
-                      </span>
-                    </button>
-                  ))}
+                  {(() => {
+                    const areas = suggestions.filter(s => s.type === 'area')
+                    const nurseries = suggestions.filter(s => s.type === 'nursery')
+                    return (
+                      <>
+                        {areas.length > 0 && (
+                          <>
+                            <div className="px-3 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wide bg-gray-50">Areas</div>
+                            {areas.map((s, i) => (
+                              <button
+                                key={`area-${s.postcode}-${i}`}
+                                type="button"
+                                onClick={() => selectSuggestion(s)}
+                                className="w-full text-left px-3 py-2 hover:bg-blue-50 flex items-center gap-2 border-b border-gray-50 last:border-0"
+                              >
+                                <span className="text-blue-500 text-sm">&#128205;</span>
+                                <span className="text-sm text-gray-800 truncate">{s.label.replace(' \u2014 ', ' - ')}</span>
+                              </button>
+                            ))}
+                          </>
+                        )}
+                        {nurseries.length > 0 && (
+                          <>
+                            <div className="px-3 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wide bg-gray-50">Nurseries</div>
+                            {nurseries.map((s, i) => (
+                              <button
+                                key={`nursery-${s.urn}-${i}`}
+                                type="button"
+                                onClick={() => selectSuggestion(s)}
+                                className="w-full text-left px-3 py-2 hover:bg-blue-50 flex items-center gap-2 border-b border-gray-50 last:border-0"
+                              >
+                                <span className="text-green-500 text-sm">&#127979;</span>
+                                <span className="text-sm text-gray-800 truncate">{s.label}</span>
+                              </button>
+                            ))}
+                          </>
+                        )}
+                      </>
+                    )
+                  })()}
                 </div>
               )}
             </div>
