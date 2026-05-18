@@ -409,6 +409,66 @@ router.get('/:urn/availability', async (req, res, next) => {
   }
 })
 
+// GET /api/v1/nurseries/:urn/progression — school progression path
+router.get('/:urn/progression', async (req, res, next) => {
+  try {
+    const { urn } = req.params
+
+    const { data: nursery, error: nErr } = await db
+      .from('nurseries')
+      .select('urn, name, ofsted_overall_grade, postcode, town, lat, lng')
+      .eq('urn', urn)
+      .maybeSingle()
+    if (nErr) throw nErr
+    if (!nursery) return res.status(404).json({ error: 'Nursery not found' })
+    if (!nursery.lat || !nursery.lng) {
+      return res.json({ nursery, schools: [], timeline: null })
+    }
+
+    const { data: schools, error: sErr } = await db.rpc('search_schools_near', {
+      search_lat: nursery.lat,
+      search_lng: nursery.lng,
+      radius_km: 2,
+      phase_filter: 'Primary',
+    })
+    if (sErr) throw sErr
+
+    const now = new Date()
+    const receptionYear = now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear()
+
+    const timeline = [
+      { stage: 'Nursery', ages: '0-4', current: true, location: nursery.name },
+      {
+        stage: 'Reception',
+        ages: '4-5',
+        year: receptionYear,
+        location: schools?.[0]?.name || 'Nearby primary school',
+      },
+      {
+        stage: 'Primary',
+        ages: '5-11',
+        location: schools?.[0]?.name || 'Nearby primary school',
+      },
+    ]
+
+    res.json({
+      nursery: { urn: nursery.urn, name: nursery.name, grade: nursery.ofsted_overall_grade },
+      schools: (schools || []).slice(0, 5).map((s) => ({
+        urn: s.urn,
+        name: s.name,
+        ofsted_rating: s.ofsted_rating,
+        age_range: s.age_range,
+        distance_km: s.distance_km,
+        pupils: s.pupils,
+        website: s.website,
+      })),
+      timeline,
+    })
+  } catch (err) {
+    next(err)
+  }
+})
+
 // GET /api/v1/nurseries/:urn
 router.get('/:urn', async (req, res, next) => {
   try {
