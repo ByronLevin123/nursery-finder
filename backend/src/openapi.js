@@ -50,7 +50,15 @@ const openapi = {
     license: { name: 'MIT', url: 'https://opensource.org/licenses/MIT' },
     contact: { name: 'NurseryMatch', url: 'https://nurserymatch.com' },
   },
-  servers: [{ url: 'https://nursery-finder-6u7r.onrender.com', description: 'Production' }],
+  servers: [
+    {
+      url:
+        process.env.API_PUBLIC_URL ||
+        process.env.RENDER_EXTERNAL_URL ||
+        'https://nursery-finder-6u7r.onrender.com',
+      description: 'Production',
+    },
+  ],
   tags: [
     { name: 'Nurseries', description: 'Search, lookup, compare, and autocomplete nurseries' },
     { name: 'Areas', description: 'Postcode-district family scores, stats, and nursery lists' },
