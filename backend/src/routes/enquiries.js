@@ -73,6 +73,7 @@ router.post(
           preferred_start: preferred_start || null,
           session_preference: session_preference || null,
           message: message || null,
+          parent_email: req.user.email || null,
           status: isClaimed ? 'sent' : 'queued',
           requires_admin_review: !isClaimed,
         }
