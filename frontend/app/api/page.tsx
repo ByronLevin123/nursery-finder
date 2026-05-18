@@ -93,19 +93,29 @@ export default function ApiDocsPage() {
       <div className="border border-gray-200 rounded-xl divide-y divide-gray-200 mb-10">
         {ENDPOINTS.map((e) => (
           <div key={`${e.method} ${e.path}`} className="p-4 flex flex-col gap-1">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
               <span
-                className={`text-xs font-bold px-2 py-1 rounded ${
+                className={`text-xs font-bold px-2 py-1 rounded flex-shrink-0 ${
                   e.method === 'GET' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
                 }`}
               >
                 {e.method}
               </span>
-              <code className="text-sm text-gray-900">{e.path}</code>
+              <code className="text-xs sm:text-sm text-gray-900 break-all">{e.path}</code>
             </div>
-            <p className="text-sm text-gray-600 ml-12">{e.description}</p>
+            <p className="text-sm text-gray-600">{e.description}</p>
           </div>
         ))}
+      </div>
+
+      <h2 className="text-2xl font-bold text-gray-900 mb-4">Import into Postman</h2>
+      <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-10">
+        <ol className="list-decimal pl-5 text-sm text-gray-700 space-y-2">
+          <li>Open <strong>Postman</strong> and click <strong>Import</strong></li>
+          <li>Select <strong>Link</strong> and paste: <code className="text-xs bg-white px-2 py-1 rounded border break-all">{API}/api/openapi.json</code></li>
+          <li>Click <strong>Import</strong> — all 100+ endpoints will be added as a collection</li>
+          <li>Set the base URL variable to your API URL</li>
+        </ol>
       </div>
 
       <h2 className="text-2xl font-bold text-gray-900 mb-4">Example</h2>
@@ -175,6 +185,13 @@ curl ${API}/api/v1/public/area/SW11.md`}
           <div>
             <p className="text-sm font-medium text-gray-900">Embeddable widget</p>
             <p className="text-xs text-gray-500">Drop-in nursery search for any website</p>
+          </div>
+        </a>
+        <a href={`${API}/api/openapi.json`} className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+          <span className="text-2xl">&#128230;</span>
+          <div>
+            <p className="text-sm font-medium text-gray-900">Postman Collection</p>
+            <p className="text-xs text-gray-500">Import the OpenAPI spec into Postman for testing</p>
           </div>
         </a>
         <a href="/llms.txt" className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
