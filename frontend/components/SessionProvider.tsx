@@ -91,6 +91,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
     setSession(null)
     setRole('customer')
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('nursery-shortlist')
+      localStorage.removeItem('nursery-compare')
+      window.location.href = '/login'
+    }
   }, [])
 
   return (
