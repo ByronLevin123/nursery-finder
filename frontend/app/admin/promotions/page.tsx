@@ -94,7 +94,7 @@ export default function AdminPromotionsPage() {
       const res = await fetch(`${API_URL}/api/v1/admin/promotions`, { headers })
       if (!res.ok) throw new Error('Failed to load promotions')
       const data = await res.json()
-      setPromotions(Array.isArray(data) ? data : data.promotions ?? [])
+      setPromotions(Array.isArray(data) ? data : data.data ?? data.promotions ?? [])
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
