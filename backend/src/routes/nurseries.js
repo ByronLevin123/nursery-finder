@@ -168,28 +168,29 @@ router.post('/fees', async (req, res, next) => {
       return res.status(400).json({ error: 'fee_per_month must be between 100 and 5000' })
     }
 
-    const { error } = await db.from('nursery_fees').insert({
+    const row = {
       nursery_urn,
-      fee_per_month,
-      hours_per_week,
-      age_group,
-    })
+      price_gbp: fee_per_month,
+      age_group: age_group || 'all',
+      session_type: 'Monthly',
+    }
+    if (hours_per_week) row.hours_per_week = hours_per_week
+    if (fee_per_month) row.fee_per_month = fee_per_month
 
+    const { error } = await db.from('nursery_fees').insert(row)
     if (error) throw error
 
+    // Update nursery average from all fee submissions
     const { data: fees } = await db
       .from('nursery_fees')
-      .select('fee_per_month')
+      .select('price_gbp')
       .eq('nursery_urn', nursery_urn)
 
     if (fees?.length >= 3) {
-      const avg = Math.round(fees.reduce((s, f) => s + f.fee_per_month, 0) / fees.length)
+      const avg = Math.round(fees.reduce((s, f) => s + (f.price_gbp || 0), 0) / fees.length)
       await db
         .from('nurseries')
-        .update({
-          fee_avg_monthly: avg,
-          fee_report_count: fees.length,
-        })
+        .update({ fee_avg_monthly: avg, fee_report_count: fees.length })
         .eq('urn', nursery_urn)
     }
 
