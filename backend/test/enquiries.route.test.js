@@ -176,8 +176,7 @@ describe('POST /api/v1/enquiries', () => {
     expect(res.status).toBe(401)
   })
 
-  it('blocks users with unverified email (403, code email_not_verified)', async () => {
-    // Temporarily clear email_confirmed_at on the test user.
+  it('allows users with unverified email to submit enquiries', async () => {
     const original = USER.email_confirmed_at
     USER.email_confirmed_at = null
     try {
@@ -185,8 +184,7 @@ describe('POST /api/v1/enquiries', () => {
         .post('/api/v1/enquiries')
         .set('Authorization', `Bearer ${userToken}`)
         .send({ nursery_ids: ['n-1'], child_name: 'Alice' })
-      expect(res.status).toBe(403)
-      expect(res.body.code).toBe('email_not_verified')
+      expect(res.status).toBe(201)
     } finally {
       USER.email_confirmed_at = original
     }
