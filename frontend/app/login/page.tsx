@@ -107,7 +107,7 @@ function LoginInner() {
     } catch {
       // Fall through to default
     }
-    router.push('/shortlist')
+    router.push('/')
   }
 
   async function handleMagicLink(e: React.FormEvent) {
