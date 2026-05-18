@@ -14,6 +14,8 @@ import FeeModal from '@/components/FeeModal'
 import ShortlistButton from '@/components/ShortlistButton'
 import OglAttribution from '@/components/OglAttribution'
 import NearbyPromotions from '@/components/NearbyPromotions'
+import AvailabilityBadge from '@/components/AvailabilityBadge'
+import CompareButton from '@/components/CompareButton'
 import ReviewSection from '@/components/ReviewSection'
 import AiNurserySummary from '@/components/AiNurserySummary'
 import AiReviewSynthesis from '@/components/AiReviewSynthesis'
@@ -140,20 +142,70 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
       />
 
       {/* Header */}
-      <div className="flex justify-between items-start gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{nursery.name}</h1>
-          <p className="text-gray-500 mt-1">{nursery.town}{nursery.local_authority ? `, ${nursery.local_authority}` : ''}</p>
-          {nursery.claimed_by_user_id && (
-            <span className="inline-block mt-2 text-xs px-2 py-1 bg-green-50 text-green-700 border border-green-200 rounded-full font-medium">
-              Claimed by provider
-            </span>
-          )}
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <GradeBadge grade={nursery.ofsted_overall_grade} size="lg" />
-          <ShortlistButton urn={nursery.urn} />
-        </div>
+      <div className="mb-4">
+        <h1 className="text-2xl font-bold text-gray-900">{nursery.name}</h1>
+        <p className="text-gray-500 mt-1">{nursery.town}{nursery.local_authority ? `, ${nursery.local_authority}` : ''}</p>
+      </div>
+
+      {/* Rating row */}
+      <div className="flex items-center gap-3 flex-wrap mb-4">
+        <GradeBadge grade={nursery.ofsted_overall_grade} size="lg" />
+        {(nursery as any).google_rating && (
+          <span className="inline-flex items-center gap-1 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-full px-3 py-1">
+            <span className="text-yellow-500">&#9733;</span>
+            {(nursery as any).google_rating} Google
+            {(nursery as any).google_review_count ? ` (${(nursery as any).google_review_count})` : ''}
+          </span>
+        )}
+        {(nursery as any).review_avg_rating && (
+          <span className="inline-flex items-center gap-1 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-full px-3 py-1">
+            <span className="text-blue-500">&#9733;</span>
+            {Number((nursery as any).review_avg_rating).toFixed(1)} Parents
+          </span>
+        )}
+        <AvailabilityBadge nursery={nursery} />
+        <ShortlistButton urn={nursery.urn} />
+        {nursery.claimed_by_user_id && (
+          <span className="text-xs px-2 py-1 bg-green-50 text-green-700 border border-green-200 rounded-full font-medium">
+            Verified provider
+          </span>
+        )}
+      </div>
+
+      {/* Key info badges */}
+      <div className="flex items-center gap-2 flex-wrap mb-4">
+        {nursery.total_places && (
+          <span className="text-xs px-2.5 py-1 bg-gray-100 text-gray-700 rounded-full">{nursery.total_places} places</span>
+        )}
+        {nursery.places_funded_2yr && nursery.places_funded_2yr > 0 && (
+          <span className="text-xs px-2.5 py-1 bg-green-50 text-green-700 rounded-full border border-green-200">2yr funded</span>
+        )}
+        {nursery.places_funded_3_4yr && nursery.places_funded_3_4yr > 0 && (
+          <span className="text-xs px-2.5 py-1 bg-green-50 text-green-700 rounded-full border border-green-200">3-4yr funded</span>
+        )}
+        {nursery.fee_avg_monthly && nursery.fee_report_count >= 3 && (
+          <span className="text-xs px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-200">~&pound;{nursery.fee_avg_monthly}/mo</span>
+        )}
+      </div>
+
+      {/* Hero photo gallery */}
+      <div className="mb-6">
+        <ProviderPhotoGallery urn={nursery.urn} nurseryName={nursery.name} />
+        {nursery.photos && nursery.photos.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+            {nursery.photos.slice(0, 6).map((src, i) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={i} src={src} alt={`${nursery.name} photo ${i + 1}`} className="w-full h-40 object-cover rounded-lg border border-gray-200" />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Action CTAs — visible without scrolling */}
+      <div className="flex items-center gap-3 mb-6 flex-wrap">
+        <BookVisitButton urn={nursery.urn} nurseryId={nursery.id} />
+        <EnquiryModalTrigger urn={nursery.urn} nurseryName={nursery.name} nurseryId={nursery.id} />
+        <CompareButton urn={nursery.urn} />
       </div>
 
       <StickyProfileNav />
@@ -254,18 +306,6 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         </div>
       )}
 
-      {/* Provider photo gallery (from enhanced listings) */}
-      <ProviderPhotoGallery urn={nursery.urn} nurseryName={nursery.name} />
-
-      {/* Legacy photos from nurseries table (fallback for non-gallery photos) */}
-      {nursery.photos && nursery.photos.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-6">
-          {nursery.photos.map((src, i) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={i} src={src} alt={`${nursery.name} photo ${i + 1}`} className="w-full h-32 object-cover rounded-lg border border-gray-200" />
-          ))}
-        </div>
-      )}
 
       {(nursery.website_url || nursery.contact_email || nursery.contact_phone) && (
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
@@ -290,11 +330,6 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         </div>
       )}
 
-      {/* Action CTAs — Book a visit, Send enquiry */}
-      <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <BookVisitButton urn={nursery.urn} nurseryId={nursery.id} />
-        <EnquiryModalTrigger urn={nursery.urn} nurseryName={nursery.name} nurseryId={nursery.id} />
-      </div>
       <ClaimNurseryButton
         urn={nursery.urn}
         nurseryName={nursery.name}
