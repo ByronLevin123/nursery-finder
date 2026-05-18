@@ -230,7 +230,7 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         ) : (
           <p className="text-sm text-blue-700">No fee data yet for this nursery.</p>
         )}
-        <FeeModal nurseryId={nursery.id} />
+        <FeeModal nurseryId={nursery.urn} />
       </div>
 
       {/* True Cost Calculator */}
