@@ -67,9 +67,7 @@ router.post('/', requireAuth, enquiryLimiter, verifyTurnstile, async (req, res, 
         preferred_start: preferred_start || null,
         session_preference: session_preference || null,
         message: message || null,
-        parent_email: req.user.email || null,
-        status: isClaimed ? 'sent' : 'queued',
-        requires_admin_review: !isClaimed,
+        status: 'sent',
       }
 
       const { data: enquiry, error: insertErr } = await db
@@ -88,24 +86,23 @@ router.post('/', requireAuth, enquiryLimiter, verifyTurnstile, async (req, res, 
 
       if (!isClaimed) {
         queued.push(enriched)
-        // Notify admin users about the queued enquiry
+        // Notify admin — fire and forget, must not block enquiry creation
         try {
           const { data: admins } = await db.from('user_profiles').select('id').eq('role', 'admin')
           if (admins && admins.length > 0) {
             const notifs = admins.map((a) => ({
               user_id: a.id,
               type: 'admin_enquiry_queued',
-              title: `Enquiry queued for unclaimed nursery`,
-              body: `A parent enquired about ${nursery.name} (URN ${nursery.urn}) which hasn't been claimed yet.`,
-              data: { enquiry_id: enquiry.id, nursery_id: nursery.id, nursery_urn: nursery.urn },
+              title: 'Enquiry for unclaimed nursery',
+              body: `A parent enquired about ${nursery.name} (URN ${nursery.urn}).`,
             }))
-            await db.from('notifications').insert(notifs)
+            await db
+              .from('notifications')
+              .insert(notifs)
+              .catch(() => {})
           }
-        } catch (notifErr) {
-          logger.warn(
-            { err: notifErr.message, nurseryId: nursery.id },
-            'admin notification insert failed'
-          )
+        } catch {
+          // Non-fatal
         }
         logger.info({ nurseryId: nursery.id }, 'enquiry queued for admin — nursery unclaimed')
         continue
