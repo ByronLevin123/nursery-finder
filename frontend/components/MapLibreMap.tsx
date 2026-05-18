@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import { loadGoogleMapsScript, getGoogleMapsApiKey } from '@/lib/googleMaps'
 
 /* ── Public interfaces (unchanged — all consumers depend on these) ── */
@@ -63,6 +63,7 @@ export default function GoogleMap({
   const polygonObjectsRef = useRef<any[]>([])
   const circleRef = useRef<any>(null)
   const readyRef = useRef(false)
+  const [mapReady, setMapReady] = useState(false)
 
   // Initialize map once
   const initMap = useCallback(async () => {
@@ -83,7 +84,6 @@ export default function GoogleMap({
       streetViewControl: false,
       fullscreenControl: false,
       styles: [
-        // Subtle, clean style
         { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
       ],
     })
@@ -91,6 +91,7 @@ export default function GoogleMap({
     mapRef.current = map
     infoWindowRef.current = new google.maps.InfoWindow()
     readyRef.current = true
+    setMapReady(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -136,13 +137,16 @@ export default function GoogleMap({
       const marker = new google.maps.Marker({
         position: { lat: m.lat, lng: m.lng },
         map,
+        label: {
+          text: '👶',
+          fontSize: '20px',
+        },
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
-          fillColor: color,
-          fillOpacity: 1,
-          strokeColor: '#ffffff',
-          strokeWeight: 2,
-          scale: r,
+          fillColor: 'transparent',
+          fillOpacity: 0,
+          strokeWeight: 0,
+          scale: 0,
         },
         clickable: !!(m.popupHtml || m.onClick),
       })
@@ -159,7 +163,7 @@ export default function GoogleMap({
 
       markerObjectsRef.current.push(marker)
     }
-  }, [markers])
+  }, [markers, mapReady])
 
   // Render polygons + radius circle
   useEffect(() => {
@@ -209,7 +213,7 @@ export default function GoogleMap({
 
       polygonObjectsRef.current.push(poly)
     }
-  }, [polygons, radiusKm, center[0], center[1]])
+  }, [polygons, radiusKm, center[0], center[1], mapReady])
 
   return <div ref={containerRef} className={`${heightClassName} ${className}`} />
 }
