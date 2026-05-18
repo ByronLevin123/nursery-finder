@@ -45,9 +45,7 @@ router.post('/', requireAuth, enquiryLimiter, verifyTurnstile, async (req, res, 
     // Fetch nurseries to verify they exist and get contact details
     const { data: nurseries, error: nErr } = await db
       .from('nurseries')
-      .select(
-        'id, urn, name, contact_email, email, claimed_by_user_id, nursery_claims(claimer_email)'
-      )
+      .select('id, urn, name, contact_email, email, claimed_by_user_id')
       .in('id', nursery_ids)
     if (nErr) throw nErr
 
@@ -109,11 +107,7 @@ router.post('/', requireAuth, enquiryLimiter, verifyTurnstile, async (req, res, 
       }
 
       // Claimed nursery — email the provider
-      const claimerEmail =
-        Array.isArray(nursery.nursery_claims) && nursery.nursery_claims.length > 0
-          ? nursery.nursery_claims[0].claimer_email
-          : null
-      const contactEmail = claimerEmail || nursery.contact_email || nursery.email
+      const contactEmail = nursery.contact_email || nursery.email
       if (contactEmail && isEmailAvailable()) {
         try {
           let childAgeMonths = null
