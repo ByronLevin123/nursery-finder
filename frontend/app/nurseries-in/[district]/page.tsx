@@ -3,6 +3,7 @@ import { getNurseriesInDistrict, getAreaSummary } from '@/lib/api'
 import AreaSummaryCard from '@/components/AreaSummaryCard'
 import NurseryCard from '@/components/NurseryCard'
 import OglAttribution from '@/components/OglAttribution'
+import DistrictSchools from '@/components/DistrictSchools'
 import Breadcrumbs from '@/components/Breadcrumbs'
 import Link from 'next/link'
 import { placeSchema, breadcrumbSchema, faqSchema, jsonLdScript } from '@/lib/schema'
@@ -180,6 +181,11 @@ export default async function AreaPage({ params }: Props) {
             )}
           </div>
         </div>
+      )}
+
+      {/* Schools in the area */}
+      {nurseries[0]?.lat && nurseries[0]?.lng && (
+        <DistrictSchools lat={nurseries[0].lat} lng={nurseries[0].lng} district={district} />
       )}
 
       {/* Internal links to nursery pages */}
