@@ -58,10 +58,15 @@ export default function ProviderRegisterPage() {
     debounceRef.current = setTimeout(async () => {
       setSearching(true)
       try {
-        const res = await fetch(`${API_URL}/api/v1/nurseries/search?q=${encodeURIComponent(q)}&limit=5`)
+        const res = await fetch(`${API_URL}/api/v1/nurseries/autocomplete?q=${encodeURIComponent(q)}`)
         if (res.ok) {
           const data = await res.json()
-          setSearchResults(data.nurseries || data.data || data || [])
+          const suggestions = data.suggestions || []
+          setSearchResults(
+            suggestions
+              .filter((s: any) => s.type === 'nursery' && s.urn)
+              .map((s: any) => ({ urn: s.urn, name: s.label, town: null, postcode: s.postcode || null }))
+          )
         }
       } catch {
         // ignore search errors
