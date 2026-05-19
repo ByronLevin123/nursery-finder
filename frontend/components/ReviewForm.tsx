@@ -95,7 +95,7 @@ export default function ReviewForm({ urn, onSuccess }: Props) {
   return (
     <form
       onSubmit={onSubmit}
-      className="border border-gray-200 rounded-lg p-4 bg-white space-y-4"
+      className="border border-gray-200 rounded-lg p-4 bg-white space-y-4 overflow-hidden"
       aria-label="Write a review"
     >
       <div>
@@ -218,7 +218,10 @@ export default function ReviewForm({ urn, onSuccess }: Props) {
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
           />
         </div>
-        <div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="overflow-hidden">
           <label
             htmlFor="review-from"
             className="block text-sm font-medium text-gray-700 mb-1"
@@ -230,10 +233,10 @@ export default function ReviewForm({ urn, onSuccess }: Props) {
             type="date"
             value={attendedFrom}
             onChange={e => setAttendedFrom(e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm max-w-full"
           />
         </div>
-        <div>
+        <div className="overflow-hidden">
           <label
             htmlFor="review-to"
             className="block text-sm font-medium text-gray-700 mb-1"
@@ -245,7 +248,7 @@ export default function ReviewForm({ urn, onSuccess }: Props) {
             type="date"
             value={attendedTo}
             onChange={e => setAttendedTo(e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm max-w-full"
           />
         </div>
       </div>
