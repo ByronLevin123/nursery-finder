@@ -549,9 +549,6 @@ function AccountPageInner() {
           ) : (
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-500">Free plan</span>
-              <Link href="/pricing" className="text-sm text-indigo-600 font-medium hover:underline">
-                Upgrade
-              </Link>
             </div>
           )}
         </div>}

@@ -99,10 +99,13 @@ router.post('/schools/ingest', requireRole('admin'), async (req, res, next) => {
 router.post('/schools/geocode', requireRole('admin'), async (req, res, next) => {
   try {
     logger.info('overlays: schools geocode start')
-    const limit = Math.min(1000, Math.max(1, Number(req.body?.limit) || 500))
-    const result = await geocodeSchoolsBatch(limit)
-    logger.info({ result }, 'overlays: schools geocode done')
-    res.json(result)
+    const limit = Math.min(100, Math.max(1, Number(req.body?.limit) || 100))
+
+    res.json({ status: 'started', message: `Geocoding up to ${limit} schools in background.` })
+
+    geocodeSchoolsBatch(limit)
+      .then((result) => logger.info({ result }, 'overlays: schools geocode done'))
+      .catch((err) => logger.error({ err: err.message }, 'overlays: schools geocode failed'))
   } catch (err) {
     logger.error({ err: err.message }, 'overlays: schools geocode failed')
     next(err)

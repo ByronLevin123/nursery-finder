@@ -130,60 +130,18 @@ export default function ForProvidersPage() {
         </div>
       </section>
 
-      {/* Pricing preview */}
-      <section className="max-w-5xl mx-auto px-4 py-16">
-        <h2 className="text-3xl font-bold text-gray-900 text-center mb-4">
-          Simple, transparent pricing
-        </h2>
-        <p className="text-center text-gray-500 mb-10 max-w-xl mx-auto">
-          Start free. Upgrade when you are ready to grow.
+      {/* CTA */}
+      <section className="max-w-5xl mx-auto px-4 py-16 text-center">
+        <h2 className="text-3xl font-bold text-gray-900 mb-4">Get started for free</h2>
+        <p className="text-gray-500 mb-8 max-w-xl mx-auto">
+          Claim your nursery listing and start connecting with local families today.
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <PricingCard
-            tier="Free"
-            price="0"
-            description="Get started"
-            features={[
-              'Claim your listing',
-              'Update basic info',
-              'Receive up to 3 enquiries/mo',
-              'Respond to reviews',
-            ]}
-          />
-          <PricingCard
-            tier="Pro"
-            price="29"
-            description="Most popular"
-            highlighted
-            features={[
-              'Everything in Free',
-              'Unlimited enquiries',
-              'Photo gallery',
-              'Featured in search results',
-              'Analytics dashboard',
-            ]}
-          />
-          <PricingCard
-            tier="Premium"
-            price="79"
-            description="Maximum visibility"
-            features={[
-              'Everything in Pro',
-              'Priority search placement',
-              'Custom branding',
-              'Advanced analytics',
-              'Dedicated support',
-            ]}
-          />
-        </div>
-        <div className="text-center mt-8">
-          <Link href="/pricing" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
-            View full pricing details &rarr;
-          </Link>
-        </div>
+        <Link href="/provider/register" className="inline-block px-8 py-3 bg-blue-600 text-white text-lg font-semibold rounded-xl hover:bg-blue-700 transition">
+          Register your nursery
+        </Link>
       </section>
 
-      {/* Testimonials placeholder */}
+      {/* Testimonials */}
       <section className="bg-gray-50 border-y border-gray-200">
         <div className="max-w-5xl mx-auto px-4 py-16">
           <h2 className="text-3xl font-bold text-gray-900 text-center mb-10">
