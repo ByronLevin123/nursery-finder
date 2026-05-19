@@ -15,7 +15,7 @@ describe('parseSchoolRow', () => {
   it('parses a valid GIAS row', () => {
     const r = parseSchoolRow(validRow)
     expect(r).toEqual({
-      urn: 100001,
+      urn: '100001',
       name: 'St Mary Primary',
       phase: 'Primary',
       postcode: 'SW11 6QT',
@@ -39,7 +39,7 @@ describe('parseSchoolRow', () => {
       URN: '200002',
       EstablishmentName: 'Some School',
     })
-    expect(r.urn).toBe(200002)
+    expect(r.urn).toBe('200002')
     expect(r.phase).toBeNull()
     expect(r.postcode).toBeNull()
     expect(r.ofsted_rating).toBeNull()
