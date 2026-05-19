@@ -295,8 +295,7 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         nurseryName={nursery.name}
       />
 
-      {/* Pricing + Availability */}
-      <NurseryPricingTab urn={nursery.urn} nurseryId={nursery.id} />
+      {/* Availability */}
       <NurseryAvailabilityTab urn={nursery.urn} />
 
       {/* Provider-supplied content */}
