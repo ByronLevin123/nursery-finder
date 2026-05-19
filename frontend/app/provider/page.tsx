@@ -93,19 +93,6 @@ export default function ProviderDashboard() {
     <div className="max-w-3xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Provider dashboard</h1>
 
-      {providerTier === 'free' && (
-        <div className="mb-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl flex items-center justify-between">
-          <p className="text-sm text-indigo-800">
-            Upgrade to Pro for featured listings and priority search placement
-          </p>
-          <Link
-            href="/pricing"
-            className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 whitespace-nowrap ml-4"
-          >
-            See plans &rarr;
-          </Link>
-        </div>
-      )}
 
       {error && <p className="text-red-500 mb-4">{error}</p>}
 

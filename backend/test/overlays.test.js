@@ -272,7 +272,7 @@ describe('POST /api/v1/overlays/schools/geocode', () => {
       .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
       .send({ limit: 50 })
     expect(res.status).toBe(200)
-    expect(res.body).toMatchObject({ geocoded: 50 })
+    expect(res.body).toMatchObject({ status: 'started' })
   })
 })
 
