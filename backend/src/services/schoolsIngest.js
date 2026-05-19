@@ -49,7 +49,7 @@ export function parseSchoolRow(row) {
     name,
     phase,
     postcode,
-    ofsted_grade,
+    ofsted_rating: ofsted_grade,
     last_inspection_date,
     local_authority,
   }

@@ -19,7 +19,7 @@ describe('parseSchoolRow', () => {
       name: 'St Mary Primary',
       phase: 'Primary',
       postcode: 'SW11 6QT',
-      ofsted_grade: 'Good',
+      ofsted_rating: 'Good',
       last_inspection_date: '2023-03-15',
       local_authority: 'Wandsworth',
     })
@@ -42,7 +42,7 @@ describe('parseSchoolRow', () => {
     expect(r.urn).toBe(200002)
     expect(r.phase).toBeNull()
     expect(r.postcode).toBeNull()
-    expect(r.ofsted_grade).toBeNull()
+    expect(r.ofsted_rating).toBeNull()
     expect(r.last_inspection_date).toBeNull()
     expect(r.local_authority).toBeNull()
   })
