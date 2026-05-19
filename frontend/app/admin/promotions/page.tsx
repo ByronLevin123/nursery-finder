@@ -161,6 +161,33 @@ export default function AdminPromotionsPage() {
     setFormError(null)
     try {
       const headers = await authHeaders()
+      // Auto-geocode from postcode district
+      let lat: number | null = null
+      let lng: number | null = null
+      if (form.postcode_district.trim()) {
+        try {
+          const pc = form.postcode_district.trim().toUpperCase()
+          const geoRes = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(pc + ' 1AA')}`)
+          if (geoRes.ok) {
+            const geoData = await geoRes.json()
+            if (geoData.result) {
+              lat = geoData.result.latitude
+              lng = geoData.result.longitude
+            }
+          }
+          if (!lat) {
+            const geoRes2 = await fetch(`https://api.postcodes.io/outcodes/${encodeURIComponent(pc)}`)
+            if (geoRes2.ok) {
+              const geoData2 = await geoRes2.json()
+              if (geoData2.result) {
+                lat = geoData2.result.latitude
+                lng = geoData2.result.longitude
+              }
+            }
+          }
+        } catch {}
+      }
+
       const body = {
         title: form.title.trim(),
         description: form.description.trim() || null,
@@ -168,7 +195,9 @@ export default function AdminPromotionsPage() {
         link_url: form.link_url.trim(),
         category: form.category,
         postcode_district: form.postcode_district.trim() || null,
-        radius_km: form.radius_km ? Number(form.radius_km) : null,
+        lat,
+        lng,
+        radius_km: form.radius_km ? Number(form.radius_km) : 10,
         start_date: form.start_date || null,
         end_date: form.end_date || null,
       }
