@@ -261,7 +261,7 @@ describe('POST /api/v1/overlays/schools/ingest', () => {
       .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
       .send({ csvUrl: 'https://get-information-schools.service.gov.uk/schools.csv' })
     expect(res.status).toBe(200)
-    expect(res.body).toMatchObject({ inserted: 100, updated: 20 })
+    expect(res.body).toMatchObject({ status: 'started' })
   })
 })
 

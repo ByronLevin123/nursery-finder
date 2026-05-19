@@ -80,9 +80,16 @@ router.post('/schools/ingest', requireRole('admin'), async (req, res, next) => {
       }
     }
     logger.info({ csvUrl: csvUrl ? 'provided' : 'default' }, 'overlays: schools ingest start')
-    const result = await ingestSchoolsFromCsvUrl(csvUrl)
-    logger.info({ result }, 'overlays: schools ingest done')
-    res.json(result)
+
+    // Return immediately — process in background (Render kills requests after 30s)
+    res.json({
+      status: 'started',
+      message: 'Schools import started in background. Check logs for progress.',
+    })
+
+    ingestSchoolsFromCsvUrl(csvUrl)
+      .then((result) => logger.info({ result }, 'overlays: schools ingest done'))
+      .catch((err) => logger.error({ err: err.message }, 'overlays: schools ingest failed'))
   } catch (err) {
     logger.error({ err: err.message }, 'overlays: schools ingest failed')
     next(err)
@@ -127,7 +134,7 @@ router.get('/schools/near', async (req, res, next) => {
 
     let q = db
       .from('schools')
-      .select('urn, name, phase, postcode, lat, lng, ofsted_grade, last_inspection_date')
+      .select('urn, name, phase, postcode, lat, lng, ofsted_rating, last_inspection_date')
       .not('lat', 'is', null)
       .gte('lat', origin.lat - dLat)
       .lte('lat', origin.lat + dLat)

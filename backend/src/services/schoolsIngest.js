@@ -45,7 +45,7 @@ export function parseSchoolRow(row) {
   const local_authority = (row['LA (name)'] || row.LA || '').trim() || null
 
   return {
-    urn,
+    urn: String(urn),
     name,
     phase,
     postcode,
@@ -64,7 +64,7 @@ export async function ingestSchoolsFromCsvUrl(url) {
   let batch = []
 
   return new Promise((resolve, reject) => {
-    axios({ method: 'get', url: target, responseType: 'stream' })
+    axios({ method: 'get', url: target, responseType: 'stream', timeout: 120000 })
       .then((response) => {
         response.data
           .pipe(csv())
@@ -104,7 +104,10 @@ export async function ingestSchoolsFromCsvUrl(url) {
           })
           .on('error', reject)
       })
-      .catch(reject)
+      .catch((err) => {
+        logger.error({ err: err.message, url: target }, 'schools: CSV download failed')
+        reject(new Error(`Failed to download schools CSV: ${err.message}`))
+      })
   })
 }
 
