@@ -40,6 +40,7 @@ const NurseryQA = dynamic(() => import('@/components/NurseryQA'), { ssr: false }
 const VisitChecklistSection = dynamic(() => import('@/components/VisitChecklistSection'), { ssr: false })
 const StreetViewPanorama = dynamic(() => import('@/components/StreetViewPanorama'), { ssr: false })
 const StickyProfileNav = dynamic(() => import('@/components/StickyProfileNav'), { ssr: false })
+const JoinWaitlistButton = dynamic(() => import('@/components/JoinWaitlistButton'), { ssr: false })
 
 export async function generateMetadata({ params }: { params: { urn: string } }): Promise<Metadata> {
   try {
@@ -207,6 +208,13 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         <BookVisitButton urn={nursery.urn} nurseryId={nursery.id} />
         <EnquiryModalTrigger urn={nursery.urn} nurseryName={nursery.name} nurseryId={nursery.id} />
         <CompareButton urn={nursery.urn} />
+        <JoinWaitlistButton
+          nurseryId={nursery.id}
+          nurseryUrn={nursery.urn}
+          nurseryName={nursery.name}
+          spotsAvailable={nursery.spots_available}
+          hasWaitlist={nursery.has_waitlist}
+        />
       </div>
 
       <StickyProfileNav />
