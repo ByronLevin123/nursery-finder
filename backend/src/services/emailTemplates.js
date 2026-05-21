@@ -843,6 +843,179 @@ export function renderProviderEnquiryNotificationEmail({
   return { subject, html, text }
 }
 
+
+// ---------- 14. Quiz-complete drip Day 0 ----------
+
+export function renderQuizCompleteDay0Email({ userName } = {}) {
+  const greeting = userName ? `Hi ${escapeHtml(userName)},` : 'Hi,'
+  const subject = 'Your personalised nursery results'
+
+  const html = shell({
+    title: subject,
+    preheader: 'We have matched you with nurseries based on your priorities.',
+    bodyHtml: `
+      <p style="margin:0 0 12px 0;">${greeting}</p>
+      <p style="margin:0 0 16px 0;">
+        Thank you for completing the NurseryMatch quiz! We have analysed your priorities
+        and matched you with nurseries that fit what matters most to your family.
+      </p>
+      <p style="margin:0 0 8px 0;font-weight:600;">Your personalised results include:</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="padding:12px 0;border-bottom:1px solid #f1f5f9;">
+            <div style="font-weight:600;color:#2563eb;">Ranked nurseries</div>
+            <div style="font-size:13px;color:#4b5563;">Sorted by how well they match your priorities — Ofsted grade, fees, location and more.</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0;border-bottom:1px solid #f1f5f9;">
+            <div style="font-weight:600;color:#2563eb;">Trade-off insights</div>
+            <div style="font-size:13px;color:#4b5563;">Understand the strengths and compromises of each nursery at a glance.</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0;">
+            <div style="font-weight:600;color:#2563eb;">Saved for later</div>
+            <div style="font-size:13px;color:#4b5563;">Your results are saved to your account — come back any time.</div>
+          </td>
+        </tr>
+      </table>
+      <p style="margin:20px 0 0 0;">
+        ${ctaButton(`${FRONTEND_URL}/recommendations`, 'View your matches')}
+      </p>
+    `,
+  })
+
+  const text = [
+    greeting,
+    '',
+    'Your personalised nursery results are ready!',
+    '',
+    'We have analysed your priorities and matched you with nurseries that fit your family.',
+    '',
+    '- Ranked nurseries sorted by how well they match your priorities',
+    '- Trade-off insights for each nursery',
+    '- Results saved to your account',
+    '',
+    `View your matches: ${FRONTEND_URL}/recommendations`,
+    '',
+    `Manage preferences: ${UNSUBSCRIBE_URL}`,
+  ].join('\n')
+
+  return { subject, html, text }
+}
+
+// ---------- 15. Quiz-complete drip Day 3 ----------
+
+export function renderQuizCompleteDay3Email({ userName } = {}) {
+  const greeting = userName ? `Hi ${escapeHtml(userName)},` : 'Hi,'
+  const subject = 'Ready to visit? Book a tour'
+
+  const html = shell({
+    title: subject,
+    preheader: 'See your top-ranked nurseries in person — book a visit today.',
+    bodyHtml: `
+      <p style="margin:0 0 12px 0;">${greeting}</p>
+      <p style="margin:0 0 16px 0;">
+        Now that you have your personalised nursery matches, the next step is to visit
+        your favourites in person. Nothing beats seeing the setting, meeting the staff
+        and watching how the children interact.
+      </p>
+      <p style="margin:0 0 8px 0;font-weight:600;">Tips for your nursery visit:</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="padding:12px 0;border-bottom:1px solid #f1f5f9;">
+            <div style="font-weight:600;color:#2563eb;">Ask about staff turnover</div>
+            <div style="font-size:13px;color:#4b5563;">Consistent caregivers help children feel secure.</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0;border-bottom:1px solid #f1f5f9;">
+            <div style="font-weight:600;color:#2563eb;">Check the outdoor space</div>
+            <div style="font-size:13px;color:#4b5563;">Good nurseries have safe, stimulating outdoor areas for daily play.</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0;">
+            <div style="font-weight:600;color:#2563eb;">Trust your instincts</div>
+            <div style="font-size:13px;color:#4b5563;">Do the children look happy and engaged? Does the environment feel warm?</div>
+          </td>
+        </tr>
+      </table>
+      <p style="margin:20px 0 0 0;">
+        ${ctaButton(`${FRONTEND_URL}/recommendations`, 'See your top nurseries')}
+      </p>
+      <p style="margin:12px 0 0 0;font-size:13px;color:#6b7280;">
+        You can send enquiries directly from any nursery profile page.
+      </p>
+    `,
+  })
+
+  const text = [
+    greeting,
+    '',
+    'Ready to visit? Book a tour at your top-ranked nurseries.',
+    '',
+    'Tips for your nursery visit:',
+    '- Ask about staff turnover — consistent caregivers help children feel secure.',
+    '- Check the outdoor space — good nurseries have safe, stimulating outdoor areas.',
+    '- Trust your instincts — do the children look happy and engaged?',
+    '',
+    `See your top nurseries: ${FRONTEND_URL}/recommendations`,
+    '',
+    `Manage preferences: ${UNSUBSCRIBE_URL}`,
+  ].join('\n')
+
+  return { subject, html, text }
+}
+
+// ---------- 16. Quiz-complete drip Day 7 ----------
+
+export function renderQuizCompleteDay7Email({ userName } = {}) {
+  const greeting = userName ? `Hi ${escapeHtml(userName)},` : 'Hi,'
+  const subject = 'Compare your top nurseries side by side'
+
+  const html = shell({
+    title: subject,
+    preheader: 'Put your top picks next to each other and see which one wins.',
+    bodyHtml: `
+      <p style="margin:0 0 12px 0;">${greeting}</p>
+      <p style="margin:0 0 16px 0;">
+        Still deciding between a few nurseries? Our comparison tool lets you see
+        Ofsted grades, fees, funded hours, reviews and distance side by side — so
+        you can make a confident choice.
+      </p>
+      <p style="margin:0 0 16px 0;">
+        Shortlist your top picks and hit compare — it only takes a moment.
+      </p>
+      <p style="margin:0 0 20px 0;">
+        ${ctaButton(`${FRONTEND_URL}/compare`, 'Compare nurseries')}
+      </p>
+      <p style="margin:0;font-size:13px;color:#6b7280;">
+        Need more help? Our <a href="${FRONTEND_URL}/assistant" style="color:#2563eb;font-weight:600;">AI Family Assistant</a>
+        can answer your questions about any nursery.
+      </p>
+    `,
+  })
+
+  const text = [
+    greeting,
+    '',
+    'Compare your top nurseries side by side.',
+    '',
+    'Our comparison tool lets you see Ofsted grades, fees, funded hours, reviews and distance side by side.',
+    '',
+    'Shortlist your top picks and hit compare.',
+    '',
+    `Compare nurseries: ${FRONTEND_URL}/compare`,
+    `AI Assistant: ${FRONTEND_URL}/assistant`,
+    '',
+    `Manage preferences: ${UNSUBSCRIBE_URL}`,
+  ].join('\n')
+
+  return { subject, html, text }
+}
+
 export default {
   renderWelcomeEmail,
   renderWelcomeDay3Email,
@@ -857,4 +1030,7 @@ export default {
   renderProviderWelcomeEmail,
   renderProviderPaymentConfirmationEmail,
   renderProviderEnquiryNotificationEmail,
+  renderQuizCompleteDay0Email,
+  renderQuizCompleteDay3Email,
+  renderQuizCompleteDay7Email,
 }

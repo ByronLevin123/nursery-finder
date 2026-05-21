@@ -6,7 +6,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import ClaimNurseryButton from '@/components/ClaimNurseryButton'
 import Breadcrumbs from '@/components/Breadcrumbs'
-import { nurserySchema, breadcrumbSchema, jsonLdScript } from '@/lib/schema'
+import { nurserySchema, breadcrumbSchema, faqSchema, jsonLdScript } from '@/lib/schema'
 import GradeBadge from '@/components/GradeBadge'
 import StaleGradeBanner from '@/components/StaleGradeBanner'
 import EnforcementBanner from '@/components/EnforcementBanner'
@@ -41,6 +41,7 @@ const VisitChecklistSection = dynamic(() => import('@/components/VisitChecklistS
 const StreetViewPanorama = dynamic(() => import('@/components/StreetViewPanorama'), { ssr: false })
 const StickyProfileNav = dynamic(() => import('@/components/StickyProfileNav'), { ssr: false })
 const JoinWaitlistButton = dynamic(() => import('@/components/JoinWaitlistButton'), { ssr: false })
+const ShareButtons = dynamic(() => import('@/components/ShareButtons'), { ssr: false })
 
 export async function generateMetadata({ params }: { params: { urn: string } }): Promise<Metadata> {
   try {
@@ -214,6 +215,10 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
           nurseryName={nursery.name}
           spotsAvailable={nursery.spots_available}
           hasWaitlist={nursery.has_waitlist}
+        />
+        <ShareButtons
+          url={`https://www.nurserymatch.com/nursery/${nursery.urn}`}
+          title={nursery.name}
         />
       </div>
 
@@ -442,6 +447,25 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbSchema(crumbs.map((c) => ({ name: c.name, url: c.href || `/nursery/${nursery.urn}` })))) }}
       />
+      {(() => {
+        const faqs: { question: string; answer: string }[] = []
+        if (nursery.ofsted_overall_grade) {
+          faqs.push({ question: `What is the Ofsted rating of ${nursery.name}?`, answer: `${nursery.name} has an Ofsted rating of ${nursery.ofsted_overall_grade}.` })
+        }
+        if (nursery.town) {
+          faqs.push({ question: `Where is ${nursery.name} located?`, answer: `${nursery.name} is located in ${nursery.town}${nursery.postcode ? `, ${nursery.postcode}` : ''}.` })
+        }
+        if (nursery.total_places) {
+          faqs.push({ question: `How many places does ${nursery.name} have?`, answer: `${nursery.name} has ${nursery.total_places} registered places.` })
+        }
+        if (faqs.length === 0) return null
+        return (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: jsonLdScript(faqSchema(faqs)) }}
+          />
+        )
+      })()}
 
       <div id="reviews">
         <AiReviewSynthesis urn={nursery.urn} />
