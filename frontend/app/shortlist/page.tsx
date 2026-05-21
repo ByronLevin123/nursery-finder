@@ -78,7 +78,27 @@ export default function ShortlistPage() {
     setShowEmailPrompt(true)
   }
 
-  function handleShare() {
+  async function handleShare() {
+    if (session) {
+      try {
+        const res = await fetch(`${API_URL}/api/v1/shortlist/share`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ urns: nurseries.map(n => n.urn) }),
+        })
+        if (res.ok) {
+          const { token } = await res.json()
+          const url = `${window.location.origin}/shortlist/shared/${token}`
+          await navigator.clipboard.writeText(url)
+          setCopied(true)
+          setTimeout(() => setCopied(false), 3000)
+          return
+        }
+      } catch {}
+    }
     const urns = nurseries.map(n => n.urn).join(',')
     const url = `${window.location.origin}/shortlist?urns=${urns}`
     navigator.clipboard.writeText(url).then(() => {
