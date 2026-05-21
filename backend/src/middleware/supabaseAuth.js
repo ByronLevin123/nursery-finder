@@ -133,7 +133,17 @@ export function requirePaidProvider(req, res, next) {
       if (nErr) throw nErr
       if (!nursery) return res.status(404).json({ error: 'Nursery not found' })
       if (nursery.claimed_by_user_id !== req.user.id) {
-        return res.status(403).json({ error: 'You do not own this nursery' })
+        // Check team membership as fallback
+        const { data: teamMember } = await db
+          .from('nursery_team_members')
+          .select('role')
+          .eq('nursery_urn', urn)
+          .eq('user_id', req.user.id)
+          .maybeSingle()
+        if (!teamMember) {
+          return res.status(403).json({ error: 'You do not have access to this nursery' })
+        }
+        req.teamRole = teamMember.role
       }
 
       // Check provider subscription tier

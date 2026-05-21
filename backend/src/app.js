@@ -34,6 +34,8 @@ import emailRouter from './routes/email.js'
 import savedSearchesRouter from './routes/savedSearches.js'
 import sharedShortlistsRouter from './routes/sharedShortlists.js'
 import overlaysRouter from './routes/overlays.js'
+import providerTeamRouter from './routes/providerTeam.js'
+import waitlistRouter from './routes/waitlist.js'
 import claimsRouter from './routes/claims.js'
 import providerRouter from './routes/provider.js'
 import travelRouter from './routes/travel.js'
@@ -268,6 +270,8 @@ app.use('/api/v1/sitemap', sitemapRouter)
 app.use('/api/v1/email', emailRouter)
 app.use('/api/v1/saved-searches', savedSearchesRouter)
 app.use('/api/v1/shortlist', sharedShortlistsRouter)
+app.use('/api/v1/provider', providerTeamRouter)
+app.use('/api/v1/waitlist', waitlistRouter)
 app.use('/api/v1/overlays', overlaysRouter)
 app.use('/api/v1/claims', claimsRouter)
 app.use('/api/v1/provider', providerRouter)
