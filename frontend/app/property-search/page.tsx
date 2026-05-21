@@ -38,6 +38,7 @@ export default function PropertySearchPage() {
   const [propertyType, setPropertyType] = useState('all')
   const [maxPrice, setMaxPrice] = useState('')
   const [minPrice, setMinPrice] = useState('')
+  const [postcode, setPostcode] = useState('')
   const [sort, setSort] = useState('family_score')
   const [results, setResults] = useState<DistrictResult[]>([])
   const [loading, setLoading] = useState(false)
@@ -50,6 +51,7 @@ export default function PropertySearchPage() {
       const params = new URLSearchParams({ property_type: propertyType, sort, limit: '60' })
       if (minPrice) params.set('min_price', minPrice)
       if (maxPrice) params.set('max_price', maxPrice)
+      if (postcode.trim()) params.set('region', postcode.trim().toUpperCase())
       const res = await fetch(`${API_URL}/api/v1/properties/districts?${params}`)
       if (!res.ok) throw new Error(`Search failed (${res.status})`)
       const json = await res.json()
@@ -88,7 +90,17 @@ export default function PropertySearchPage() {
         }}
         className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm mb-8"
       >
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Postcode / Region</label>
+            <input
+              type="text"
+              value={postcode}
+              onChange={(e) => setPostcode(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+              placeholder="e.g. SW11 or London"
+            />
+          </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Property type</label>
             <select
