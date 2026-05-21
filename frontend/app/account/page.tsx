@@ -56,7 +56,6 @@ function AccountPageInner() {
   // Form state mirrors profile
   const [displayName, setDisplayName] = useState('')
   const [homePostcode, setHomePostcode] = useState('')
-  const [avatarUrl, setAvatarUrl] = useState('')
   const [emailAlerts, setEmailAlerts] = useState(false)
   const [children, setChildren] = useState<ProfileChild[]>([])
   const [emailWeeklyDigest, setEmailWeeklyDigest] = useState(true)
@@ -73,7 +72,6 @@ function AccountPageInner() {
         setProfile(p)
         setDisplayName(p.display_name || '')
         setHomePostcode(p.home_postcode || '')
-        setAvatarUrl(p.avatar_url || '')
         setEmailAlerts(!!p.email_alerts)
         setChildren(Array.isArray(p.children) ? p.children.map(c => ({ ...c, id: c.id || crypto.randomUUID() })) : [])
         setEmailWeeklyDigest(p.email_weekly_digest !== false)
@@ -122,7 +120,6 @@ function AccountPageInner() {
       const updated = await updateProfile(session.access_token, {
         display_name: displayName || null,
         home_postcode: homePostcode || null,
-        avatar_url: avatarUrl || null,
         email_alerts: emailAlerts,
         children,
         email_weekly_digest: emailWeeklyDigest,
@@ -286,17 +283,6 @@ function AccountPageInner() {
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Avatar URL</label>
-            <input
-              type="url"
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-              maxLength={500}
-              placeholder="https://…"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
-            />
-          </div>
 
           {role !== 'provider' && (
             <>

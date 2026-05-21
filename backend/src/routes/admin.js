@@ -182,25 +182,20 @@ router.get('/users', async (req, res, next) => {
 
     let query = db
       .from('user_profiles')
-      .select('id, display_name, role, created_at', { count: 'exact' })
+      .select('id, email, display_name, role, created_at', { count: 'exact' })
 
     if (role) {
       query = query.eq('role', role)
     }
     if (search) {
-      // Search by display_name (email is not in user_profiles — see note below)
-      query = query.ilike('display_name', `%${escapeLike(search)}%`)
+      const term = `%${escapeLike(search)}%`
+      query = query.or(`display_name.ilike.${term},email.ilike.${term}`)
     }
 
     query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1)
 
     const { data, error, count } = await query
     if (error) throw error
-
-    // NOTE: auth.users is not directly queryable via the Supabase client data API.
-    // Email is available on req.user from the JWT but not joinable here.
-    // We return the user_profiles fields; email lookup would require Supabase Admin API
-    // or a database view. The frontend can display display_name + role.
 
     logger.info({ page, limit, role, search }, 'admin users list')
     return res.json({
