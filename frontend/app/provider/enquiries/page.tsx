@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from '@/components/SessionProvider'
 import MessageThread from '@/components/MessageThread'
 import { API_URL } from '@/lib/api'
@@ -42,13 +42,21 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 export default function ProviderEnquiriesPage() {
+  return <Suspense fallback={<div className="p-8 text-center text-gray-500">Loading...</div>}><ProviderEnquiriesContent /></Suspense>
+}
+
+function ProviderEnquiriesContent() {
   const router = useRouter()
+  const params = useSearchParams()
   const { session, loading: sessionLoading } = useSession()
   const [enquiries, setEnquiries] = useState<Enquiry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [updatingId, setUpdatingId] = useState<string | null>(null)
-  const [expandedMessages, setExpandedMessages] = useState<Record<string, boolean>>({})
+  const threadParam = params.get('thread')
+  const [expandedMessages, setExpandedMessages] = useState<Record<string, boolean>>(
+    threadParam ? { [threadParam]: true } : {}
+  )
   const [filterStatus, setFilterStatus] = useState('')
   const [filterSearch, setFilterSearch] = useState('')
 

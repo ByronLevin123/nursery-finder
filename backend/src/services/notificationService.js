@@ -165,8 +165,8 @@ export async function notifyNewMessage(enquiryId, message, recipientId) {
   const preview = message.body?.length > 80 ? message.body.slice(0, 80) + '...' : message.body
   const link =
     message.sender_role === 'parent'
-      ? `${FRONTEND_URL}/provider/enquiries`
-      : `${FRONTEND_URL}/applications`
+      ? `${FRONTEND_URL}/provider/enquiries?thread=${enquiryId}`
+      : `${FRONTEND_URL}/applications?thread=${enquiryId}`
 
   const notification = await createNotification({
     userId: recipientId,

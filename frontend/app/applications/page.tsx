@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from '@/components/SessionProvider'
 import VisitSurveyModal from '@/components/VisitSurveyModal'
 import MessageThread from '@/components/MessageThread'
@@ -69,7 +69,12 @@ const STATUS_LABELS: Record<string, string> = {
 const STATUS_ORDER = ['sent', 'opened', 'responded', 'visit_booked', 'place_offered', 'accepted']
 
 export default function ApplicationsPage() {
+  return <Suspense fallback={<div className="p-8 text-center text-gray-500">Loading...</div>}><ApplicationsContent /></Suspense>
+}
+
+function ApplicationsContent() {
   const router = useRouter()
+  const params = useSearchParams()
   const { session, loading: sessionLoading } = useSession()
   const [tab, setTab] = useState<'enquiries' | 'visits'>('enquiries')
   const [enquiries, setEnquiries] = useState<Enquiry[]>([])
@@ -78,7 +83,10 @@ export default function ApplicationsPage() {
   const [error, setError] = useState('')
   const [surveyBookingId, setSurveyBookingId] = useState<string | null>(null)
   const [surveyNurseryName, setSurveyNurseryName] = useState('')
-  const [expandedMessages, setExpandedMessages] = useState<Record<string, boolean>>({})
+  const threadParam = params.get('thread')
+  const [expandedMessages, setExpandedMessages] = useState<Record<string, boolean>>(
+    threadParam ? { [threadParam]: true } : {}
+  )
 
   useEffect(() => {
     if (sessionLoading) return
