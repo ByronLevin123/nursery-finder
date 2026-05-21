@@ -445,6 +445,14 @@ router.get('/:urn/progression', async (req, res, next) => {
     })
     if (sErr) throw sErr
 
+    const { data: secondarySchools, error: secErr } = await db.rpc('search_schools_near', {
+      search_lat: nursery.lat,
+      search_lng: nursery.lng,
+      radius_km: 3,
+      phase_filter: 'Secondary',
+    })
+    if (secErr) throw secErr
+
     const now = new Date()
     const receptionYear = now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear()
 
@@ -461,19 +469,43 @@ router.get('/:urn/progression', async (req, res, next) => {
         ages: '5-11',
         location: schools?.[0]?.name || 'Nearby primary school',
       },
+      {
+        stage: 'Secondary',
+        ages: '11-16',
+        location: secondarySchools?.[0]?.name || 'Nearby secondary school',
+      },
+      {
+        stage: 'Sixth Form',
+        ages: '16-18',
+        location: secondarySchools?.[0]?.name || 'Nearby sixth form',
+      },
     ]
+
+    const primaryList = (schools || []).slice(0, 5).map((s) => ({
+      urn: s.urn,
+      name: s.name,
+      ofsted_rating: s.ofsted_rating,
+      age_range: s.age_range,
+      distance_km: s.distance_km,
+      pupils: s.pupils,
+      website: s.website,
+    }))
+
+    const secondaryList = (secondarySchools || []).slice(0, 5).map((s) => ({
+      urn: s.urn,
+      name: s.name,
+      ofsted_rating: s.ofsted_rating,
+      age_range: s.age_range,
+      distance_km: s.distance_km,
+      pupils: s.pupils,
+      website: s.website,
+    }))
 
     res.json({
       nursery: { urn: nursery.urn, name: nursery.name, grade: nursery.ofsted_overall_grade },
-      schools: (schools || []).slice(0, 5).map((s) => ({
-        urn: s.urn,
-        name: s.name,
-        ofsted_rating: s.ofsted_rating,
-        age_range: s.age_range,
-        distance_km: s.distance_km,
-        pupils: s.pupils,
-        website: s.website,
-      })),
+      schools: primaryList,
+      primary_schools: primaryList,
+      secondary_schools: secondaryList,
       timeline,
     })
   } catch (err) {
