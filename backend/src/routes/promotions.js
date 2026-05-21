@@ -33,7 +33,7 @@ router.get('/nearby', async (req, res, next) => {
     const { data, error } = await db.rpc('search_promotions_near', {
       search_lat: searchLat,
       search_lng: searchLng,
-      radius_km: radiusKm,
+      search_radius_km: radiusKm,
       cat_filter: category || null,
     })
 
