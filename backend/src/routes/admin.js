@@ -1395,9 +1395,7 @@ router.get('/activity-log', async (req, res, next) => {
 
     let query = db
       .from('user_activity_log')
-      .select('*, user_profiles!user_activity_log_user_id_fkey(email, display_name)', {
-        count: 'exact',
-      })
+      .select('*', { count: 'exact' })
 
     if (user_id) query = query.eq('user_id', user_id)
     if (event) query = query.eq('event', event)
@@ -1405,9 +1403,7 @@ router.get('/activity-log', async (req, res, next) => {
     if (date_to) query = query.lte('created_at', date_to)
     if (search) {
       const term = `%${escapeLike(search)}%`
-      query = query.or(
-        `target_urn.ilike.${term},user_profiles.email.ilike.${term},user_profiles.display_name.ilike.${term}`
-      )
+      query = query.ilike('target_urn', term)
     }
 
     query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1)
@@ -1415,17 +1411,32 @@ router.get('/activity-log', async (req, res, next) => {
     const { data, error, count } = await query
     if (error) throw error
 
-    const rows = (data || []).map((row) => ({
-      id: row.id,
-      user_id: row.user_id,
-      email: row.user_profiles?.email || null,
-      display_name: row.user_profiles?.display_name || null,
-      event: row.event,
-      target_urn: row.target_urn,
-      metadata: row.metadata,
-      ip_hash: row.ip_hash,
-      created_at: row.created_at,
-    }))
+    const userIds = [...new Set((data || []).map((r) => r.user_id).filter(Boolean))]
+    let profileMap = {}
+    if (userIds.length > 0) {
+      const { data: profiles } = await db
+        .from('user_profiles')
+        .select('id, email, display_name')
+        .in('id', userIds)
+      if (profiles) {
+        profileMap = Object.fromEntries(profiles.map((p) => [p.id, p]))
+      }
+    }
+
+    const rows = (data || []).map((row) => {
+      const profile = profileMap[row.user_id] || {}
+      return {
+        id: row.id,
+        user_id: row.user_id,
+        email: profile.email || null,
+        display_name: profile.display_name || null,
+        event: row.event,
+        target_urn: row.target_urn,
+        metadata: row.metadata,
+        ip_hash: row.ip_hash,
+        created_at: row.created_at,
+      }
+    })
 
     res.json({ data: rows, meta: paginationMeta(count ?? 0, page, limit) })
   } catch (err) {
