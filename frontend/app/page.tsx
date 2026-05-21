@@ -7,6 +7,7 @@ import OglAttribution from '@/components/OglAttribution'
 import PriorityWizardButton from '@/components/PriorityWizardButton'
 
 const RecentlyViewed = dynamic(() => import('@/components/RecentlyViewed'), { ssr: false })
+const TestimonialCarousel = dynamic(() => import('@/components/TestimonialCarousel'), { ssr: false })
 
 export const metadata: Metadata = {
   title: 'NurseryMatch — Compare UK Nurseries by Ofsted Grade',
@@ -173,6 +174,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Parent testimonials */}
+      <TestimonialCarousel />
 
       {/* Live area example */}
       <section className="px-4 py-14">

@@ -51,6 +51,53 @@ function isIsoDate(s) {
   return /^\d{4}-\d{2}-\d{2}/.test(s) && !Number.isNaN(Date.parse(s))
 }
 
+// GET /api/v1/nurseries/reviews/featured — must be before /:urn routes
+router.get('/reviews/featured', async (req, res, next) => {
+  try {
+    const limit = Math.min(10, Math.max(1, Number(req.query.limit) || 5))
+
+    const { data: reviews, error } = await db
+      .from('nursery_reviews')
+      .select('id, urn, rating, title, body, would_recommend, author_display_name, created_at')
+      .eq('status', 'published')
+      .eq('would_recommend', true)
+      .gte('rating', 4)
+      .order('rating', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (error) throw error
+
+    const urns = [...new Set((reviews || []).map((r) => r.urn))]
+    let nurseryMap = {}
+    if (urns.length > 0) {
+      const { data: nurseries } = await db
+        .from('nurseries')
+        .select('urn, name, town')
+        .in('urn', urns)
+      if (nurseries) {
+        nurseryMap = Object.fromEntries(nurseries.map((n) => [n.urn, n]))
+      }
+    }
+
+    const enriched = (reviews || []).map((r) => ({
+      id: r.id,
+      rating: r.rating,
+      title: r.title,
+      body: r.body.length > 200 ? r.body.slice(0, 200) + '...' : r.body,
+      author_display_name: r.author_display_name || 'Parent',
+      nursery_name: nurseryMap[r.urn]?.name || null,
+      nursery_town: nurseryMap[r.urn]?.town || null,
+      nursery_urn: r.urn,
+      created_at: r.created_at,
+    }))
+
+    res.json({ data: enriched })
+  } catch (err) {
+    next(err)
+  }
+})
+
 // POST /api/v1/nurseries/:urn/reviews
 router.post('/:urn/reviews', optionalAuth, reviewSubmissionLimiter, async (req, res, next) => {
   try {
