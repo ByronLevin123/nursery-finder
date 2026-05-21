@@ -77,11 +77,15 @@ router.get('/', requireAuth, async (req, res, next) => {
       .eq('id', req.user.id)
       .maybeSingle()
     if (error) throw error
+    if (data && !data.email && req.user.email) {
+      await db.from('user_profiles').update({ email: req.user.email }).eq('id', req.user.id)
+      data.email = req.user.email
+    }
     if (!data) {
       // Lazily create — trigger may not have fired (or running with service key against test)
       const { data: created, error: insErr } = await db
         .from('user_profiles')
-        .insert({ id: req.user.id })
+        .insert({ id: req.user.id, email: req.user.email || null })
         .select()
         .single()
       if (insErr) {
