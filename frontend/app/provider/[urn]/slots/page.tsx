@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import SlotCalendar from '@/components/SlotCalendar'
 import { supabase } from '@/lib/supabase'
 import { API_URL } from '@/lib/api'
 
@@ -160,32 +161,8 @@ export default function ProviderSlotsPage({ params }: { params: { urn: string } 
         </button>
       </div>
 
-      {/* Slots list */}
-      {slots.length === 0 ? (
-        <p className="text-gray-500 text-center py-8">No slots created yet.</p>
-      ) : (
-        <div className="space-y-2">
-          {slots.map((slot) => (
-            <div key={slot.id} className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-3">
-              <div>
-                <p className="text-sm font-medium">
-                  {new Date(slot.slot_date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
-                  {' '}at {slot.slot_time}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {slot.duration_min}min &middot; {slot.booked}/{slot.capacity} booked
-                </p>
-              </div>
-              <button
-                onClick={() => deleteSlot(slot.id)}
-                className="text-xs text-red-600 hover:underline"
-              >
-                Delete
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Calendar view */}
+      <SlotCalendar slots={slots} onDeleteSlot={deleteSlot} />
     </div>
   )
 }
