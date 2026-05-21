@@ -5,6 +5,7 @@ import { searchCache, searchCacheKey } from '../services/cache.js'
 import { autocompleteCache, similarCache } from '../services/cache.js'
 import { smartSearch } from '../services/smartSearch.js'
 import { logger } from '../logger.js'
+import { trackActivity } from '../services/activityTracker.js'
 
 const router = express.Router()
 
@@ -74,6 +75,10 @@ router.post('/search', async (req, res, next) => {
 
     searchCache.set(cacheKey, result)
     logger.info({ postcode, radius_km, results: data.length }, 'search completed')
+    trackActivity(req.user?.id, 'search', {
+      metadata: { postcode, radius_km, result_count: data.length, grade, funded_2yr, funded_3yr },
+      req,
+    })
     res.json(result)
   } catch (err) {
     if (err.message?.includes('not found')) {
@@ -150,6 +155,12 @@ router.post('/compare', async (req, res, next) => {
     const { data, error } = await db.from('nurseries').select('*').in('urn', urns)
 
     if (error) throw error
+
+    for (const u of urns) {
+      db.rpc('increment_compare_count', { nursery_urn: u }).catch(() => {})
+    }
+    trackActivity(req.user?.id, 'compare', { metadata: { urns }, req })
+
     res.json({ data })
   } catch (err) {
     next(err)

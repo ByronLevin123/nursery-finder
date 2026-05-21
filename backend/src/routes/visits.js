@@ -5,6 +5,7 @@ import db from '../db.js'
 import { requireAuth } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
 import { sendEmail, isEmailAvailable, escapeHtml } from '../services/emailService.js'
+import { trackActivity } from '../services/activityTracker.js'
 
 const router = express.Router()
 
@@ -87,6 +88,7 @@ router.post('/book', requireAuth, async (req, res, next) => {
     if (bookErr) throw bookErr
 
     logger.info({ userId: req.user.id, slotId: slot_id, bookingId: booking.id }, 'visit booked')
+    trackActivity(req.user.id, 'booking', { metadata: { slot_id, nursery_id }, req })
 
     // Send confirmation emails (non-blocking)
     if (isEmailAvailable()) {

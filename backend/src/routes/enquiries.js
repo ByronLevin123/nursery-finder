@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit'
 import db from '../db.js'
 import { requireAuth } from '../middleware/supabaseAuth.js'
 import { verifyTurnstile } from '../middleware/turnstile.js'
+import { trackActivity } from '../services/activityTracker.js'
 import {
   sendEmail,
   isEmailAvailable,
@@ -154,6 +155,10 @@ router.post('/', requireAuth, enquiryLimiter, verifyTurnstile, async (req, res, 
       },
       'enquiries submitted'
     )
+
+    for (const enq of created) {
+      trackActivity(req.user.id, 'enquiry', { targetUrn: enq.nursery_urn || enq.nursery_id, req })
+    }
 
     return res.status(201).json({
       data: created,

@@ -2,6 +2,7 @@ import express from 'express'
 import db from '../db.js'
 import { requireAuth, optionalAuth } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
+import { trackActivity } from '../services/activityTracker.js'
 
 const router = express.Router()
 
@@ -67,6 +68,7 @@ router.post('/join', requireAuth, async (req, res, next) => {
     if (error) throw error
 
     logger.info({ userId: req.user.id, nurseryId: nursery.id }, 'joined waitlist')
+    trackActivity(req.user.id, 'waitlist_join', { targetUrn: nursery.urn, req })
     res.status(201).json({ data: entry, nursery_name: nursery.name })
   } catch (err) {
     next(err)

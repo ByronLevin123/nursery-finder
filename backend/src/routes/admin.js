@@ -1384,4 +1384,92 @@ router.post('/reports/snapshot', async (req, res, next) => {
   }
 })
 
+// ---------------------------------------------------------------------------
+// GET /activity-log — per-user activity feed
+// ---------------------------------------------------------------------------
+router.get('/activity-log', async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+    const { page, limit, offset } = paginate(req.query)
+    const { user_id, event, date_from, date_to, search } = req.query
+
+    let query = db
+      .from('user_activity_log')
+      .select('*, user_profiles!user_activity_log_user_id_fkey(email, display_name)', {
+        count: 'exact',
+      })
+
+    if (user_id) query = query.eq('user_id', user_id)
+    if (event) query = query.eq('event', event)
+    if (date_from) query = query.gte('created_at', date_from)
+    if (date_to) query = query.lte('created_at', date_to)
+    if (search) {
+      const term = `%${escapeLike(search)}%`
+      query = query.or(
+        `target_urn.ilike.${term},user_profiles.email.ilike.${term},user_profiles.display_name.ilike.${term}`
+      )
+    }
+
+    query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1)
+
+    const { data, error, count } = await query
+    if (error) throw error
+
+    const rows = (data || []).map((row) => ({
+      id: row.id,
+      user_id: row.user_id,
+      email: row.user_profiles?.email || null,
+      display_name: row.user_profiles?.display_name || null,
+      event: row.event,
+      target_urn: row.target_urn,
+      metadata: row.metadata,
+      ip_hash: row.ip_hash,
+      created_at: row.created_at,
+    }))
+
+    res.json({ data: rows, meta: paginationMeta(count ?? 0, page, limit) })
+  } catch (err) {
+    logger.error({ err: err?.message }, 'admin activity-log failed')
+    next(err)
+  }
+})
+
+// ---------------------------------------------------------------------------
+// GET /funnel — conversion funnel data
+// ---------------------------------------------------------------------------
+router.get('/funnel', async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+    const days = Math.min(90, Math.max(1, parseInt(req.query.days, 10) || 30))
+    const since = new Date(Date.now() - days * 86400000).toISOString()
+
+    const { data, error } = await db
+      .from('user_activity_log')
+      .select('event')
+      .gte('created_at', since)
+
+    if (error) throw error
+
+    const counts = {}
+    for (const row of data || []) {
+      counts[row.event] = (counts[row.event] || 0) + 1
+    }
+
+    res.json({
+      period: `${days}d`,
+      search: counts.search || 0,
+      view: counts.view || 0,
+      compare: counts.compare || 0,
+      enquiry: counts.enquiry || 0,
+      booking: counts.booking || 0,
+      waitlist_join: counts.waitlist_join || 0,
+      review: counts.review || 0,
+      signup: counts.signup || 0,
+    })
+  } catch (err) {
+    logger.error({ err: err?.message }, 'admin funnel failed')
+    next(err)
+  }
+})
+
 export default router
