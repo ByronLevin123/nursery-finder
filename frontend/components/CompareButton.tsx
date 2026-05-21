@@ -34,14 +34,14 @@ export default function CompareButton({ urn }: Props) {
     <>
       <button
         onClick={toggle}
-        className={`text-lg transition-all ${
+        className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full border transition-all ${
           inCompare
-            ? 'text-blue-600 scale-110'
-            : 'text-gray-300 hover:text-blue-400'
+            ? 'bg-purple-50 text-purple-700 border-purple-300'
+            : 'bg-white text-gray-500 border-gray-200 hover:border-purple-300 hover:text-purple-600'
         }`}
         title={inCompare ? 'Remove from comparison' : 'Add to comparison'}
       >
-        &#9878;
+        {inCompare ? '- Compare' : '+ Compare'}
       </button>
       {alertMsg && (
         <span className="text-xs text-amber-600 ml-1">{alertMsg}</span>
