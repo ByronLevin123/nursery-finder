@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit'
 import db from '../db.js'
 import { requireAuth, requireRole } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
+import { trackActivity } from '../services/activityTracker.js'
 
 const router = express.Router()
 
@@ -54,6 +55,7 @@ router.post('/nurseries/:urn/view', viewLimiter, async (req, res, next) => {
         .eq('urn', urn)
     }
 
+    trackActivity(req.user?.id, 'view', { targetUrn: urn, req })
     return res.json({ counted: true })
   } catch (err) {
     next(err)

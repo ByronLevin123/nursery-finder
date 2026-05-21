@@ -200,6 +200,7 @@ export default function AdminOverview() {
   const [quality, setQuality] = useState<AdminDataQuality | null>(null)
   const [activity, setActivity] = useState<AdminActivityItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [funnel, setFunnel] = useState<Record<string, number> | null>(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -209,11 +210,12 @@ export default function AdminOverview() {
       try {
         const token = await getAuthToken()
         if (!token) throw new Error('No auth token')
-        const [statsData, growthData, qualityData, activityData] = await Promise.all([
+        const [statsData, growthData, qualityData, activityData, funnelData] = await Promise.all([
           adminFetch('/stats', token),
           getAdminGrowthStats(token).catch(() => null),
           getAdminDataQuality(token).catch(() => null),
           getAdminActivity(token, 50).catch(() => []),
+          adminFetch('/funnel?days=30', token).catch(() => null),
         ])
         if (!cancelled) {
           // Map API response to expected shape — fill in derived top-level fields
@@ -226,6 +228,7 @@ export default function AdminOverview() {
           setGrowth(growthData)
           setQuality(qualityData)
           setActivity(activityData)
+          setFunnel(funnelData)
         }
       } catch (e: any) {
         if (!cancelled) setError(e.message || 'Failed to load stats')
@@ -382,6 +385,43 @@ export default function AdminOverview() {
           </>
         ) : null}
       </div>
+
+      {/* Conversion funnel */}
+      {funnel && (
+        <>
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">Conversion Funnel (30 days)</h3>
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 mb-8">
+            <div className="flex items-end gap-2 justify-between">
+              {[
+                { label: 'Searches', key: 'search', color: 'bg-blue-500' },
+                { label: 'Views', key: 'view', color: 'bg-indigo-500' },
+                { label: 'Compares', key: 'compare', color: 'bg-purple-500' },
+                { label: 'Enquiries', key: 'enquiry', color: 'bg-green-500' },
+                { label: 'Bookings', key: 'booking', color: 'bg-emerald-500' },
+              ].map((step, idx, arr) => {
+                const count = funnel[step.key] || 0
+                const maxCount = Math.max(...arr.map((s) => funnel[s.key] || 0), 1)
+                const height = Math.max(8, (count / maxCount) * 120)
+                const prev = idx > 0 ? funnel[arr[idx - 1].key] || 0 : 0
+                const rate = idx > 0 && prev > 0 ? ((count / prev) * 100).toFixed(0) : null
+                return (
+                  <div key={step.key} className="flex-1 flex flex-col items-center gap-1">
+                    <span className="text-xs font-bold text-gray-900">{count.toLocaleString()}</span>
+                    <div
+                      className={`w-full max-w-[48px] rounded-t ${step.color}`}
+                      style={{ height: `${height}px` }}
+                    />
+                    <span className="text-xs text-gray-600 text-center">{step.label}</span>
+                    {rate && (
+                      <span className="text-[10px] text-gray-400">{rate}%</span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Recent activity feed */}
       <h3 className="text-sm font-semibold text-gray-700 mb-3">Recent Activity</h3>
