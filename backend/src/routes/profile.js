@@ -150,6 +150,9 @@ router.get('/export', requireAuth, async (req, res, next) => {
       messagesRes,
       notificationsRes,
       notifPrefsRes,
+      waitlistRes,
+      teamRes,
+      sharedShortlistsRes,
     ] = await Promise.all([
       db.from('user_profiles').select('*').eq('id', userId).maybeSingle(),
       db.from('nursery_claims').select('*').eq('user_id', userId),
@@ -160,6 +163,9 @@ router.get('/export', requireAuth, async (req, res, next) => {
       db.from('messages').select('*').eq('sender_id', userId),
       db.from('notifications').select('*').eq('user_id', userId),
       db.from('notification_preferences').select('*').eq('user_id', userId).maybeSingle(),
+      db.from('waitlist_entries').select('*').eq('user_id', userId),
+      db.from('nursery_team_members').select('*').eq('user_id', userId),
+      db.from('shared_shortlists').select('*').eq('user_id', userId),
     ])
 
     const exportData = {
@@ -173,6 +179,9 @@ router.get('/export', requireAuth, async (req, res, next) => {
       messages: messagesRes.data || [],
       notifications: notificationsRes.data || [],
       notification_preferences: notifPrefsRes.data || null,
+      waitlist_entries: waitlistRes.data || [],
+      team_memberships: teamRes.data || [],
+      shared_shortlists: sharedShortlistsRes.data || [],
     }
 
     logger.info({ userId }, 'GDPR data export requested')
@@ -200,6 +209,9 @@ router.delete('/', requireAuth, async (req, res, next) => {
       { table: 'nursery_claims', column: 'user_id' },
       { table: 'notification_preferences', column: 'user_id' },
       { table: 'drip_queue', column: 'user_id' },
+      { table: 'waitlist_entries', column: 'user_id' },
+      { table: 'nursery_team_members', column: 'user_id' },
+      { table: 'shared_shortlists', column: 'user_id' },
       { table: 'user_profiles', column: 'id' },
     ]
 
