@@ -224,17 +224,6 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
 
       <StickyProfileNav />
 
-      <AiNurserySummary urn={nursery.urn} />
-
-      {/* Insight scores */}
-      <NurseryInsightPanel
-        qualityScore={nursery.quality_score}
-        costScore={nursery.cost_score}
-        availabilityScore={nursery.availability_score}
-        staffScore={nursery.staff_score}
-        sentimentScore={nursery.sentiment_score}
-      />
-
       {/* Details grid */}
       <div id="overview" className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         {nursery.address_line1 && (
@@ -319,68 +308,6 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         </div>
       )}
 
-
-      {(nursery.website_url || nursery.contact_email || nursery.contact_phone) && (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-          <p className="text-xs text-gray-500 uppercase font-medium mb-2">Provider contact</p>
-          {nursery.website_url && (
-            <p className="text-sm">
-              <a href={nursery.website_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                {nursery.website_url}
-              </a>
-            </p>
-          )}
-          {nursery.contact_email && (
-            <p className="text-sm">
-              <a href={`mailto:${nursery.contact_email}`} className="text-blue-600 hover:underline">{nursery.contact_email}</a>
-            </p>
-          )}
-          {nursery.contact_phone && (
-            <p className="text-sm">
-              <a href={`tel:${nursery.contact_phone.replace(/\s/g, '')}`} className="text-blue-600 hover:underline">{nursery.contact_phone}</a>
-            </p>
-          )}
-        </div>
-      )}
-
-      <ClaimNurseryButton
-        urn={nursery.urn}
-        nurseryName={nursery.name}
-        alreadyClaimed={!!nursery.claimed_by_user_id}
-        claimedByCurrentUser={
-          !!nursery.claimed_by_user_id &&
-          !!currentUserId &&
-          nursery.claimed_by_user_id === currentUserId
-        }
-      />
-
-      {/* Visit checklist */}
-      <VisitChecklistSection nurseryName={nursery.name} nurseryUrn={nursery.urn} />
-
-      {/* Street View + Map */}
-      {nursery.lat && nursery.lng && (
-        <div className="mb-6">
-          <StreetViewPanorama lat={nursery.lat} lng={nursery.lng} name={nursery.name} />
-        </div>
-      )}
-
-      {/* Travel time */}
-      {nursery.lat && nursery.lng && (
-        <TravelTimePanel
-          nurseryLat={nursery.lat}
-          nurseryLng={nursery.lng}
-          nurseryUrn={nursery.urn}
-          homePostcode={homePostcode}
-        />
-      )}
-
-      {/* Nearby primary schools */}
-      {nursery.lat && nursery.lng && (
-        <>
-          <NearbySchools lat={nursery.lat} lng={nursery.lng} />
-          <ProgressionPath urn={nursery.urn} />
-        </>
-      )}
 
       {/* More nurseries in this district — internal linking for SEO */}
       {relatedNurseries.length > 0 && district && (
@@ -476,6 +403,76 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         <NurseryQA urn={nursery.urn} isProvider={!!currentUserId && nursery.claimed_by_user_id === currentUserId} />
       </div>
 
+      {/* More about this nursery — collapsible secondary info */}
+      <details className="border border-gray-200 rounded-xl mb-6">
+        <summary className="p-4 cursor-pointer font-semibold text-gray-900 flex items-center justify-between">
+          More about this nursery
+          <svg className="w-5 h-5 text-gray-400 details-chevron transition-transform" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+        </summary>
+        <div className="px-4 pb-4 space-y-4">
+          <AiNurserySummary urn={nursery.urn} />
+
+          <NurseryInsightPanel
+            qualityScore={nursery.quality_score}
+            costScore={nursery.cost_score}
+            availabilityScore={nursery.availability_score}
+            staffScore={nursery.staff_score}
+            sentimentScore={nursery.sentiment_score}
+          />
+
+          {(nursery.website_url || nursery.contact_email || nursery.contact_phone) && (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <p className="text-xs text-gray-500 uppercase font-medium mb-2">Provider contact</p>
+              {nursery.website_url && (
+                <p className="text-sm">
+                  <a href={nursery.website_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                    {nursery.website_url}
+                  </a>
+                </p>
+              )}
+              {nursery.contact_email && (
+                <p className="text-sm">
+                  <a href={`mailto:${nursery.contact_email}`} className="text-blue-600 hover:underline">{nursery.contact_email}</a>
+                </p>
+              )}
+              {nursery.contact_phone && (
+                <p className="text-sm">
+                  <a href={`tel:${nursery.contact_phone.replace(/\s/g, '')}`} className="text-blue-600 hover:underline">{nursery.contact_phone}</a>
+                </p>
+              )}
+            </div>
+          )}
+
+          <VisitChecklistSection nurseryName={nursery.name} nurseryUrn={nursery.urn} />
+
+          {nursery.lat && nursery.lng && (
+            <StreetViewPanorama lat={nursery.lat} lng={nursery.lng} name={nursery.name} />
+          )}
+
+          {nursery.lat && nursery.lng && (
+            <TravelTimePanel
+              nurseryLat={nursery.lat}
+              nurseryLng={nursery.lng}
+              nurseryUrn={nursery.urn}
+              homePostcode={homePostcode}
+            />
+          )}
+
+          {nursery.lat && nursery.lng && (
+            <>
+              <NearbySchools lat={nursery.lat} lng={nursery.lng} />
+              <ProgressionPath urn={nursery.urn} />
+            </>
+          )}
+
+          {nursery.lat && nursery.lng && (
+            <NearbyPromotions lat={nursery.lat} lng={nursery.lng} />
+          )}
+        </div>
+      </details>
+
       {/* Photo placeholder when no provider photos */}
       {(!nursery.photos || nursery.photos.length === 0) && (
         <div className="mb-6">
@@ -483,13 +480,19 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         </div>
       )}
 
-      {/* Nearby activities */}
-      {nursery.lat && nursery.lng && (
-        <NearbyPromotions lat={nursery.lat} lng={nursery.lng} />
-      )}
-
       {/* Similar nurseries */}
       <SimilarNurseries urn={nursery.urn} />
+
+      <ClaimNurseryButton
+        urn={nursery.urn}
+        nurseryName={nursery.name}
+        alreadyClaimed={!!nursery.claimed_by_user_id}
+        claimedByCurrentUser={
+          !!nursery.claimed_by_user_id &&
+          !!currentUserId &&
+          nursery.claimed_by_user_id === currentUserId
+        }
+      />
 
       <ViewTracker urn={nursery.urn} />
       <RecentlyViewedTracker urn={nursery.urn} name={nursery.name} grade={nursery.ofsted_overall_grade} town={nursery.town} />

@@ -31,20 +31,6 @@ export default function Footer() {
               </div>
             </div>
             <div>
-              <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Providers</p>
-              <div className="flex flex-col gap-1 text-sm">
-                <Link href="/for-providers" className="text-gray-500 hover:text-gray-700">
-                  For Providers
-                </Link>
-                <Link href="/claim" className="text-gray-500 hover:text-gray-700">
-                  Claim Your Nursery
-                </Link>
-                <Link href="/refund" className="text-gray-500 hover:text-gray-700">
-                  Refund Policy
-                </Link>
-              </div>
-            </div>
-            <div>
               <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Company</p>
               <div className="flex flex-col gap-1 text-sm">
                 <Link href="/about" className="text-gray-500 hover:text-gray-700">
@@ -64,6 +50,9 @@ export default function Footer() {
                 </Link>
                 <Link href="/press" className="text-gray-500 hover:text-gray-700">
                   Press
+                </Link>
+                <Link href="/for-providers" className="text-gray-500 hover:text-gray-700">
+                  Are you a nursery?
                 </Link>
               </div>
             </div>

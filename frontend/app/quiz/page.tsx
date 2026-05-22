@@ -74,7 +74,7 @@ export default function QuizPage() {
     budget_min: 400,
     budget_max: 1500,
     budget_flexible: false,
-    priority_order: PRIORITY_ITEMS.map((p) => p.id),
+    priority_order: [],
     must_haves: [],
     min_grade: '',
   })
@@ -98,13 +98,6 @@ export default function QuizPage() {
 
   function updateData(patch: Partial<QuizData>) {
     setData((prev) => ({ ...prev, ...patch }))
-  }
-
-  function moveItem(arr: string[], from: number, to: number): string[] {
-    const copy = [...arr]
-    const [item] = copy.splice(from, 1)
-    copy.splice(to, 0, item)
-    return copy
   }
 
   async function handleSubmit() {
@@ -316,42 +309,42 @@ export default function QuizPage() {
       {/* Step 5: Priorities + Must-haves */}
       {step === 5 && (
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Rank your priorities</h1>
-          <p className="text-gray-600 mb-6">Drag to reorder. Top = most important.</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">What matters most to you?</h1>
+          <p className="text-gray-600 mb-6">Pick up to 3 priorities</p>
 
-          <div className="space-y-2 mb-8">
-            {data.priority_order.map((id, idx) => {
-              const item = PRIORITY_ITEMS.find((p) => p.id === id)
-              if (!item) return null
+          <div className="grid grid-cols-2 gap-3 mb-8">
+            {PRIORITY_ITEMS.map((item) => {
+              const selectedIndex = data.priority_order.indexOf(item.id)
+              const isSelected = selectedIndex !== -1
+              const maxReached = data.priority_order.length >= 3 && !isSelected
               return (
-                <div
-                  key={id}
-                  className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg"
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    if (isSelected) {
+                      const next = data.priority_order.filter((id) => id !== item.id)
+                      updateData({ priority_order: next })
+                    } else if (data.priority_order.length < 3) {
+                      updateData({ priority_order: [...data.priority_order, item.id] })
+                    }
+                  }}
+                  disabled={maxReached}
+                  className={`relative text-left p-4 rounded-xl border-2 transition ${
+                    isSelected
+                      ? 'border-indigo-600 bg-indigo-50'
+                      : maxReached
+                        ? 'border-gray-200 opacity-40 pointer-events-none'
+                        : 'border-gray-200 hover:border-gray-300'
+                  }`}
                 >
-                  <span className="text-xs font-bold text-indigo-600 w-5">{idx + 1}</span>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{item.label}</p>
-                    <p className="text-xs text-gray-500">{item.desc}</p>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <button
-                      onClick={() => idx > 0 && updateData({ priority_order: moveItem(data.priority_order, idx, idx - 1) })}
-                      disabled={idx === 0}
-                      className="text-xs text-gray-400 hover:text-gray-700 disabled:opacity-30"
-                      aria-label="Move up"
-                    >
-                      &#9650;
-                    </button>
-                    <button
-                      onClick={() => idx < data.priority_order.length - 1 && updateData({ priority_order: moveItem(data.priority_order, idx, idx + 1) })}
-                      disabled={idx === data.priority_order.length - 1}
-                      className="text-xs text-gray-400 hover:text-gray-700 disabled:opacity-30"
-                      aria-label="Move down"
-                    >
-                      &#9660;
-                    </button>
-                  </div>
-                </div>
+                  {isSelected && (
+                    <span className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-indigo-600 text-white text-xs font-bold">
+                      {selectedIndex + 1}
+                    </span>
+                  )}
+                  <p className="text-sm font-medium text-gray-900">{item.label}</p>
+                  <p className="text-xs text-gray-500 mt-1">{item.desc}</p>
+                </button>
               )
             })}
           </div>

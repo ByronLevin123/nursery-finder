@@ -95,9 +95,16 @@ function Cross() {
 export default function PricingPage() {
   const router = useRouter()
   const { session, user, role } = useSession()
+  const [tab, setTab] = useState<'parents' | 'providers'>(
+    role === 'provider' || role === 'admin' ? 'providers' : 'parents'
+  )
   const [annual, setAnnual] = useState(false)
   const [sub, setSub] = useState<SubscriptionInfo | null>(null)
   const [loading, setLoading] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (role === 'provider' || role === 'admin') setTab('providers')
+  }, [role])
 
   useEffect(() => {
     if (!session) return
@@ -161,8 +168,32 @@ export default function PricingPage() {
           Whether you are a parent searching for the perfect nursery or a provider looking to reach more families, we have a plan for you.
         </p>
 
-        {/* Annual toggle */}
-        <div className="flex items-center justify-center gap-3 mb-12">
+        {/* Tab switcher */}
+        <div className="flex items-center justify-center gap-2 mb-8">
+          <button
+            onClick={() => setTab('parents')}
+            className={`px-5 py-2 rounded-full text-sm font-semibold transition ${
+              tab === 'parents'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            For Parents
+          </button>
+          <button
+            onClick={() => setTab('providers')}
+            className={`px-5 py-2 rounded-full text-sm font-semibold transition ${
+              tab === 'providers'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            For Providers
+          </button>
+        </div>
+
+        {/* Annual toggle (only show for providers tab) */}
+        {tab === 'providers' && <div className="flex items-center justify-center gap-3 mb-12">
           <span className={`text-sm font-medium ${!annual ? 'text-gray-900' : 'text-gray-500'}`}>Monthly</span>
           <button
             onClick={() => setAnnual(!annual)}
@@ -180,10 +211,11 @@ export default function PricingPage() {
               2 months free
             </span>
           </span>
-        </div>
+        </div>}
       </section>
 
       {/* ---- Free for Parents banner ---- */}
+      {tab === 'parents' && (
       <section className="px-4 pb-16">
         <div className="max-w-4xl mx-auto">
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-8 text-center">
@@ -210,8 +242,10 @@ export default function PricingPage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* ---- For Providers ---- */}
+      {tab === 'providers' && (<>
       <section className="px-4 pb-20">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 text-center mb-8">For Nursery Providers</h2>
@@ -321,6 +355,8 @@ export default function PricingPage() {
           </div>
         </div>
       </section>
+      </>
+      )}
 
       <div className="max-w-5xl mx-auto px-4 py-8">
         <OglAttribution />
