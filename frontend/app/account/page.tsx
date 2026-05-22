@@ -205,7 +205,7 @@ function AccountPageInner() {
 
   async function handleSignOut() {
     await signOut()
-    router.push('/')
+    window.location.href = '/'
   }
 
   if (sessionLoading || loading) {

@@ -88,13 +88,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut()
+    try {
+      await supabase.auth.signOut()
+    } catch {
+      // Continue with local cleanup even if server-side sign out fails
+    }
     setSession(null)
     setRole('customer')
     if (typeof window !== 'undefined') {
       localStorage.removeItem('nursery-shortlist')
       localStorage.removeItem('nursery-compare')
-      window.location.href = '/login'
     }
   }, [])
 

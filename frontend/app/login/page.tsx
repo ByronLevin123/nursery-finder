@@ -30,7 +30,7 @@ function LoginInner() {
 
   async function handleGoogle() {
     setError(null)
-    const redirectTo = `${window.location.origin}${next.startsWith('/') ? next : '/' + next}`
+    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo },
@@ -114,7 +114,7 @@ function LoginInner() {
     e.preventDefault()
     setLoading(true)
     setError(null)
-    const redirectTo = `${window.location.origin}${next.startsWith('/') ? next : '/' + next}`
+    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: redirectTo },
@@ -139,7 +139,7 @@ function LoginInner() {
     }
 
     setLoading(true)
-    const redirectTo = `${window.location.origin}/login?confirmed=true`
+    const redirectTo = `${window.location.origin}/auth/callback?next=/login?confirmed=true`
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -165,7 +165,7 @@ function LoginInner() {
     setLoading(true)
     setError(null)
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/login`,
+      redirectTo: `${window.location.origin}/auth/callback?next=/account`,
     })
     if (error) setError(error.message)
     else setSuccessView('password-reset-sent')
