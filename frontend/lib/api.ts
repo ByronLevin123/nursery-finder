@@ -145,7 +145,7 @@ export async function compareNurseries(urns: string[]): Promise<Nursery[]> {
     throw new Error(err.error || `Compare failed: ${res.status}`)
   }
   const result = await res.json()
-  return result.data
+  return result.data || []
 }
 
 export interface AreaSummary {

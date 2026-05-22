@@ -3,22 +3,31 @@
 import Link from 'next/link'
 
 export default function Error({
+  error,
   reset,
 }: {
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  const isNetworkError =
+    error.message === 'Failed to fetch' ||
+    error.message.includes('NetworkError') ||
+    error.message.includes('network')
+
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
       <div className="max-w-md w-full text-center">
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl p-8 mb-8 shadow-lg">
-          <h1 className="text-4xl font-bold mb-2">Oops</h1>
-          <p className="text-lg font-medium text-white/90">Something went wrong</p>
-        </div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          {isNetworkError ? 'Connection problem' : 'Something went wrong'}
+        </h1>
 
-        <p className="text-gray-600 mb-8">
-          We ran into an unexpected problem. Please try again, or head back to the
-          home page.
+        <p className="text-gray-500 mb-2">
+          {isNetworkError
+            ? 'We could not reach the server. Please check your internet connection and try again.'
+            : 'We ran into an unexpected problem. This is usually temporary.'}
+        </p>
+        <p className="text-sm text-gray-400 mb-8">
+          If this keeps happening, try refreshing the page or come back in a few minutes.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
