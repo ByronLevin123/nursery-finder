@@ -171,8 +171,8 @@ cron.schedule('0 8 * * *', async () => {
   }
 })
 
-// Hourly: process drip email queue
-cron.schedule('0 * * * *', async () => {
+// Every 15 minutes: process drip email queue
+cron.schedule('*/15 * * * *', async () => {
   logger.info('cron: processing drip queue')
   try {
     const result = await processDripQueue()
@@ -182,8 +182,8 @@ cron.schedule('0 * * * *', async () => {
   }
 })
 
-// Daily 8:30am: saved-search new-nursery alerts
-cron.schedule('30 8 * * *', async () => {
+// Daily 9am: saved-search new-nursery alerts
+cron.schedule('0 9 * * *', async () => {
   logger.info('cron: starting saved-search alerts')
   try {
     const result = await processSavedSearchAlerts()
@@ -193,8 +193,8 @@ cron.schedule('30 8 * * *', async () => {
   }
 })
 
-// Monday 9am: weekly digest (legacy — user_profiles.email_weekly_digest)
-cron.schedule('0 9 * * 1', async () => {
+// Monday 8am: weekly digest (legacy — user_profiles.email_weekly_digest)
+cron.schedule('0 8 * * 1', async () => {
   logger.info('cron: starting weekly digest')
   try {
     const result = await sendWeeklyDigests()
@@ -204,8 +204,8 @@ cron.schedule('0 9 * * 1', async () => {
   }
 })
 
-// Monday 9am: enhanced weekly digest (notification_preferences.email_weekly_digest)
-cron.schedule('0 9 * * 1', async () => {
+// Monday 8am: enhanced weekly digest (notification_preferences.email_weekly_digest)
+cron.schedule('0 8 * * 1', async () => {
   logger.info('cron: starting enhanced weekly digest')
   try {
     const result = await sendEnhancedWeeklyDigests()

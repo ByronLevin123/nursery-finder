@@ -7,6 +7,9 @@ import {
   renderWelcomeEmail,
   renderWelcomeDay3Email,
   renderWelcomeDay7Email,
+  renderQuizCompleteDay0Email,
+  renderQuizCompleteDay3Email,
+  renderQuizCompleteDay7Email,
 } from './emailTemplates.js'
 
 // ---------- Sequence definitions ----------
@@ -17,6 +20,13 @@ const SEQUENCES = {
       { day: 0, template: 'welcome', render: renderWelcomeEmail },
       { day: 3, template: 'welcome_day3', render: renderWelcomeDay3Email },
       { day: 7, template: 'welcome_day7', render: renderWelcomeDay7Email },
+    ],
+  },
+  quiz_complete: {
+    steps: [
+      { day: 0, template: 'quiz_complete_day0', render: renderQuizCompleteDay0Email },
+      { day: 3, template: 'quiz_complete_day3', render: renderQuizCompleteDay3Email },
+      { day: 7, template: 'quiz_complete_day7', render: renderQuizCompleteDay7Email },
     ],
   },
 }

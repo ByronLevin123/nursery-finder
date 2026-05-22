@@ -9,6 +9,7 @@ import {
   generateTradeoffExplanation,
 } from '../services/quizEngine.js'
 import { logger } from '../logger.js'
+import { startSequence } from '../services/dripEngine.js'
 
 const router = express.Router()
 
@@ -164,6 +165,12 @@ router.get('/recommendations', requireAuth, async (req, res, next) => {
 
     const result = await getPersonalisedRankings(enrichedQuiz, { limit, offset })
     logger.info({ userId: req.user.id, total: result.meta.total }, 'recommendations served')
+
+    // Start quiz-complete drip sequence (fire-and-forget, non-blocking)
+    startSequence(req.user.id, 'quiz_complete').catch((err) =>
+      logger.warn({ err: err?.message, userId: req.user.id }, 'quiz_complete drip start failed')
+    )
+
     return res.json(result)
   } catch (err) {
     next(err)

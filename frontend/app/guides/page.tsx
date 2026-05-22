@@ -19,6 +19,13 @@ export const metadata: Metadata = {
     siteName: 'NurseryMatch',
     type: 'website',
     locale: 'en_GB',
+    images: [{ url: '/og-default.png', width: 1200, height: 630, alt: 'Nursery Guides & Advice' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Nursery Guides & Advice | NurseryMatch',
+    description: 'Helpful guides for UK parents on nurseries, Ofsted, and childcare.',
+    images: ['/og-default.png'],
   },
 }
 

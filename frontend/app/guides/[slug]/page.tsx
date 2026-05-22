@@ -95,12 +95,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       siteName: 'NurseryMatch',
       type: 'article',
       locale: 'en_GB',
+      images: [{ url: '/og-default.png', width: 1200, height: 630, alt: post.title }],
       ...(post.date ? { publishedTime: post.date } : {}),
     },
     twitter: {
       card: 'summary_large_image',
       title: post.title,
       description: post.excerpt,
+      images: ['/og-default.png'],
     },
   }
 }
