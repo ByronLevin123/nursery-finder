@@ -28,20 +28,23 @@ function CompareContent() {
 
   useEffect(() => {
     async function load() {
-      // Get URNs from URL params or localStorage
-      const urlUrns = searchParams.get('urns')?.split(',').filter(Boolean) || []
-      const urns = urlUrns.length >= 2 ? urlUrns : getCompareList()
-
-      if (urns.length < 2) {
-        setLoading(false)
-        return
-      }
-
       try {
+        const urlUrns = searchParams.get('urns')?.split(',').filter(Boolean) || []
+        const urns = urlUrns.length >= 2 ? urlUrns : getCompareList()
+
+        if (urns.length < 2) {
+          setLoading(false)
+          return
+        }
+
         const data = await compareNurseries(urns)
+        if (!Array.isArray(data)) {
+          setError('Unexpected response from the server. Please try again.')
+          setLoading(false)
+          return
+        }
         setNurseries(data)
 
-        // Fetch AI tradeoff for top 2 if signed in
         if (data.length >= 2 && session?.access_token) {
           try {
             const trRes = await fetch(
@@ -57,7 +60,11 @@ function CompareContent() {
           }
         }
       } catch (err: any) {
-        setError(err.message || 'Failed to load nurseries')
+        setError(
+          err.message === 'Failed to fetch'
+            ? 'Could not reach the server. Please check your connection and try again.'
+            : err.message || 'Failed to load nurseries for comparison.'
+        )
       }
       setLoading(false)
     }
@@ -141,14 +148,25 @@ function CompareContent() {
   if (error) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Comparison Error</h1>
-        <p className="text-red-500 mb-6">{error}</p>
-        <Link
-          href="/search"
-          className="inline-block px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700"
-        >
-          Search nurseries
-        </Link>
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">Could not load comparison</h1>
+        <p className="text-gray-500 mb-2">{error}</p>
+        <p className="text-sm text-gray-400 mb-8">
+          Your compare list is saved — you can try again in a moment.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <button
+            onClick={() => { setError(''); setLoading(true); window.location.reload() }}
+            className="px-6 py-3 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition"
+          >
+            Try again
+          </button>
+          <Link
+            href="/search"
+            className="px-6 py-3 border border-gray-300 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50 transition"
+          >
+            Search nurseries
+          </Link>
+        </div>
       </div>
     )
   }
@@ -270,7 +288,7 @@ function CompareContent() {
                   <p className="font-semibold text-gray-900">&pound;{n.fee_avg_monthly}/mo</p>
                 </div>
               )}
-              {(n.distance_km != null) && (
+              {(n.distance_km != null && typeof n.distance_km === 'number') && (
                 <div className="bg-gray-50 rounded-lg p-2">
                   <p className="text-xs text-gray-500">Distance</p>
                   <p className="font-semibold text-gray-900">{n.distance_km.toFixed(1)} km</p>
