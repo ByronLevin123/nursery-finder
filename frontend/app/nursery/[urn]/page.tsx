@@ -216,11 +216,11 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
           spotsAvailable={nursery.spots_available}
           hasWaitlist={nursery.has_waitlist}
         />
-        <ShareButtons
-          url={`https://www.nurserymatch.com/nursery/${nursery.urn}`}
-          title={nursery.name}
-        />
       </div>
+      <ShareButtons
+        url={`https://www.nurserymatch.com/nursery/${nursery.urn}`}
+        title={nursery.name}
+      />
 
       <StickyProfileNav />
 
