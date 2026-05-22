@@ -1,3 +1,13 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+details[open] .details-chevron {
+  transform: rotate(180deg);
+}
+details summary::-webkit-details-marker {
+  display: none;
+}
+details > summary {
+  list-style: none;
+}

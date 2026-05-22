@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { API_URL } from '@/lib/api'
 import { trackEvent } from '@/lib/analytics'
+import { useSession } from '@/components/SessionProvider'
 
 interface Props {
   urn: string
@@ -34,6 +35,8 @@ export default function ClaimNurseryButton({
   const [role, setRole] = useState('')
   const [phone, setPhone] = useState('')
   const [evidence, setEvidence] = useState('')
+
+  const { role: sessionRole } = useSession()
 
   // Check whether this user already has a claim for this nursery.
   useEffect(() => {
@@ -66,6 +69,9 @@ export default function ClaimNurseryButton({
       cancelled = true
     }
   }, [urn])
+
+  // Hide claim button for signed-in parents
+  if (sessionRole === 'customer') return null
 
   // Pill: already managed by this user
   if (claimedByCurrentUser || myClaim?.status === 'approved') {

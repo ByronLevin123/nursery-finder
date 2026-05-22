@@ -4,7 +4,6 @@ import HomeSearch from '@/components/HomeSearch'
 import AreaSummaryCard from '@/components/AreaSummaryCard'
 import NewsletterSignup from '@/components/NewsletterSignup'
 import OglAttribution from '@/components/OglAttribution'
-import PriorityWizardButton from '@/components/PriorityWizardButton'
 
 const RecentlyViewed = dynamic(() => import('@/components/RecentlyViewed'), { ssr: false })
 const TestimonialCarousel = dynamic(() => import('@/components/TestimonialCarousel'), { ssr: false })
@@ -62,7 +61,7 @@ export default function HomePage() {
       <section className="px-4 pt-16 pb-14">
         <div className="max-w-3xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">
-            Find the right nursery — and the right area
+            Find the right nursery for your child
           </h1>
           <p className="text-lg md:text-xl text-gray-600 mb-10">
             Compare 27,000+ UK nurseries with real Ofsted ratings, live market data, and parent reviews.
@@ -74,24 +73,11 @@ export default function HomePage() {
             >
               Take the 2-min quiz &rarr;
             </a>
-            <a
-              href="/property-search"
-              className="inline-flex items-center justify-center gap-2 px-6 py-4 bg-white border-2 border-purple-300 text-purple-800 rounded-xl font-semibold text-lg shadow-sm hover:bg-purple-50 transition"
-            >
-              <span className="text-2xl">🏠</span> Find a home
-            </a>
-            <a
-              href="/assistant"
-              className="inline-flex items-center justify-center gap-2 px-6 py-4 bg-white border-2 border-indigo-300 text-indigo-800 rounded-xl font-semibold text-lg shadow-sm hover:bg-indigo-50 transition"
-            >
-              <span className="text-2xl">🤖</span> AI Move Assistant
-            </a>
           </div>
           <div id="nursery-search">
             <HomeSearch />
           </div>
           <p className="text-xs text-gray-400 mt-2">Or search by postcode above</p>
-          <PriorityWizardButton />
           <div className="flex flex-wrap justify-center gap-3 mt-6">
             <span className="px-3 py-1 bg-white/80 rounded-full text-xs font-medium text-gray-700 border border-gray-200 shadow-sm">
               27,808 nurseries compared
@@ -209,6 +195,22 @@ export default function HomePage() {
                 <p className="text-sm text-gray-600">{s.body}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Moving with your family? */}
+      <section className="px-4 pb-12">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Moving with your family?</h2>
+          <p className="text-gray-600 mb-6">Explore areas, compare property prices, and find the best place to raise your family.</p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="/property-search" className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white border-2 border-purple-300 text-purple-800 rounded-xl font-semibold shadow-sm hover:bg-purple-50 transition">
+              Find a home
+            </a>
+            <a href="/assistant" className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white border-2 border-indigo-300 text-indigo-800 rounded-xl font-semibold shadow-sm hover:bg-indigo-50 transition">
+              AI Move Assistant
+            </a>
           </div>
         </div>
       </section>

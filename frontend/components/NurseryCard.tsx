@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import GradeBadge from './GradeBadge'
 import FeaturedBadge from './FeaturedBadge'
-import ScoreBadge from './ScoreBadge'
 import { Nursery } from '@/lib/api'
 import ShortlistButton from './ShortlistButton'
 import CompareButton from './CompareButton'
@@ -10,12 +9,6 @@ import MatchRationale from './MatchRationale'
 import AvailabilityBadge from './AvailabilityBadge'
 import NurseryCardThumbnail from './NurseryCardThumbnail'
 import type { MatchResult } from '@/lib/preferences'
-
-function computeOverallScore(n: Nursery): number | null {
-  const scores = [n.quality_score, n.cost_score, n.availability_score, n.staff_score, n.sentiment_score].filter((s): s is number => s != null)
-  if (scores.length === 0) return null
-  return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
-}
 
 interface Props {
   nursery: Nursery
@@ -58,7 +51,6 @@ export default function NurseryCard({ nursery, showDistance = true, onClick, mat
 
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         <GradeBadge grade={nursery.ofsted_overall_grade} size="sm" />
-        <ScoreBadge score={computeOverallScore(nursery)} />
         {nursery.featured && <FeaturedBadge />}
         {match && <MatchBadge score={match.excluded ? null : match.score} excluded={match.excluded} />}
         <AvailabilityBadge nursery={nursery} />
@@ -77,11 +69,8 @@ export default function NurseryCard({ nursery, showDistance = true, onClick, mat
         {nursery.total_places && (
           <span>🏫 {nursery.total_places} places</span>
         )}
-        {nursery.places_funded_2yr && nursery.places_funded_2yr > 0 && (
-          <span className="text-green-700">✓ 2yr funded</span>
-        )}
-        {nursery.places_funded_3_4yr && nursery.places_funded_3_4yr > 0 && (
-          <span className="text-green-700">✓ 3-4yr funded</span>
+        {((nursery.places_funded_2yr && nursery.places_funded_2yr > 0) || (nursery.places_funded_3_4yr && nursery.places_funded_3_4yr > 0)) && (
+          <span className="text-green-700">✓ Funded places</span>
         )}
         {showDistance && nursery.distance_km != null && (
           <span>📍 {nursery.distance_km.toFixed(1)}km away</span>
@@ -90,12 +79,6 @@ export default function NurseryCard({ nursery, showDistance = true, onClick, mat
           <span>💷 ~£{nursery.fee_avg_monthly}/mo</span>
         )}
       </div>
-
-      {nursery.last_inspection_date && (
-        <p className="text-xs text-gray-400 mt-2">
-          Inspected {new Date(nursery.last_inspection_date).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
-        </p>
-      )}
 
       {match && <MatchRationale match={match} />}
       </div>

@@ -94,8 +94,7 @@ describe('NurseryCard', () => {
 
   it('renders funded place indicators', () => {
     render(<NurseryCard nursery={makeNursery()} />)
-    expect(screen.getByText(/2yr funded/)).toBeInTheDocument()
-    expect(screen.getByText(/3-4yr funded/)).toBeInTheDocument()
+    expect(screen.getByText(/Funded places/)).toBeInTheDocument()
   })
 
   it('handles null/missing data gracefully', () => {
@@ -110,7 +109,7 @@ describe('NurseryCard', () => {
     render(<NurseryCard nursery={nursery} />)
     expect(screen.getByText('Sunny Days Nursery')).toBeInTheDocument()
     expect(screen.queryByText(/places/)).not.toBeInTheDocument()
-    expect(screen.queryByText(/funded/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Funded places/)).not.toBeInTheDocument()
     expect(screen.queryByText(/away/)).not.toBeInTheDocument()
   })
 
@@ -119,8 +118,4 @@ describe('NurseryCard', () => {
     expect(screen.getByText(/Old inspection/)).toBeInTheDocument()
   })
 
-  it('renders inspection date when present', () => {
-    render(<NurseryCard nursery={makeNursery({ last_inspection_date: '2024-06-15' })} />)
-    expect(screen.getByText(/Inspected June 2024/)).toBeInTheDocument()
-  })
 })
