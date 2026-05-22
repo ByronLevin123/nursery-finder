@@ -194,6 +194,7 @@ export default function Nav() {
                     onClick={async () => {
                       setAccountOpen(false)
                       await signOut()
+                      window.location.href = '/login'
                     }}
                     className="block w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-gray-50"
                   >
@@ -256,7 +257,7 @@ export default function Nav() {
             <>
               <Link href="/account" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Account</Link>
               <button
-                onClick={async () => { setMenuOpen(false); await signOut() }}
+                onClick={async () => { setMenuOpen(false); await signOut(); window.location.href = '/login' }}
                 className="block text-sm text-red-600"
               >
                 Sign out
