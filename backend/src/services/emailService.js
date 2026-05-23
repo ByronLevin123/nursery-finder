@@ -5,7 +5,7 @@
 
 import { logger } from '../logger.js'
 
-const FROM = process.env.EMAIL_FROM || 'NurseryMatch <noreply@nurserymatch.com>'
+const FROM = process.env.EMAIL_FROM || 'NurseryMatch <hello@nurserymatch.com>'
 const SEND_TIMEOUT_MS = 15_000
 export const FRONTEND_URL = process.env.FRONTEND_URL || 'https://nurserymatch.com'
 export const UNSUBSCRIBE_URL = `${FRONTEND_URL}/account?tab=notifications`

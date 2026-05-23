@@ -95,7 +95,7 @@ INGEST_SECRET=change-this-to-random-string
 SENTRY_DSN=https://your-dsn@sentry.io/project-id
 
 # Alerts
-ALERT_EMAIL=your@email.com
+ALERT_EMAIL=byron@nurserymatch.com
 ```
 
 ### 0.5 — Create frontend/.env.example
