@@ -42,6 +42,7 @@ const StreetViewPanorama = dynamic(() => import('@/components/StreetViewPanorama
 const StickyProfileNav = dynamic(() => import('@/components/StickyProfileNav'), { ssr: false })
 const JoinWaitlistButton = dynamic(() => import('@/components/JoinWaitlistButton'), { ssr: false })
 const ShareButtons = dynamic(() => import('@/components/ShareButtons'), { ssr: false })
+const NewsletterPopup = dynamic(() => import('@/components/NewsletterPopup'), { ssr: false })
 
 export async function generateMetadata({ params }: { params: { urn: string } }): Promise<Metadata> {
   try {
@@ -496,6 +497,7 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
 
       <ViewTracker urn={nursery.urn} />
       <RecentlyViewedTracker urn={nursery.urn} name={nursery.name} grade={nursery.ofsted_overall_grade} town={nursery.town} />
+      <NewsletterPopup />
       <OglAttribution />
     </div>
   )

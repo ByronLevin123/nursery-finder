@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useSession } from '@/components/SessionProvider'
 import {
@@ -485,15 +485,61 @@ const INGEST_STEPS = [
   { id: 'snapshot', label: 'Snapshot Reports', desc: 'Capture today\'s metrics for the reports timeseries', path: '/api/v1/admin/reports/snapshot' },
 ]
 
+function formatJobResult(result: any): string {
+  if (!result) return ''
+  if (result.error) return result.error
+  const parts: string[] = []
+  if (result.imported != null) parts.push(`${result.imported} imported`)
+  if (result.geocoded != null) parts.push(`${result.geocoded} geocoded`)
+  if (result.failed != null && result.failed > 0) parts.push(`${result.failed} failed`)
+  if (result.skipped != null) parts.push(`${result.skipped} skipped`)
+  if (result.duration_ms != null) parts.push(`${(result.duration_ms / 1000).toFixed(1)}s`)
+  if (parts.length > 0) return parts.join(', ')
+  return JSON.stringify(result).slice(0, 120)
+}
+
 function IngestPanel() {
   const [running, setRunning] = useState<string | null>(null)
-  const [results, setResults] = useState<Record<string, { ok: boolean; data?: any; error?: string }>>({})
+  const [results, setResults] = useState<Record<string, { ok: boolean; status?: string; data?: any; error?: string }>>({})
+  const [history, setHistory] = useState<Record<string, any[]>>({})
+  const [showHistory, setShowHistory] = useState<string | null>(null)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
+  }, [])
+
+  useEffect(() => () => stopPolling(), [stopPolling])
+
+  async function pollJob(stepId: string, jobId: string) {
+    const token = await getAuthToken()
+    if (!token) return
+    stopPolling()
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/v1/admin/jobs/${jobId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!res.ok) return
+        const job = await res.json()
+        if (job.status === 'completed') {
+          stopPolling()
+          setResults((prev) => ({ ...prev, [stepId]: { ok: true, status: 'completed', data: job.result } }))
+          setRunning(null)
+        } else if (job.status === 'failed') {
+          stopPolling()
+          setResults((prev) => ({ ...prev, [stepId]: { ok: false, status: 'failed', error: job.result?.error || 'Job failed' } }))
+          setRunning(null)
+        }
+      } catch { /* ignore polling errors */ }
+    }, 3000)
+  }
 
   async function runStep(step: typeof INGEST_STEPS[0]) {
     const token = await getAuthToken()
     if (!token) return
     setRunning(step.id)
-    setResults((prev) => ({ ...prev, [step.id]: undefined as any }))
+    setResults((prev) => ({ ...prev, [step.id]: { ok: true, status: 'running' } }))
     try {
       const res = await fetch(`${API_URL}${step.path}`, {
         method: 'POST',
@@ -501,47 +547,118 @@ function IngestPanel() {
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.error || `Failed (${res.status})`)
-      setResults((prev) => ({ ...prev, [step.id]: { ok: true, data } }))
+      if (data.jobId) {
+        setResults((prev) => ({ ...prev, [step.id]: { ok: true, status: 'running', data: { message: 'Processing in background...' } } }))
+        pollJob(step.id, data.jobId)
+      } else {
+        setResults((prev) => ({ ...prev, [step.id]: { ok: true, status: 'completed', data } }))
+        setRunning(null)
+      }
     } catch (err: unknown) {
-      setResults((prev) => ({ ...prev, [step.id]: { ok: false, error: err instanceof Error ? err.message : 'Failed' } }))
-    } finally {
+      setResults((prev) => ({ ...prev, [step.id]: { ok: false, status: 'failed', error: err instanceof Error ? err.message : 'Failed' } }))
       setRunning(null)
     }
+  }
+
+  async function loadHistory(stepId: string, jobType: string) {
+    if (showHistory === stepId) { setShowHistory(null); return }
+    const token = await getAuthToken()
+    if (!token) return
+    try {
+      const res = await fetch(`${API_URL}/api/v1/admin/jobs/recent?type=${jobType}&limit=5`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const { data } = await res.json()
+        setHistory((prev) => ({ ...prev, [stepId]: data || [] }))
+      }
+    } catch { /* ignore */ }
+    setShowHistory(stepId)
+  }
+
+  const JOB_TYPE_MAP: Record<string, string> = {
+    schools: 'schools_ingest',
+    'schools-geo': 'schools_geocode',
+    geocode: 'nursery_geocode',
+    ofsted: 'ofsted_ingest',
+    aggregate: 'aggregate_areas',
+    family: 'family_scores',
+    crime: 'crime_ingest',
+    imd: 'imd_ingest',
+    google: 'google_places',
+    snapshot: 'snapshot_reports',
   }
 
   return (
     <>
       <h3 className="text-sm font-semibold text-gray-700 mb-3">Data Ingest</h3>
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 mb-8">
-        <p className="text-xs text-gray-500 mb-4">Run data pipelines manually. Ofsted import can take 10-30 minutes. Run steps in order for first-time setup.</p>
+        <p className="text-xs text-gray-500 mb-4">Run data pipelines manually. Background jobs poll for completion automatically.</p>
         <div className="space-y-3">
           {INGEST_STEPS.map((step) => {
             const result = results[step.id]
+            const jobType = JOB_TYPE_MAP[step.id]
+            const historyItems = history[step.id] || []
             return (
-              <div key={step.id} className="flex items-center justify-between gap-4 py-2 border-b border-gray-100 last:border-0">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{step.label}</p>
-                  <p className="text-xs text-gray-500 truncate">{step.desc}</p>
-                  {result?.ok && (
-                    <p className="text-xs text-green-600 mt-1">
-                      Done: {JSON.stringify(result.data).slice(0, 120)}
-                    </p>
-                  )}
-                  {result && !result.ok && (
-                    <p className="text-xs text-red-600 mt-1">{result.error}</p>
-                  )}
+              <div key={step.id} className="py-2 border-b border-gray-100 last:border-0">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900">{step.label}</p>
+                    <p className="text-xs text-gray-500 truncate">{step.desc}</p>
+                    {result?.status === 'running' && (
+                      <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                        <span className="inline-block w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+                        Processing in background...
+                      </p>
+                    )}
+                    {result?.status === 'completed' && result.ok && (
+                      <p className="text-xs text-green-600 mt-1">
+                        Completed: {formatJobResult(result.data)}
+                      </p>
+                    )}
+                    {result?.status === 'failed' && (
+                      <p className="text-xs text-red-600 mt-1">Failed: {result.error}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {jobType && (
+                      <button
+                        onClick={() => loadHistory(step.id, jobType)}
+                        className="px-2 py-1 text-xs text-gray-500 hover:text-gray-700"
+                        title="View recent runs"
+                      >
+                        History
+                      </button>
+                    )}
+                    <button
+                      onClick={() => runStep(step)}
+                      disabled={running !== null}
+                      className={`px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition ${
+                        running === step.id
+                          ? 'bg-amber-100 text-amber-700 cursor-wait'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50'
+                      }`}
+                    >
+                      {running === step.id ? 'Running...' : 'Run'}
+                    </button>
+                  </div>
                 </div>
-                <button
-                  onClick={() => runStep(step)}
-                  disabled={running !== null}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition ${
-                    running === step.id
-                      ? 'bg-amber-100 text-amber-700 cursor-wait'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50'
-                  }`}
-                >
-                  {running === step.id ? 'Running...' : 'Run'}
-                </button>
+                {showHistory === step.id && (
+                  <div className="mt-2 ml-4 border-l-2 border-gray-100 pl-3 space-y-1">
+                    {historyItems.length === 0 ? (
+                      <p className="text-xs text-gray-400">No recent runs</p>
+                    ) : historyItems.map((job: any) => (
+                      <div key={job.id} className="text-xs text-gray-600">
+                        <span className={job.status === 'completed' ? 'text-green-600' : job.status === 'failed' ? 'text-red-600' : 'text-amber-600'}>
+                          {job.status}
+                        </span>
+                        {' '}
+                        <span className="text-gray-400">{new Date(job.started_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                        {job.result && <span className="ml-1">{formatJobResult(job.result)}</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )
           })}

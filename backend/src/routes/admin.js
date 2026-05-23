@@ -1446,6 +1446,40 @@ router.get('/activity-log', async (req, res, next) => {
 })
 
 // ---------------------------------------------------------------------------
+// GET /jobs/recent — recent job runs (must be defined before /jobs/:id)
+// ---------------------------------------------------------------------------
+router.get('/jobs/recent', async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+    const type = req.query.type || null
+    const limit = Math.min(Number(req.query.limit) || 10, 50)
+    let q = db.from('job_runs').select('*').order('started_at', { ascending: false }).limit(limit)
+    if (type) q = q.eq('job_type', type)
+    const { data, error } = await q
+    if (error) throw error
+    res.json({ data: data || [] })
+  } catch (err) {
+    logger.error({ err: err?.message }, 'admin jobs/recent failed')
+    next(err)
+  }
+})
+
+// ---------------------------------------------------------------------------
+// GET /jobs/:id — single job run status
+// ---------------------------------------------------------------------------
+router.get('/jobs/:id', async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+    const { data, error } = await db.from('job_runs').select('*').eq('id', req.params.id).single()
+    if (error || !data) return res.status(404).json({ error: 'Job not found' })
+    res.json(data)
+  } catch (err) {
+    logger.error({ err: err?.message }, 'admin jobs/:id failed')
+    next(err)
+  }
+})
+
+// ---------------------------------------------------------------------------
 // GET /funnel — conversion funnel data
 // ---------------------------------------------------------------------------
 router.get('/funnel', async (req, res, next) => {
