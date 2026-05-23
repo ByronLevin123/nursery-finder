@@ -11,6 +11,71 @@ interface Props {
   params: { slug: string }
 }
 
+async function RelatedGuides({
+  currentSlug,
+  currentTags,
+}: {
+  currentSlug: string
+  currentTags?: string[]
+}) {
+  let allPosts: import('@/lib/api').BlogPost[] = []
+  try {
+    allPosts = await getBlogPosts()
+  } catch {
+    return null
+  }
+
+  if (allPosts.length === 0) return null
+
+  const others = allPosts.filter((p) => p.slug !== currentSlug)
+  if (others.length === 0) return null
+
+  let related: import('@/lib/api').BlogPost[]
+
+  // If current post has tags, find posts that share tags
+  if (currentTags && currentTags.length > 0) {
+    const scored = others.map((p) => {
+      const postTags = (p as any).tags as string[] | undefined
+      if (!postTags || postTags.length === 0) return { post: p, overlap: 0 }
+      const overlap = currentTags.filter((t) => postTags.includes(t)).length
+      return { post: p, overlap }
+    })
+    scored.sort((a, b) => b.overlap - a.overlap)
+
+    // If top results have tag overlap, use them; otherwise fall back to most recent
+    if (scored[0]?.overlap > 0) {
+      related = scored.slice(0, 3).map((s) => s.post)
+    } else {
+      related = others.slice(0, 3)
+    }
+  } else {
+    // No tags on current post — show 3 most recent
+    related = others.slice(0, 3)
+  }
+
+  if (related.length === 0) return null
+
+  return (
+    <div className="mt-12 pt-8 border-t border-gray-200">
+      <h2 className="text-lg font-semibold text-gray-900 mb-4">You might also like</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {related.map((rp) => (
+          <Link
+            key={rp.slug}
+            href={`/guides/${rp.slug}`}
+            className="block p-4 bg-white border border-gray-200 rounded-xl hover:shadow-md hover:border-indigo-200 transition"
+          >
+            <h3 className="font-medium text-gray-900 text-sm mb-2 line-clamp-2">
+              {rp.title}
+            </h3>
+            <p className="text-xs text-gray-500 line-clamp-3">{rp.excerpt}</p>
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 /** Simple markdown to HTML — handles headings, bold, links, and paragraphs */
 function renderMarkdown(md: string): string {
   const lines = md.split('\n')
@@ -157,9 +222,11 @@ export default async function GuidePage({ params }: Props) {
         />
       </article>
 
-      {/* Related guides CTA */}
-      <div className="mt-12 pt-8 border-t border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">More Guides</h2>
+      {/* Related guides */}
+      <RelatedGuides currentSlug={post.slug} currentTags={(post as any).tags} />
+
+      {/* All guides CTA */}
+      <div className="mt-8 text-center">
         <Link
           href="/guides"
           className="text-blue-600 hover:underline text-sm"

@@ -6,6 +6,7 @@ import { refreshAllFloodRisk, refreshFloodRiskForDistrict } from '../services/fl
 import { refreshAllParks, refreshParksForDistrict } from '../services/parksData.js'
 import { ingestSchoolsFromCsvUrl, geocodeSchoolsBatch } from '../services/schoolsIngest.js'
 import { geocodePostcode } from '../services/geocoding.js'
+import { startJob, completeJob, failJob } from '../services/jobTracker.js'
 
 const router = express.Router()
 
@@ -81,15 +82,24 @@ router.post('/schools/ingest', requireRole('admin'), async (req, res, next) => {
     }
     logger.info({ csvUrl: csvUrl ? 'provided' : 'default' }, 'overlays: schools ingest start')
 
+    const jobId = await startJob('schools_ingest', req.user?.id)
+
     // Return immediately — process in background (Render kills requests after 30s)
     res.json({
       status: 'started',
+      jobId,
       message: 'Schools import started in background. Check logs for progress.',
     })
 
     ingestSchoolsFromCsvUrl(csvUrl)
-      .then((result) => logger.info({ result }, 'overlays: schools ingest done'))
-      .catch((err) => logger.error({ err: err.message }, 'overlays: schools ingest failed'))
+      .then((result) => {
+        logger.info({ result }, 'overlays: schools ingest done')
+        completeJob(jobId, result)
+      })
+      .catch((err) => {
+        logger.error({ err: err.message }, 'overlays: schools ingest failed')
+        failJob(jobId, err.message)
+      })
   } catch (err) {
     logger.error({ err: err.message }, 'overlays: schools ingest failed')
     next(err)
@@ -101,11 +111,19 @@ router.post('/schools/geocode', requireRole('admin'), async (req, res, next) => 
     logger.info('overlays: schools geocode start')
     const limit = Math.min(100, Math.max(1, Number(req.body?.limit) || 100))
 
-    res.json({ status: 'started', message: `Geocoding up to ${limit} schools in background.` })
+    const jobId = await startJob('schools_geocode', req.user?.id)
+
+    res.json({ status: 'started', jobId, message: `Geocoding up to ${limit} schools in background.` })
 
     geocodeSchoolsBatch(limit)
-      .then((result) => logger.info({ result }, 'overlays: schools geocode done'))
-      .catch((err) => logger.error({ err: err.message }, 'overlays: schools geocode failed'))
+      .then((result) => {
+        logger.info({ result }, 'overlays: schools geocode done')
+        completeJob(jobId, result)
+      })
+      .catch((err) => {
+        logger.error({ err: err.message }, 'overlays: schools geocode failed')
+        failJob(jobId, err.message)
+      })
   } catch (err) {
     logger.error({ err: err.message }, 'overlays: schools geocode failed')
     next(err)

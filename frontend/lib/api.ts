@@ -922,6 +922,7 @@ export interface BlogPost {
   date: string | null
   author: string
   body?: string
+  tags?: string[]
 }
 
 export async function getBlogPosts(): Promise<BlogPost[]> {
