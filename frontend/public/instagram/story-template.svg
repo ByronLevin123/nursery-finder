@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1920" fill="url(#bg)"/>
+  <!-- Decorative elements -->
+  <circle cx="100" cy="400" r="300" fill="rgba(99,102,241,0.15)"/>
+  <circle cx="980" cy="1500" r="250" fill="rgba(124,58,237,0.15)"/>
+  <!-- Brand -->
+  <text x="540" y="260" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="40" fill="rgba(255,255,255,0.8)">NurseryMatch</text>
+  <!-- Quote/content card -->
+  <rect x="80" y="480" width="920" height="900" rx="32" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.1)" stroke-width="2"/>
+  <!-- Large quote mark -->
+  <text x="160" y="620" font-family="Georgia, serif" font-size="120" fill="rgba(255,255,255,0.2)">"</text>
+  <!-- Content area -->
+  <text x="540" y="800" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="600" font-size="48" fill="white">Your story</text>
+  <text x="540" y="870" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="600" font-size="48" fill="white">content here</text>
+  <text x="540" y="1000" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="400" font-size="32" fill="rgba(255,255,255,0.7)">Add your message or quote</text>
+  <!-- Swipe up indicator -->
+  <line x1="540" y1="1600" x2="540" y2="1680" stroke="rgba(255,255,255,0.5)" stroke-width="3" stroke-linecap="round"/>
+  <polyline points="510,1620 540,1600 570,1620" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="540" y="1740" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="500" font-size="24" fill="rgba(255,255,255,0.5)">Swipe up to learn more</text>
+  <!-- URL -->
+  <text x="540" y="1840" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="500" font-size="28" fill="rgba(255,255,255,0.5)">nurserymatch.com</text>
+</svg>
