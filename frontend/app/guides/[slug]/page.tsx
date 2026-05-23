@@ -3,7 +3,32 @@ import { getBlogPost, getBlogPosts } from '@/lib/api'
 import Breadcrumbs from '@/components/Breadcrumbs'
 import Link from 'next/link'
 import OglAttribution from '@/components/OglAttribution'
-import { breadcrumbSchema, jsonLdScript } from '@/lib/schema'
+import { breadcrumbSchema, howToSchema, jsonLdScript } from '@/lib/schema'
+
+const HOWTO_STEPS: Record<string, { steps: { name: string; text: string }[]; totalTime?: string }> = {
+  'free-childcare-hours-guide': {
+    totalTime: 'PT30M',
+    steps: [
+      { name: 'Check your eligibility', text: 'Visit the GOV.UK Childcare Choices website to check whether you qualify for 15 or 30 funded hours based on your working status and income.' },
+      { name: 'Create a Childcare Service account', text: 'Sign up at the government Childcare Service portal using your National Insurance number, details of your employer, and your child\'s date of birth.' },
+      { name: 'Apply for your code', text: 'Submit your application through the portal. You will receive an eligibility code, usually within a few days. This code is valid for the current term.' },
+      { name: 'Share your code with your nursery', text: 'Give the eligibility code to your chosen nursery or childcare provider. They will validate it with the local authority to activate your funded hours.' },
+      { name: 'Reconfirm every three months', text: 'Log back in to the Childcare Service every 3 months to reconfirm your eligibility. If you miss the deadline, you may lose your funded hours for the following term.' },
+    ],
+  },
+  'how-to-choose-nursery': {
+    steps: [
+      { name: 'Start with Ofsted ratings', text: 'Check the nursery\'s Ofsted grade and read the full inspection report. Look beyond the headline rating at specific areas like safeguarding, learning environment, and staff qualifications.' },
+      { name: 'Visit in person', text: 'Book a visit during a normal session so you can see how staff interact with children, how the space is used, and how routines like meals and nap time work.' },
+      { name: 'Ask the right questions', text: 'Prepare a list of questions covering staff-to-child ratios, meal policies, nappy changing procedures, outdoor play frequency, and how they handle settling-in periods.' },
+      { name: 'Consider practicalities', text: 'Think about your commute, opening hours, flexibility for pick-up and drop-off times, and whether the location works for your daily routine.' },
+      { name: 'Check for funded places', text: 'Ask whether the nursery accepts government-funded hours (15 or 30 hours), Tax-Free Childcare, and whether there are any additional charges on top of funded sessions.' },
+      { name: 'Look at the setting', text: 'Assess the indoor and outdoor spaces. Check they are clean, safe, age-appropriate, and stimulating. Look for evidence of planned activities and child-led learning.' },
+      { name: 'Talk to other parents', text: 'Ask the nursery if you can speak to current parents. Online reviews on Google or NurseryMatch can also give you a sense of parent satisfaction.' },
+      { name: 'Make your decision', text: 'Weigh up all factors including quality, cost, location, and gut feeling. Use NurseryMatch\'s comparison tool to compare your shortlisted nurseries side by side.' },
+    ],
+  },
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -234,6 +259,24 @@ export default async function GuidePage({ params }: Props) {
           Browse all nursery guides and advice
         </Link>
       </div>
+
+      {/* JSON-LD: HowTo (for step-by-step guides) */}
+      {HOWTO_STEPS[post.slug] && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: jsonLdScript(
+              howToSchema({
+                title: post.title,
+                description: post.excerpt,
+                slug: post.slug,
+                date: post.date,
+                ...HOWTO_STEPS[post.slug],
+              })
+            ),
+          }}
+        />
+      )}
 
       {/* JSON-LD: Article + Breadcrumb */}
       <script
