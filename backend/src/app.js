@@ -29,6 +29,7 @@ import profileRouter from './routes/profile.js'
 import propertiesRouter from './routes/properties.js'
 import publicMarkdownRouter from './routes/publicMarkdown.js'
 import openapi from './openapi.js'
+import openapiGpt from './openapiGpt.js'
 import swaggerUi from 'swagger-ui-express'
 import emailRouter from './routes/email.js'
 import savedSearchesRouter from './routes/savedSearches.js'
@@ -145,6 +146,7 @@ const publicCorsPaths = [
   '/api/v1/public',
   '/api/v1/blog',
   '/api/openapi.json',
+  '/api/openapi-gpt.json',
 ]
 app.use(publicCorsPaths, cors({ origin: '*', methods: ['GET', 'POST'] }))
 
@@ -298,10 +300,17 @@ app.use('/api/v1/provider', providerReportsRouter)
 app.use('/api/v1/blog', blogRouter)
 app.use('/api/v1/schools', schoolsRouter)
 
-// Public OpenAPI spec for LLM agents + ChatGPT Custom GPT
+// Public OpenAPI spec — full (165+ ops) and GPT-trimmed (30 ops)
 app.get('/api/openapi.json', (req, res, next) => {
   try {
     res.json(openapi)
+  } catch (err) {
+    next(err)
+  }
+})
+app.get('/api/openapi-gpt.json', (req, res, next) => {
+  try {
+    res.json(openapiGpt)
   } catch (err) {
     next(err)
   }

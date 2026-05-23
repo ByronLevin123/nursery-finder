@@ -9,7 +9,7 @@
   },
   "api": {
     "type": "openapi",
-    "url": "https://nursery-finder-6u7r.onrender.com/api/openapi.json"
+    "url": "https://nursery-finder-6u7r.onrender.com/api/openapi-gpt.json"
   },
   "logo_url": "https://nurserymatch.com/opengraph-image",
   "contact_email": "blevin35@gmail.com",

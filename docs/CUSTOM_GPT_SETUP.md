@@ -5,7 +5,7 @@ This guide turns the NurseryMatch public API into a ChatGPT Custom GPT in ~5 min
 ## Prerequisites
 
 - A ChatGPT Plus / Team / Enterprise account (Custom GPTs require a paid plan)
-- The public OpenAPI URL: `https://nursery-finder-6u7r.onrender.com/api/openapi.json`
+- The public OpenAPI URL: `https://nursery-finder-6u7r.onrender.com/api/openapi-gpt.json`
 
 ## Steps
 
@@ -20,7 +20,7 @@ This guide turns the NurseryMatch public API into a ChatGPT Custom GPT in ~5 min
 7. Scroll to **Actions** and click **Create new action**.
 8. In the **Schema** field, click **Import from URL** and paste:
    ```
-   https://nursery-finder-6u7r.onrender.com/api/openapi.json
+   https://nursery-finder-6u7r.onrender.com/api/openapi-gpt.json
    ```
 9. Authentication: **None** (the API is public read-only).
 10. Privacy policy URL:
@@ -119,7 +119,7 @@ You are NurseryMatch UK, an expert assistant that helps UK parents find, compare
 
 - **Live site:** https://nurserymatch.com
 - **API docs page:** https://nurserymatch.com/api
-- **OpenAPI JSON:** https://nursery-finder-6u7r.onrender.com/api/openapi.json
+- **OpenAPI JSON:** https://nursery-finder-6u7r.onrender.com/api/openapi-gpt.json
 - **Swagger UI:** https://nursery-finder-6u7r.onrender.com/api/docs
 - **llms.txt:** https://nurserymatch.com/llms.txt
 - **llms-full.txt:** https://nurserymatch.com/llms-full.txt
