@@ -43,7 +43,7 @@ async function findPlaceId(nursery) {
       'Content-Type': 'application/json',
       'X-Goog-Api-Key': API_KEY,
       'X-Goog-FieldMask':
-        'places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.photos',
+        'places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.photos,places.reviews',
     },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(15000),
@@ -131,6 +131,7 @@ export async function syncGooglePlacesData(
   let failed = 0
   let skipped = 0
   let photosAdded = 0
+  let reviewsAdded = 0
 
   for (const nursery of nurseries) {
     try {
@@ -212,6 +213,41 @@ export async function syncGooglePlacesData(
         }
       }
 
+      // Step 5: Import Google reviews if available
+      if (place.reviews && place.reviews.length > 0) {
+        for (const review of place.reviews) {
+          try {
+            const googleReviewId = `${placeId}:${review.authorAttribution?.displayName || 'anon'}:${review.relativePublishTimeDescription || ''}`
+            const rating = review.rating ?? 3
+            const body = (review.text?.text || review.originalText?.text || '').trim()
+            if (!body || body.length < 20) continue
+
+            const title = body.length > 100 ? body.slice(0, 97) + '...' : body
+            const authorName = review.authorAttribution?.displayName || 'Google reviewer'
+            const publishTime = review.publishTime || new Date().toISOString()
+
+            await db.from('nursery_reviews').upsert(
+              {
+                urn: nursery.urn,
+                rating: Math.max(1, Math.min(5, Math.round(rating))),
+                title: title.slice(0, 120),
+                body: body.slice(0, 4000),
+                would_recommend: rating >= 4,
+                author_display_name: authorName.slice(0, 100),
+                source: 'google',
+                google_review_id: googleReviewId,
+                status: 'published',
+                created_at: publishTime,
+              },
+              { onConflict: 'google_review_id' }
+            )
+            reviewsAdded++
+          } catch (revErr) {
+            logger.debug({ urn: nursery.urn, err: revErr.message }, 'google-places: review import skipped')
+          }
+        }
+      }
+
       if (updated % 50 === 0) {
         logger.info({ updated, matched, failed, skipped }, 'google-places: progress')
       }
@@ -221,7 +257,7 @@ export async function syncGooglePlacesData(
     }
   }
 
-  const result = { matched, updated, failed, skipped, photos: photosAdded }
+  const result = { matched, updated, failed, skipped, photos: photosAdded, reviews: reviewsAdded }
   logger.info(result, 'google-places: batch sync complete')
   return result
 }
