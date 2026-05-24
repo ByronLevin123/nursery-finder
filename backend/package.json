@@ -34,7 +34,7 @@
     "helmet": "^7.1.0",
     "node-cache": "^5.1.2",
     "node-cron": "^3.0.3",
-    "nodemailer": "^6.9.7",
+    "nodemailer": "^8.0.8",
     "pg": "^8.19.0",
     "pino": "^8.17.0",
     "pino-http": "^9.0.0",
