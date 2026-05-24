@@ -147,8 +147,7 @@ export async function recomputeAllDimensionScores() {
   let offset = 0
   const now = new Date().toISOString()
 
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
+  for (;;) {
     const { data: nurseries, error } = await db
       .from('nurseries')
       .select(

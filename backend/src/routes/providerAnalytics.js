@@ -3,8 +3,7 @@
 import express from 'express'
 import rateLimit from 'express-rate-limit'
 import db from '../db.js'
-import { requireAuth, requireRole } from '../middleware/supabaseAuth.js'
-import { logger } from '../logger.js'
+import { requireRole } from '../middleware/supabaseAuth.js'
 import { trackActivity } from '../services/activityTracker.js'
 
 const router = express.Router()

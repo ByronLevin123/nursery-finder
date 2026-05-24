@@ -85,7 +85,7 @@ function loadPosts() {
 router.get('/', (req, res, next) => {
   try {
     const posts = loadPosts()
-    const list = posts.map(({ body, ...rest }) => rest)
+    const list = posts.map(({ body: _body, ...rest }) => rest)
     res.json({ data: list })
   } catch (err) {
     next(err)

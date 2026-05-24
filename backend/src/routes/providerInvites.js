@@ -6,7 +6,12 @@ import db from '../db.js'
 import { requireRole } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
 import { escapeLike } from '../utils.js'
-import { sendEmail, renderProviderInviteEmail, renderAwarenessEmail, isEmailAvailable } from '../services/emailService.js'
+import {
+  sendEmail,
+  renderProviderInviteEmail,
+  renderAwarenessEmail,
+  isEmailAvailable,
+} from '../services/emailService.js'
 
 const VALID_CAMPAIGN_TYPES = ['invite', 'awareness']
 
@@ -34,8 +39,15 @@ router.post('/preview', async (req, res, next) => {
   try {
     if (!db) return res.status(503).json({ error: 'Database not configured' })
 
-    const { region, local_authority, limit: rawLimit, campaign_type: rawCampaignType } = req.body || {}
-    const campaign_type = VALID_CAMPAIGN_TYPES.includes(rawCampaignType) ? rawCampaignType : 'invite'
+    const {
+      region,
+      local_authority,
+      limit: rawLimit,
+      campaign_type: rawCampaignType,
+    } = req.body || {}
+    const campaign_type = VALID_CAMPAIGN_TYPES.includes(rawCampaignType)
+      ? rawCampaignType
+      : 'invite'
     const limit = Math.min(500, Math.max(1, parseInt(rawLimit, 10) || 50))
 
     let query = db
@@ -61,12 +73,18 @@ router.post('/preview', async (req, res, next) => {
 
     if (campaign_type === 'invite') {
       // For invite campaigns, exclude nurseries already invited
-      const { data: alreadyInvited } = await db.from('provider_invites').select('urn').eq('campaign_type', 'invite')
+      const { data: alreadyInvited } = await db
+        .from('provider_invites')
+        .select('urn')
+        .eq('campaign_type', 'invite')
       const invitedUrns = new Set((alreadyInvited || []).map((r) => r.urn))
       filtered = filtered.filter((n) => !invitedUrns.has(n.urn))
     } else {
       // For awareness campaigns, exclude nurseries already sent this campaign type
-      const { data: alreadySent } = await db.from('provider_invites').select('urn').eq('campaign_type', 'awareness')
+      const { data: alreadySent } = await db
+        .from('provider_invites')
+        .select('urn')
+        .eq('campaign_type', 'awareness')
       const sentUrns = new Set((alreadySent || []).map((r) => r.urn))
       filtered = filtered.filter((n) => !sentUrns.has(n.urn))
     }
@@ -90,7 +108,9 @@ router.post('/send', inviteSendLimiter, async (req, res, next) => {
     if (!db) return res.status(503).json({ error: 'Database not configured' })
 
     const { urns, campaign_type: rawCampaignType } = req.body || {}
-    const campaign_type = VALID_CAMPAIGN_TYPES.includes(rawCampaignType) ? rawCampaignType : 'invite'
+    const campaign_type = VALID_CAMPAIGN_TYPES.includes(rawCampaignType)
+      ? rawCampaignType
+      : 'invite'
 
     if (!Array.isArray(urns) || urns.length === 0) {
       return res.status(400).json({ error: 'urns must be a non-empty array' })
@@ -117,7 +137,8 @@ router.post('/send', inviteSendLimiter, async (req, res, next) => {
       return res.json({ sent: 0, failed: 0, skipped: urns.length })
     }
 
-    const renderFn = campaign_type === 'awareness' ? renderAwarenessEmail : renderProviderInviteEmail
+    const renderFn =
+      campaign_type === 'awareness' ? renderAwarenessEmail : renderProviderInviteEmail
 
     let sent = 0
     let failed = 0
@@ -144,7 +165,10 @@ router.post('/send', inviteSendLimiter, async (req, res, next) => {
 
     await Promise.allSettled(sendPromises)
 
-    logger.info({ sent, failed, skipped, campaign_type, by: req.user.id }, 'provider invite batch complete')
+    logger.info(
+      { sent, failed, skipped, campaign_type, by: req.user.id },
+      'provider invite batch complete'
+    )
     return res.json({ sent, failed, skipped })
   } catch (err) {
     logger.error({ err: err?.message }, 'provider invite send failed')

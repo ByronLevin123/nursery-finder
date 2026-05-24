@@ -1,16 +1,48 @@
 -- ============================================================================
--- NurseryMatch — Combined Migration (001 through 054)
--- Safe to run on FRESH or EXISTING Supabase projects.
--- Paste into: Supabase Dashboard → SQL Editor → New query → Run
 --
--- NOTE: This is ~2000 lines. Supabase SQL editor handles it fine.
--- If you get a timeout, split at the "-- SPLIT POINT" markers below.
+--    *** DANGER — THIS SCRIPT DROPS ALL TABLES ***
+--
+--    Running this against a database with real data will PERMANENTLY DELETE:
+--      - All nursery records
+--      - All user profiles and accounts
+--      - All reviews, enquiries, claims, promotions
+--      - All shortlists, saved searches, bookings
+--      - Everything. There is no undo.
+--
+--    ONLY use this on a BRAND NEW / EMPTY Supabase project.
+--    For schema changes on an existing database, use individual
+--    migration files in database/migrations/ instead.
+--
+-- ============================================================================
+-- NurseryMatch — Fresh Install Migration (001 through 054)
+-- Paste into: Supabase Dashboard → SQL Editor → New query → Run
 -- ============================================================================
 
 -- ============================================================
+-- SAFETY GUARD: Abort if this database already has data.
+-- The _migration_guard table is created by migration 036 and
+-- indicates a database with production data.
+-- ============================================================
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = '_migration_guard') THEN
+    RAISE EXCEPTION 'ABORTED: _migration_guard table exists — this database has production data. '
+      'Do NOT run the fresh install migration against a live database. '
+      'Use individual migration files in database/migrations/ instead.';
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'nurseries') THEN
+    IF (SELECT count(*) FROM nurseries) > 0 THEN
+      RAISE EXCEPTION 'ABORTED: nurseries table contains % rows. '
+        'Do NOT run the fresh install migration against a database with data. '
+        'Use individual migration files in database/migrations/ instead.',
+        (SELECT count(*) FROM nurseries);
+    END IF;
+  END IF;
+END $$;
+
+-- ============================================================
 -- PRE-CLEANUP: Drop ALL tables so schemas are created fresh.
--- This is safe for initial setup. Do NOT run on a live database
--- with real nursery data you want to keep.
+-- Only reached if safety guard above passed (empty database).
 -- ============================================================
 DROP TABLE IF EXISTS user_shortlists CASCADE;
 DROP TABLE IF EXISTS saved_searches CASCADE;

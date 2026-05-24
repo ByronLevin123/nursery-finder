@@ -148,7 +148,7 @@ export async function ingestLandRegistryYear(year) {
 
 export async function refreshPropertyStats() {
   logger.info('land_registry: refreshing area property stats')
-  const { data, error } = await db.rpc('compute_area_property_stats')
+  const { error } = await db.rpc('compute_area_property_stats')
   if (error) throw error
   logger.info('land_registry: property stats refreshed')
 }

@@ -5,7 +5,6 @@ import { logger } from '../logger.js'
 import { sendEmail, isEmailAvailable, escapeHtml } from './emailService.js'
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://nurserymatch.com'
-const FROM = process.env.EMAIL_FROM || 'NurseryMatch <hello@nurserymatch.com>'
 
 // ---------- core helpers ----------
 
@@ -112,11 +111,7 @@ export async function notifyEnquiryStatusChange(enquiry, oldStatus, newStatus) {
   if (notification) {
     // Look up parent email
     try {
-      const { data: profile } = await db
-        .from('user_profiles')
-        .select('id')
-        .eq('id', enquiry.user_id)
-        .maybeSingle()
+      await db.from('user_profiles').select('id').eq('id', enquiry.user_id).maybeSingle()
 
       // Get email from auth — use the user_id to look up via profiles or enquiry data
       const parentEmail = enquiry.parent_email || null

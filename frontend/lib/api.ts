@@ -1,5 +1,9 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || ''
 
+if (!API_URL && typeof window !== 'undefined') {
+  console.warn('[NurseryMatch] NEXT_PUBLIC_API_URL is not set — API calls will fail. Set it in Vercel environment variables.')
+}
+
 export interface Nursery {
   id: string
   urn: string

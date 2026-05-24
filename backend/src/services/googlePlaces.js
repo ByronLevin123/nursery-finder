@@ -106,7 +106,7 @@ export async function syncGooglePlacesData(
   // 1. No google_place_id (never matched)
   // 2. Or stale data (google_place_id exists but hasn't been refreshed recently)
   // Must have lat/lng for location bias
-  const staleDate = new Date(Date.now() - staleDays * 86400000).toISOString()
+  const _staleDate = new Date(Date.now() - staleDays * 86400000).toISOString()
 
   const { data: nurseries, error: fetchErr } = await db
     .from('nurseries')
@@ -243,7 +243,10 @@ export async function syncGooglePlacesData(
             )
             reviewsAdded++
           } catch (revErr) {
-            logger.debug({ urn: nursery.urn, err: revErr.message }, 'google-places: review import skipped')
+            logger.debug(
+              { urn: nursery.urn, err: revErr.message },
+              'google-places: review import skipped'
+            )
           }
         }
       }
@@ -266,7 +269,7 @@ export async function syncGooglePlacesData(
  * Refresh stale Google data — re-fetch for nurseries that already have place_id
  * but haven't been updated in staleDays.
  */
-export async function refreshStaleGoogleData(limit = 100, staleDays = 90) {
+export async function refreshStaleGoogleData(limit = 100, _staleDays = 90) {
   if (!API_KEY) throw new Error('GOOGLE_PLACES_API_KEY not set')
   if (!db) throw new Error('Database not configured')
 

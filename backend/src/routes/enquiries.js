@@ -9,7 +9,6 @@ import { trackActivity } from '../services/activityTracker.js'
 import {
   sendEmail,
   isEmailAvailable,
-  escapeHtml,
   renderEnquiryNotificationEmail,
 } from '../services/emailService.js'
 import { logger } from '../logger.js'

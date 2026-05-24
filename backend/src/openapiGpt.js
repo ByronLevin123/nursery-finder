@@ -49,7 +49,10 @@ const openapiGpt = {
                 properties: {
                   query: { type: 'string', description: 'Postcode, place name, or nursery name' },
                   radius_km: { type: 'number', default: 5, minimum: 0.1, maximum: 25 },
-                  grade: { type: 'string', enum: ['Outstanding', 'Good', 'Requires Improvement', 'Inadequate'] },
+                  grade: {
+                    type: 'string',
+                    enum: ['Outstanding', 'Good', 'Requires Improvement', 'Inadequate'],
+                  },
                   has_availability: { type: 'boolean' },
                   min_rating: { type: 'number', minimum: 1, maximum: 5 },
                   provider_type: { type: 'string' },
@@ -60,7 +63,9 @@ const openapiGpt = {
             },
           },
         },
-        responses: { 200: { description: 'Search results with nurseries, distances, and metadata' } },
+        responses: {
+          200: { description: 'Search results with nurseries, distances, and metadata' },
+        },
       },
     },
     // -----------------------------------------------------------------------
@@ -156,9 +161,7 @@ const openapiGpt = {
         operationId: 'getNurseriesInTown',
         summary: 'List nurseries in a town sorted by Ofsted grade',
         tags: ['Nurseries'],
-        parameters: [
-          { in: 'path', name: 'town', required: true, schema: { type: 'string' } },
-        ],
+        parameters: [{ in: 'path', name: 'town', required: true, schema: { type: 'string' } }],
         responses: { 200: { description: 'Nurseries in town with stats' } },
       },
     },
@@ -171,7 +174,9 @@ const openapiGpt = {
         summary: 'Get full nursery details by Ofsted URN',
         tags: ['Nurseries'],
         parameters: [urnParam],
-        responses: { 200: { description: 'Full nursery profile with grades, fees, availability, contact' } },
+        responses: {
+          200: { description: 'Full nursery profile with grades, fees, availability, contact' },
+        },
       },
     },
     // -----------------------------------------------------------------------
@@ -198,7 +203,9 @@ const openapiGpt = {
         summary: 'Get current availability by age group',
         tags: ['Nurseries'],
         parameters: [urnParam],
-        responses: { 200: { description: 'Availability by age group (baby, toddler, pre-school)' } },
+        responses: {
+          200: { description: 'Availability by age group (baby, toddler, pre-school)' },
+        },
       },
     },
     // -----------------------------------------------------------------------
@@ -250,7 +257,9 @@ const openapiGpt = {
         summary: 'Get AI-generated nursery summary',
         tags: ['AI'],
         parameters: [urnParam],
-        responses: { 200: { description: 'AI summary of nursery based on Ofsted, reviews, and profile' } },
+        responses: {
+          200: { description: 'AI summary of nursery based on Ofsted, reviews, and profile' },
+        },
       },
     },
     // -----------------------------------------------------------------------
@@ -290,7 +299,11 @@ const openapiGpt = {
           { in: 'query', name: 'radius_km', schema: { type: 'number', default: 15 } },
           { in: 'query', name: 'min_family_score', schema: { type: 'number' } },
           { in: 'query', name: 'min_nursery_pct', schema: { type: 'number' } },
-          { in: 'query', name: 'sort', schema: { type: 'string', enum: ['family_score', 'nursery_score', 'distance'] } },
+          {
+            in: 'query',
+            name: 'sort',
+            schema: { type: 'string', enum: ['family_score', 'nursery_score', 'distance'] },
+          },
         ],
         responses: { 200: { description: 'Ranked family-friendly areas' } },
       },
@@ -318,9 +331,17 @@ const openapiGpt = {
         parameters: [
           { in: 'query', name: 'min_price', schema: { type: 'number' } },
           { in: 'query', name: 'max_price', schema: { type: 'number' } },
-          { in: 'query', name: 'property_type', schema: { type: 'string', enum: ['all', 'flat', 'terraced', 'semi', 'detached'] } },
+          {
+            in: 'query',
+            name: 'property_type',
+            schema: { type: 'string', enum: ['all', 'flat', 'terraced', 'semi', 'detached'] },
+          },
           { in: 'query', name: 'region', schema: { type: 'string' } },
-          { in: 'query', name: 'sort', schema: { type: 'string', enum: ['price_asc', 'price_desc', 'family_score', 'yield'] } },
+          {
+            in: 'query',
+            name: 'sort',
+            schema: { type: 'string', enum: ['price_asc', 'price_desc', 'family_score', 'yield'] },
+          },
           { in: 'query', name: 'limit', schema: { type: 'integer', default: 60, maximum: 200 } },
         ],
         responses: { 200: { description: 'Districts with prices and family scores' } },
@@ -395,7 +416,11 @@ const openapiGpt = {
                       lng: { type: 'number' },
                     },
                   },
-                  durations_min: { type: 'array', items: { type: 'integer' }, default: [15, 30, 45, 60] },
+                  durations_min: {
+                    type: 'array',
+                    items: { type: 'integer' },
+                    default: [15, 30, 45, 60],
+                  },
                   mode: { type: 'string', enum: ['walk', 'cycle', 'drive'], default: 'drive' },
                 },
               },
@@ -417,7 +442,11 @@ const openapiGpt = {
           { in: 'query', name: 'lat', required: true, schema: { type: 'number' } },
           { in: 'query', name: 'lng', required: true, schema: { type: 'number' } },
           { in: 'query', name: 'radius_km', schema: { type: 'number', default: 2 } },
-          { in: 'query', name: 'phase', schema: { type: 'string', description: 'Primary or Secondary' } },
+          {
+            in: 'query',
+            name: 'phase',
+            schema: { type: 'string', description: 'Primary or Secondary' },
+          },
         ],
         responses: { 200: { description: 'Schools with distance, phase, and Ofsted grade' } },
       },
@@ -478,7 +507,13 @@ const openapiGpt = {
         summary: 'Get a full guide article by slug',
         tags: ['Guides'],
         parameters: [
-          { in: 'path', name: 'slug', required: true, schema: { type: 'string' }, description: 'Guide slug (e.g. how-to-choose-nursery)' },
+          {
+            in: 'path',
+            name: 'slug',
+            required: true,
+            schema: { type: 'string' },
+            description: 'Guide slug (e.g. how-to-choose-nursery)',
+          },
         ],
         responses: { 200: { description: 'Full guide with title, body, tags, and date' } },
       },
@@ -528,7 +563,11 @@ const openapiGpt = {
                 required: ['message'],
                 properties: {
                   message: { type: 'string', description: 'Natural language nursery question' },
-                  history: { type: 'array', items: { type: 'object' }, description: 'Conversation history' },
+                  history: {
+                    type: 'array',
+                    items: { type: 'object' },
+                    description: 'Conversation history',
+                  },
                 },
               },
             },

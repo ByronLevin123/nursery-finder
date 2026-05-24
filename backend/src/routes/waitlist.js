@@ -1,6 +1,6 @@
 import express from 'express'
 import db from '../db.js'
-import { requireAuth, optionalAuth } from '../middleware/supabaseAuth.js'
+import { requireAuth } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
 import { trackActivity } from '../services/activityTracker.js'
 

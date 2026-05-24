@@ -59,7 +59,7 @@ async function getUserEmail(userId) {
   }
 }
 
-async function getUserName(userId) {
+async function _getUserName(userId) {
   if (!db) return null
   try {
     const { data } = await db

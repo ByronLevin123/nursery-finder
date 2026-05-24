@@ -113,7 +113,11 @@ router.post('/schools/geocode', requireRole('admin'), async (req, res, next) => 
 
     const jobId = await startJob('schools_geocode', req.user?.id)
 
-    res.json({ status: 'started', jobId, message: `Geocoding up to ${limit} schools in background.` })
+    res.json({
+      status: 'started',
+      jobId,
+      message: `Geocoding up to ${limit} schools in background.`,
+    })
 
     geocodeSchoolsBatch(limit)
       .then((result) => {

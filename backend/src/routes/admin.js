@@ -904,7 +904,7 @@ router.get('/analytics', async (req, res, next) => {
     const now = new Date()
     const oneWeekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString()
     const oneMonthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString()
-    const fourYearsAgo = new Date(now.getFullYear() - 4, now.getMonth(), now.getDate())
+    const _fourYearsAgo = new Date(now.getFullYear() - 4, now.getMonth(), now.getDate())
       .toISOString()
       .split('T')[0]
 
@@ -1251,7 +1251,7 @@ router.get('/reports/export', async (req, res, next) => {
   try {
     if (!db) return res.status(503).json({ error: 'Database not configured' })
 
-    const { range = '90', metric = 'all' } = req.query
+    const { range = '90', metric: _metric = 'all' } = req.query
     const days = parseInt(range) || 90
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - days)
@@ -1393,9 +1393,7 @@ router.get('/activity-log', async (req, res, next) => {
     const { page, limit, offset } = paginate(req.query)
     const { user_id, event, date_from, date_to, search } = req.query
 
-    let query = db
-      .from('user_activity_log')
-      .select('*', { count: 'exact' })
+    let query = db.from('user_activity_log').select('*', { count: 'exact' })
 
     if (user_id) query = query.eq('user_id', user_id)
     if (event) query = query.eq('event', event)

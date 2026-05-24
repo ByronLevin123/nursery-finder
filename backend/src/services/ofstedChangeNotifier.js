@@ -7,7 +7,7 @@ import { logger } from '../logger.js'
 import { isEmailAvailable, sendEmail } from './emailService.js'
 import { renderOfstedChangeEmail } from './emailTemplates.js'
 
-const BATCH_SIZE = 50
+const _BATCH_SIZE = 50
 
 // ---------- helpers ----------
 
@@ -168,7 +168,7 @@ export async function processOfstedChangeNotifications() {
             if (!userSearches.has(s.user_id)) userSearches.set(s.user_id, s)
           }
 
-          for (const [userId, search] of userSearches) {
+          for (const [userId, _search] of userSearches) {
             try {
               // Check email preferences
               const { data: profile } = await db

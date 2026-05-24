@@ -408,8 +408,6 @@ export function renderOfstedChangeEmail({
   const nurseryUrl = urn
     ? `${FRONTEND_URL}/nursery/${encodeURIComponent(urn)}`
     : `${FRONTEND_URL}/search`
-  const safeUrl = escapeHtml(nurseryUrl)
-
   const html = shell({
     title: subject,
     preheader: `${previousGrade || 'Unknown'} → ${newGrade || 'Unknown'}. See the full Ofsted report.`,
@@ -842,7 +840,6 @@ export function renderProviderEnquiryNotificationEmail({
 
   return { subject, html, text }
 }
-
 
 // ---------- 14. Quiz-complete drip Day 0 ----------
 
