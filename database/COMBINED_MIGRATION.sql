@@ -1,11 +1,56 @@
 -- ============================================================================
 -- NurseryMatch — Combined Migration (001 through 054)
--- Safe to run on a FRESH Supabase project.
+-- Safe to run on FRESH or EXISTING Supabase projects.
 -- Paste into: Supabase Dashboard → SQL Editor → New query → Run
 --
 -- NOTE: This is ~2000 lines. Supabase SQL editor handles it fine.
 -- If you get a timeout, split at the "-- SPLIT POINT" markers below.
 -- ============================================================================
+
+-- ============================================================
+-- PRE-CLEANUP: Drop tables whose schemas changed across migrations.
+-- These are recreated below with the correct final schema.
+-- Tables with user data (nurseries, postcode_areas, user_profiles, etc.)
+-- are NOT dropped — only ALTER'd.
+-- ============================================================
+DROP TABLE IF EXISTS nursery_fees CASCADE;
+DROP TABLE IF EXISTS nursery_reviews CASCADE;
+DROP TABLE IF EXISTS nursery_claims CASCADE;
+DROP TABLE IF EXISTS schools CASCADE;
+DROP TABLE IF EXISTS nursery_availability CASCADE;
+DROP TABLE IF EXISTS nursery_staff CASCADE;
+DROP TABLE IF EXISTS nursery_pricing CASCADE;
+DROP TABLE IF EXISTS nursery_questions CASCADE;
+DROP TABLE IF EXISTS nursery_answers CASCADE;
+DROP TABLE IF EXISTS nursery_photos CASCADE;
+DROP TABLE IF EXISTS visit_surveys CASCADE;
+DROP TABLE IF EXISTS visit_bookings CASCADE;
+DROP TABLE IF EXISTS visit_slots CASCADE;
+DROP TABLE IF EXISTS enquiry_messages CASCADE;
+DROP TABLE IF EXISTS enquiries CASCADE;
+DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS notification_preferences CASCADE;
+DROP TABLE IF EXISTS waitlist_entries CASCADE;
+DROP TABLE IF EXISTS shared_shortlists CASCADE;
+DROP TABLE IF EXISTS nursery_team_members CASCADE;
+DROP TABLE IF EXISTS user_activity_log CASCADE;
+DROP TABLE IF EXISTS provider_invites CASCADE;
+DROP TABLE IF EXISTS provider_subscriptions CASCADE;
+DROP TABLE IF EXISTS tier_limits CASCADE;
+DROP TABLE IF EXISTS promotions CASCADE;
+DROP TABLE IF EXISTS provider_reports_cache CASCADE;
+DROP TABLE IF EXISTS admin_reports_cache CASCADE;
+DROP TABLE IF EXISTS email_log CASCADE;
+DROP TABLE IF EXISTS drip_sequences CASCADE;
+DROP TABLE IF EXISTS ofsted_changes CASCADE;
+DROP TABLE IF EXISTS travel_time_cache CASCADE;
+DROP TABLE IF EXISTS user_quiz_responses CASCADE;
+DROP TABLE IF EXISTS ai_content_cache CASCADE;
+DROP TABLE IF EXISTS property_listings CASCADE;
+DROP TABLE IF EXISTS land_registry_prices CASCADE;
+DROP TABLE IF EXISTS area_property_stats CASCADE;
+DROP TABLE IF EXISTS job_runs CASCADE;
+DROP TABLE IF EXISTS _migration_guard CASCADE;
 
 -- ============================================================
 -- 001: Extensions + Core Tables
@@ -421,9 +466,8 @@ END;
 $$;
 
 -- ============================================================
--- 007: Reviews (final schema — replaces 001's version)
+-- 007: Reviews (final schema)
 -- ============================================================
-DROP TABLE IF EXISTS nursery_reviews CASCADE;
 
 CREATE TABLE nursery_reviews (
   id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1028,7 +1072,6 @@ CREATE POLICY "Service role manages fees" ON nursery_fees FOR ALL USING (auth.ro
 -- ============================================================
 -- 028: Schools (definitive version)
 -- ============================================================
-DROP TABLE IF EXISTS schools CASCADE;
 
 CREATE TABLE schools (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
