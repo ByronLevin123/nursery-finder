@@ -8,11 +8,12 @@
 -- ============================================================================
 
 -- ============================================================
--- PRE-CLEANUP: Drop tables whose schemas changed across migrations.
--- These are recreated below with the correct final schema.
--- Tables with user data (nurseries, postcode_areas, user_profiles, etc.)
--- are NOT dropped — only ALTER'd.
+-- PRE-CLEANUP: Drop ALL tables so schemas are created fresh.
+-- This is safe for initial setup. Do NOT run on a live database
+-- with real nursery data you want to keep.
 -- ============================================================
+DROP TABLE IF EXISTS user_shortlists CASCADE;
+DROP TABLE IF EXISTS saved_searches CASCADE;
 DROP TABLE IF EXISTS nursery_fees CASCADE;
 DROP TABLE IF EXISTS nursery_reviews CASCADE;
 DROP TABLE IF EXISTS nursery_claims CASCADE;
@@ -51,6 +52,9 @@ DROP TABLE IF EXISTS land_registry_prices CASCADE;
 DROP TABLE IF EXISTS area_property_stats CASCADE;
 DROP TABLE IF EXISTS job_runs CASCADE;
 DROP TABLE IF EXISTS _migration_guard CASCADE;
+DROP TABLE IF EXISTS user_profiles CASCADE;
+DROP TABLE IF EXISTS postcode_areas CASCADE;
+DROP TABLE IF EXISTS nurseries CASCADE;
 
 -- ============================================================
 -- 001: Extensions + Core Tables
@@ -58,7 +62,7 @@ DROP TABLE IF EXISTS _migration_guard CASCADE;
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TABLE IF NOT EXISTS nurseries (
+CREATE TABLE nurseries (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   urn                   TEXT UNIQUE NOT NULL,
   name                  TEXT NOT NULL,
@@ -109,7 +113,7 @@ CREATE INDEX IF NOT EXISTS nurseries_urn_idx ON nurseries(urn);
 CREATE INDEX IF NOT EXISTS nurseries_funded_2yr_idx ON nurseries(places_funded_2yr) WHERE places_funded_2yr > 0;
 CREATE INDEX IF NOT EXISTS nurseries_funded_3yr_idx ON nurseries(places_funded_3_4yr) WHERE places_funded_3_4yr > 0;
 
-CREATE TABLE IF NOT EXISTS postcode_areas (
+CREATE TABLE postcode_areas (
   postcode_district         TEXT PRIMARY KEY,
   local_authority           TEXT,
   region                    TEXT,
@@ -148,7 +152,7 @@ CREATE TABLE IF NOT EXISTS postcode_areas (
 );
 CREATE INDEX IF NOT EXISTS postcode_areas_location_idx ON postcode_areas USING GIST(location);
 
-CREATE TABLE IF NOT EXISTS user_shortlists (
+CREATE TABLE user_shortlists (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id       UUID,
   nursery_id    UUID REFERENCES nurseries(id) ON DELETE CASCADE,
@@ -159,7 +163,7 @@ CREATE TABLE IF NOT EXISTS user_shortlists (
 );
 
 -- Nursery claims (015 version — final schema)
-CREATE TABLE IF NOT EXISTS nursery_claims (
+CREATE TABLE nursery_claims (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   urn             TEXT NOT NULL,
   user_id         UUID NOT NULL,
@@ -310,7 +314,7 @@ CREATE POLICY "Users see own shortlist" ON user_shortlists FOR ALL USING (auth.u
 DROP POLICY IF EXISTS "Users add to own shortlist" ON user_shortlists;
 CREATE POLICY "Users add to own shortlist" ON user_shortlists FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-CREATE TABLE IF NOT EXISTS saved_searches (
+CREATE TABLE saved_searches (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   postcode TEXT,
@@ -329,7 +333,7 @@ CREATE POLICY "Users manage own searches" ON saved_searches FOR ALL USING (auth.
 -- ============================================================
 -- 003: Property layer
 -- ============================================================
-CREATE TABLE IF NOT EXISTS land_registry_prices (
+CREATE TABLE land_registry_prices (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   postcode TEXT NOT NULL,
   postcode_district TEXT NOT NULL,
@@ -342,7 +346,7 @@ CREATE TABLE IF NOT EXISTS land_registry_prices (
 CREATE INDEX IF NOT EXISTS lr_district_date_idx ON land_registry_prices(postcode_district, date_of_transfer);
 CREATE INDEX IF NOT EXISTS lr_district_type_idx ON land_registry_prices(postcode_district, property_type);
 
-CREATE TABLE IF NOT EXISTS area_property_stats (
+CREATE TABLE area_property_stats (
   postcode_district TEXT PRIMARY KEY,
   avg_price_all INTEGER, avg_price_flat INTEGER, avg_price_terraced INTEGER,
   avg_price_semi INTEGER, avg_price_detached INTEGER,
@@ -545,7 +549,7 @@ FOR EACH ROW EXECUTE FUNCTION nursery_reviews_refresh_stats_trigger();
 -- ============================================================
 -- 010: User profiles
 -- ============================================================
-CREATE TABLE IF NOT EXISTS user_profiles (
+CREATE TABLE user_profiles (
   id            UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   display_name  TEXT,
   avatar_url    TEXT,
@@ -581,7 +585,7 @@ CREATE TRIGGER on_auth_user_created
 -- ============================================================
 -- 011: AI content cache
 -- ============================================================
-CREATE TABLE IF NOT EXISTS ai_content_cache (
+CREATE TABLE ai_content_cache (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   cache_key TEXT UNIQUE NOT NULL,
   content TEXT NOT NULL,
@@ -595,7 +599,7 @@ CREATE INDEX IF NOT EXISTS ai_content_cache_expires_idx ON ai_content_cache (exp
 -- ============================================================
 -- 012: Property listings
 -- ============================================================
-CREATE TABLE IF NOT EXISTS property_listings (
+CREATE TABLE property_listings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   postcode_district TEXT NOT NULL,
   listing_type TEXT NOT NULL CHECK (listing_type IN ('sale', 'rent')),
@@ -675,7 +679,7 @@ CREATE POLICY "Admins read all profiles" ON user_profiles
 -- ============================================================
 -- 017: Travel time cache
 -- ============================================================
-CREATE TABLE IF NOT EXISTS travel_time_cache (
+CREATE TABLE travel_time_cache (
   key TEXT PRIMARY KEY,
   from_lat DOUBLE PRECISION NOT NULL, from_lng DOUBLE PRECISION NOT NULL,
   to_lat DOUBLE PRECISION NOT NULL, to_lng DOUBLE PRECISION NOT NULL,
@@ -688,7 +692,7 @@ ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS work_postcode TEXT;
 -- ============================================================
 -- 018: Decision engine
 -- ============================================================
-CREATE TABLE IF NOT EXISTS user_quiz_responses (
+CREATE TABLE user_quiz_responses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   child_dob DATE, child_name TEXT,
@@ -712,7 +716,7 @@ ALTER TABLE nurseries ADD COLUMN IF NOT EXISTS staff_score SMALLINT;
 ALTER TABLE nurseries ADD COLUMN IF NOT EXISTS sentiment_score SMALLINT;
 ALTER TABLE nurseries ADD COLUMN IF NOT EXISTS dimension_scores_updated_at TIMESTAMPTZ;
 
-CREATE TABLE IF NOT EXISTS nursery_pricing (
+CREATE TABLE nursery_pricing (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nursery_id UUID REFERENCES nurseries(id) ON DELETE CASCADE,
   age_group TEXT NOT NULL CHECK (age_group IN ('0-1','1-2','2-3','3-4','4-5')),
@@ -725,7 +729,7 @@ CREATE TABLE IF NOT EXISTS nursery_pricing (
 );
 CREATE INDEX IF NOT EXISTS idx_nursery_pricing_nursery ON nursery_pricing(nursery_id);
 
-CREATE TABLE IF NOT EXISTS nursery_availability (
+CREATE TABLE nursery_availability (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nursery_id UUID REFERENCES nurseries(id) ON DELETE CASCADE,
   age_group TEXT NOT NULL CHECK (age_group IN ('0-1','1-2','2-3','3-4','4-5')),
@@ -736,7 +740,7 @@ CREATE TABLE IF NOT EXISTS nursery_availability (
 );
 CREATE INDEX IF NOT EXISTS idx_nursery_availability_nursery ON nursery_availability(nursery_id);
 
-CREATE TABLE IF NOT EXISTS nursery_staff (
+CREATE TABLE nursery_staff (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nursery_id UUID REFERENCES nurseries(id) ON DELETE CASCADE,
   total_staff INTEGER, qualified_teachers INTEGER, level_3_plus INTEGER,
@@ -745,7 +749,7 @@ CREATE TABLE IF NOT EXISTS nursery_staff (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS enquiries (
+CREATE TABLE enquiries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   nursery_id UUID REFERENCES nurseries(id) ON DELETE CASCADE,
@@ -770,7 +774,7 @@ ALTER TABLE nursery_reviews ADD COLUMN IF NOT EXISTS category_scores JSONB;
 -- ============================================================
 -- 019: Visit booking
 -- ============================================================
-CREATE TABLE IF NOT EXISTS visit_slots (
+CREATE TABLE visit_slots (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nursery_id UUID REFERENCES nurseries(id) ON DELETE CASCADE,
   slot_date DATE NOT NULL, slot_time TIME NOT NULL,
@@ -779,7 +783,7 @@ CREATE TABLE IF NOT EXISTS visit_slots (
 );
 CREATE INDEX IF NOT EXISTS idx_visit_slots_nursery_date ON visit_slots(nursery_id, slot_date);
 
-CREATE TABLE IF NOT EXISTS visit_bookings (
+CREATE TABLE visit_bookings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   slot_id UUID REFERENCES visit_slots(id) ON DELETE CASCADE,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -795,7 +799,7 @@ CREATE POLICY "Users create bookings" ON visit_bookings FOR INSERT WITH CHECK (a
 CREATE INDEX IF NOT EXISTS idx_visit_bookings_user ON visit_bookings(user_id);
 CREATE INDEX IF NOT EXISTS idx_visit_bookings_nursery ON visit_bookings(nursery_id);
 
-CREATE TABLE IF NOT EXISTS visit_surveys (
+CREATE TABLE visit_surveys (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_id UUID REFERENCES visit_bookings(id) ON DELETE CASCADE,
   user_id UUID, nursery_id UUID,
@@ -812,7 +816,7 @@ ALTER TABLE nurseries ADD COLUMN IF NOT EXISTS compare_count INTEGER DEFAULT 0;
 -- ============================================================
 -- 020: Notifications + messaging
 -- ============================================================
-CREATE TABLE IF NOT EXISTS enquiry_messages (
+CREATE TABLE enquiry_messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   enquiry_id UUID REFERENCES enquiries(id) ON DELETE CASCADE,
   sender_id UUID REFERENCES auth.users(id),
@@ -838,7 +842,7 @@ DROP POLICY IF EXISTS "Enquiry participants send messages" ON enquiry_messages;
 CREATE POLICY "Enquiry participants send messages" ON enquiry_messages
   FOR INSERT WITH CHECK (auth.uid() = sender_id);
 
-CREATE TABLE IF NOT EXISTS notifications (
+CREATE TABLE notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   type TEXT NOT NULL, title TEXT NOT NULL, body TEXT, link TEXT,
@@ -855,7 +859,7 @@ CREATE POLICY "Users see own notifications" ON notifications
 -- ============================================================
 -- 021: Monetization / provider subscriptions
 -- ============================================================
-CREATE TABLE IF NOT EXISTS provider_subscriptions (
+CREATE TABLE provider_subscriptions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   tier TEXT NOT NULL DEFAULT 'free' CHECK (tier IN ('free','pro','premium')),
@@ -873,7 +877,7 @@ ALTER TABLE nurseries ADD COLUMN IF NOT EXISTS featured BOOLEAN DEFAULT false;
 ALTER TABLE nurseries ADD COLUMN IF NOT EXISTS featured_until TIMESTAMPTZ;
 ALTER TABLE nurseries ADD COLUMN IF NOT EXISTS provider_tier TEXT DEFAULT 'free';
 
-CREATE TABLE IF NOT EXISTS tier_limits (
+CREATE TABLE tier_limits (
   tier TEXT PRIMARY KEY, monthly_price_gbp INTEGER NOT NULL,
   enquiry_credits INTEGER NOT NULL, featured_listing BOOLEAN DEFAULT false,
   analytics_advanced BOOLEAN DEFAULT false, priority_search BOOLEAN DEFAULT false,
@@ -903,7 +907,7 @@ CREATE INDEX IF NOT EXISTS idx_nursery_claims_status ON nursery_claims(status);
 -- ============================================================
 -- 023: Email lifecycle
 -- ============================================================
-CREATE TABLE IF NOT EXISTS email_log (
+CREATE TABLE email_log (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   email_to TEXT NOT NULL, template TEXT NOT NULL, subject TEXT NOT NULL,
@@ -913,7 +917,7 @@ CREATE TABLE IF NOT EXISTS email_log (
 CREATE INDEX IF NOT EXISTS idx_email_log_user ON email_log(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_email_log_template ON email_log(template);
 
-CREATE TABLE IF NOT EXISTS drip_sequences (
+CREATE TABLE drip_sequences (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   sequence TEXT NOT NULL, step INTEGER NOT NULL DEFAULT 0,
@@ -931,7 +935,7 @@ ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS last_active_at TIMESTAMPTZ;
 -- ============================================================
 -- 024: Provider invites
 -- ============================================================
-CREATE TABLE IF NOT EXISTS provider_invites (
+CREATE TABLE provider_invites (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   urn TEXT NOT NULL, email TEXT NOT NULL,
   status TEXT DEFAULT 'sent' CHECK (status IN ('sent','opened','clicked','claimed')),
@@ -1029,7 +1033,7 @@ CREATE INDEX IF NOT EXISTS idx_saved_searches_alert_on_new ON saved_searches (la
 -- ============================================================
 -- 027: Enhanced listings (photos, fees)
 -- ============================================================
-CREATE TABLE IF NOT EXISTS nursery_photos (
+CREATE TABLE nursery_photos (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nursery_urn TEXT NOT NULL, storage_path TEXT NOT NULL, public_url TEXT NOT NULL,
   display_order INTEGER DEFAULT 0, caption TEXT,
@@ -1045,7 +1049,7 @@ UPDATE tier_limits SET photo_gallery = false, custom_description = false, fee_ma
 UPDATE tier_limits SET photo_gallery = true, custom_description = true, fee_management = true WHERE tier = 'pro';
 UPDATE tier_limits SET photo_gallery = true, custom_description = true, fee_management = true WHERE tier = 'premium';
 
-CREATE TABLE IF NOT EXISTS nursery_fees (
+CREATE TABLE nursery_fees (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nursery_urn TEXT,
   age_group TEXT,
@@ -1141,7 +1145,7 @@ $$;
 -- ============================================================
 -- 029: Ofsted changes tracking
 -- ============================================================
-CREATE TABLE IF NOT EXISTS ofsted_changes (
+CREATE TABLE ofsted_changes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nursery_urn TEXT NOT NULL, previous_grade TEXT, new_grade TEXT NOT NULL,
   change_date TIMESTAMPTZ DEFAULT NOW(), notified BOOLEAN DEFAULT false
@@ -1165,7 +1169,7 @@ ALTER TABLE nurseries ADD COLUMN IF NOT EXISTS has_waitlist BOOLEAN DEFAULT fals
 -- ============================================================
 -- 032: Parent Q&A
 -- ============================================================
-CREATE TABLE IF NOT EXISTS nursery_questions (
+CREATE TABLE nursery_questions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nursery_urn TEXT NOT NULL, user_id UUID NOT NULL,
   question TEXT NOT NULL,
@@ -1173,7 +1177,7 @@ CREATE TABLE IF NOT EXISTS nursery_questions (
   created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS nursery_answers (
+CREATE TABLE nursery_answers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   question_id UUID NOT NULL REFERENCES nursery_questions(id) ON DELETE CASCADE,
   user_id UUID NOT NULL, is_provider BOOLEAN DEFAULT false,
@@ -1187,7 +1191,7 @@ CREATE INDEX IF NOT EXISTS idx_answers_question ON nursery_answers (question_id)
 -- ============================================================
 -- 033: Notification preferences
 -- ============================================================
-CREATE TABLE IF NOT EXISTS notification_preferences (
+CREATE TABLE notification_preferences (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL UNIQUE,
   email_new_review BOOLEAN DEFAULT true, email_qa_answer BOOLEAN DEFAULT true,
@@ -1200,7 +1204,7 @@ CREATE INDEX IF NOT EXISTS idx_notif_prefs_user ON notification_preferences (use
 -- ============================================================
 -- 034: Promotions + report caches (parent subs removed)
 -- ============================================================
-CREATE TABLE IF NOT EXISTS promotions (
+CREATE TABLE promotions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL, description TEXT, image_url TEXT, link_url TEXT NOT NULL,
   category TEXT NOT NULL CHECK (category IN (
@@ -1236,7 +1240,7 @@ CREATE INDEX IF NOT EXISTS idx_promotions_location ON promotions USING GIST(loca
 CREATE INDEX IF NOT EXISTS idx_promotions_category ON promotions(category);
 CREATE INDEX IF NOT EXISTS idx_promotions_dates ON promotions(start_date, end_date);
 
-CREATE TABLE IF NOT EXISTS provider_reports_cache (
+CREATE TABLE provider_reports_cache (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID, urn TEXT NOT NULL, report_date DATE NOT NULL,
   views INTEGER DEFAULT 0, enquiries INTEGER DEFAULT 0,
@@ -1246,7 +1250,7 @@ CREATE TABLE IF NOT EXISTS provider_reports_cache (
 );
 CREATE INDEX IF NOT EXISTS idx_prc_urn_date ON provider_reports_cache(urn, report_date);
 
-CREATE TABLE IF NOT EXISTS admin_reports_cache (
+CREATE TABLE admin_reports_cache (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   report_date DATE NOT NULL UNIQUE,
   total_users INTEGER DEFAULT 0, new_users INTEGER DEFAULT 0,
@@ -1291,7 +1295,7 @@ CREATE INDEX IF NOT EXISTS idx_user_profiles_email ON user_profiles(email);
 -- ============================================================
 -- 036: Migration safety guard
 -- ============================================================
-CREATE TABLE IF NOT EXISTS _migration_guard (
+CREATE TABLE _migration_guard (
   id SERIAL PRIMARY KEY, description TEXT NOT NULL, applied_at TIMESTAMPTZ DEFAULT NOW()
 );
 INSERT INTO _migration_guard (description)
@@ -1328,7 +1332,7 @@ CREATE POLICY "Service role manages reviews" ON nursery_reviews FOR ALL USING (a
 -- ============================================================
 -- 043: Shared shortlists
 -- ============================================================
-CREATE TABLE IF NOT EXISTS shared_shortlists (
+CREATE TABLE shared_shortlists (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   token TEXT UNIQUE NOT NULL DEFAULT encode(gen_random_bytes(16), 'hex'),
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
@@ -1348,7 +1352,7 @@ CREATE POLICY "Service role manages shared shortlists" ON shared_shortlists FOR 
 -- ============================================================
 -- 044: Team access
 -- ============================================================
-CREATE TABLE IF NOT EXISTS nursery_team_members (
+CREATE TABLE nursery_team_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nursery_urn TEXT NOT NULL,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -1368,7 +1372,7 @@ CREATE POLICY "Service role manages teams" ON nursery_team_members FOR ALL USING
 -- ============================================================
 -- 045: Waitlist
 -- ============================================================
-CREATE TABLE IF NOT EXISTS waitlist_entries (
+CREATE TABLE waitlist_entries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nursery_id UUID NOT NULL REFERENCES nurseries(id) ON DELETE CASCADE,
   nursery_urn TEXT NOT NULL,
@@ -1390,7 +1394,7 @@ CREATE POLICY "Service role manages waitlist" ON waitlist_entries FOR ALL USING 
 -- ============================================================
 -- 048: User activity log
 -- ============================================================
-CREATE TABLE IF NOT EXISTS user_activity_log (
+CREATE TABLE user_activity_log (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   session_id TEXT, event TEXT NOT NULL, target_urn TEXT,
@@ -1414,7 +1418,7 @@ $$ LANGUAGE plpgsql;
 -- ============================================================
 -- 052: Job runs
 -- ============================================================
-CREATE TABLE IF NOT EXISTS job_runs (
+CREATE TABLE job_runs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   job_type TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'running',
   started_at TIMESTAMPTZ NOT NULL DEFAULT now(), completed_at TIMESTAMPTZ,
