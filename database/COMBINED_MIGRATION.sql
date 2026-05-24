@@ -137,8 +137,10 @@ CREATE INDEX IF NOT EXISTS nursery_claims_status_idx ON nursery_claims (status);
 CREATE INDEX IF NOT EXISTS nursery_claims_user_idx ON nursery_claims (user_id);
 
 ALTER TABLE nursery_claims ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users see own claims" ON nursery_claims;
 CREATE POLICY "Users see own claims" ON nursery_claims
   FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users insert own claims" ON nursery_claims;
 CREATE POLICY "Users insert own claims" ON nursery_claims
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
@@ -258,7 +260,9 @@ $$;
 -- 002: User accounts + RLS
 -- ============================================================
 ALTER TABLE user_shortlists ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users see own shortlist" ON user_shortlists;
 CREATE POLICY "Users see own shortlist" ON user_shortlists FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users add to own shortlist" ON user_shortlists;
 CREATE POLICY "Users add to own shortlist" ON user_shortlists FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 CREATE TABLE IF NOT EXISTS saved_searches (
@@ -274,6 +278,7 @@ CREATE TABLE IF NOT EXISTS saved_searches (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE saved_searches ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage own searches" ON saved_searches;
 CREATE POLICY "Users manage own searches" ON saved_searches FOR ALL USING (auth.uid() = user_id);
 
 -- ============================================================
@@ -652,6 +657,7 @@ CREATE TABLE IF NOT EXISTS user_quiz_responses (
   created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE user_quiz_responses ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users see own quiz" ON user_quiz_responses;
 CREATE POLICY "Users see own quiz" ON user_quiz_responses
   FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
@@ -706,7 +712,9 @@ CREATE TABLE IF NOT EXISTS enquiries (
   sent_at TIMESTAMPTZ DEFAULT NOW(), responded_at TIMESTAMPTZ
 );
 ALTER TABLE enquiries ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users see own enquiries" ON enquiries;
 CREATE POLICY "Users see own enquiries" ON enquiries FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users create enquiries" ON enquiries;
 CREATE POLICY "Users create enquiries" ON enquiries FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE INDEX IF NOT EXISTS idx_enquiries_user ON enquiries(user_id);
 CREATE INDEX IF NOT EXISTS idx_enquiries_nursery ON enquiries(nursery_id);
@@ -736,7 +744,9 @@ CREATE TABLE IF NOT EXISTS visit_bookings (
   notes TEXT, created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE visit_bookings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users see own bookings" ON visit_bookings;
 CREATE POLICY "Users see own bookings" ON visit_bookings FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users create bookings" ON visit_bookings;
 CREATE POLICY "Users create bookings" ON visit_bookings FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE INDEX IF NOT EXISTS idx_visit_bookings_user ON visit_bookings(user_id);
 CREATE INDEX IF NOT EXISTS idx_visit_bookings_nursery ON visit_bookings(nursery_id);
@@ -768,6 +778,7 @@ CREATE TABLE IF NOT EXISTS enquiry_messages (
 );
 CREATE INDEX IF NOT EXISTS idx_enquiry_messages_enquiry ON enquiry_messages(enquiry_id, created_at);
 ALTER TABLE enquiry_messages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enquiry participants see messages" ON enquiry_messages;
 CREATE POLICY "Enquiry participants see messages" ON enquiry_messages
   FOR SELECT USING (
     sender_id = auth.uid() OR
@@ -779,6 +790,7 @@ CREATE POLICY "Enquiry participants see messages" ON enquiry_messages
       WHERE nc.user_id = auth.uid() AND nc.status = 'approved'
     )
   );
+DROP POLICY IF EXISTS "Enquiry participants send messages" ON enquiry_messages;
 CREATE POLICY "Enquiry participants send messages" ON enquiry_messages
   FOR INSERT WITH CHECK (auth.uid() = sender_id);
 
@@ -792,6 +804,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications(user_id) WHERE read_at IS NULL;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users see own notifications" ON notifications;
 CREATE POLICY "Users see own notifications" ON notifications
   FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
@@ -830,7 +843,9 @@ INSERT INTO tier_limits (tier, monthly_price_gbp, enquiry_credits, featured_list
 ON CONFLICT (tier) DO NOTHING;
 
 ALTER TABLE provider_subscriptions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users see own provider subscription" ON provider_subscriptions;
 CREATE POLICY "Users see own provider subscription" ON provider_subscriptions FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Service role bypasses provider subscription RLS" ON provider_subscriptions;
 CREATE POLICY "Service role bypasses provider subscription RLS" ON provider_subscriptions FOR ALL USING (auth.role() = 'service_role');
 
 -- ============================================================
@@ -1280,8 +1295,11 @@ CREATE TABLE IF NOT EXISTS shared_shortlists (
 );
 CREATE INDEX IF NOT EXISTS idx_shared_shortlists_token ON shared_shortlists (token);
 ALTER TABLE shared_shortlists ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anyone can read shared shortlists by token" ON shared_shortlists;
 CREATE POLICY "Anyone can read shared shortlists by token" ON shared_shortlists FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Authenticated users can create shared shortlists" ON shared_shortlists;
 CREATE POLICY "Authenticated users can create shared shortlists" ON shared_shortlists FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Service role manages shared shortlists" ON shared_shortlists;
 CREATE POLICY "Service role manages shared shortlists" ON shared_shortlists FOR ALL USING (auth.role() = 'service_role');
 
 -- ============================================================
@@ -1299,7 +1317,9 @@ CREATE TABLE IF NOT EXISTS nursery_team_members (
 CREATE INDEX IF NOT EXISTS idx_nursery_team_urn ON nursery_team_members (nursery_urn);
 CREATE INDEX IF NOT EXISTS idx_nursery_team_user ON nursery_team_members (user_id);
 ALTER TABLE nursery_team_members ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users see teams they belong to" ON nursery_team_members;
 CREATE POLICY "Users see teams they belong to" ON nursery_team_members FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Service role manages teams" ON nursery_team_members;
 CREATE POLICY "Service role manages teams" ON nursery_team_members FOR ALL USING (auth.role() = 'service_role');
 
 -- ============================================================
@@ -1317,8 +1337,11 @@ CREATE TABLE IF NOT EXISTS waitlist_entries (
 CREATE INDEX IF NOT EXISTS idx_waitlist_nursery ON waitlist_entries (nursery_id, status);
 CREATE INDEX IF NOT EXISTS idx_waitlist_user ON waitlist_entries (user_id);
 ALTER TABLE waitlist_entries ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users see own waitlist entries" ON waitlist_entries;
 CREATE POLICY "Users see own waitlist entries" ON waitlist_entries FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can join waitlist" ON waitlist_entries;
 CREATE POLICY "Users can join waitlist" ON waitlist_entries FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Service role manages waitlist" ON waitlist_entries;
 CREATE POLICY "Service role manages waitlist" ON waitlist_entries FOR ALL USING (auth.role() = 'service_role');
 
 -- ============================================================
