@@ -32,6 +32,7 @@ export default function AdminInvitesPage() {
   const [region, setRegion] = useState('')
   const [localAuthority, setLocalAuthority] = useState('')
   const [limit, setLimit] = useState(50)
+  const [campaignType, setCampaignType] = useState<'invite' | 'awareness'>('invite')
   const [loading, setLoading] = useState(false)
   const [sending, setSending] = useState(false)
   const [sendResult, setSendResult] = useState<{ sent: number; failed: number; skipped: number } | null>(null)
@@ -45,14 +46,14 @@ export default function AdminInvitesPage() {
       try {
         const token = await getAuthToken()
         if (!token) return
-        const data = await adminFetch('/provider-invites/stats', token)
+        const data = await adminFetch(`/provider-invites/stats?campaign_type=${campaignType}`, token)
         if (!cancelled) setStats(data)
       } catch {
         // Stats may fail if table doesn't exist yet
       }
     })()
     return () => { cancelled = true }
-  }, [role])
+  }, [role, campaignType])
 
   async function handlePreview() {
     setLoading(true)
@@ -61,7 +62,7 @@ export default function AdminInvitesPage() {
     try {
       const token = await getAuthToken()
       if (!token) throw new Error('No auth token')
-      const body: any = { limit }
+      const body: any = { limit, campaign_type: campaignType }
       if (region.trim()) body.region = region.trim()
       if (localAuthority.trim()) body.local_authority = localAuthority.trim()
 
@@ -110,14 +111,14 @@ export default function AdminInvitesPage() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ urns: Array.from(selected) }),
+          body: JSON.stringify({ urns: Array.from(selected), campaign_type: campaignType }),
         }
       )
       if (!res.ok) throw new Error(`Send failed: ${res.status}`)
       const result = await res.json()
       setSendResult(result)
       // Refresh stats
-      const statsData = await adminFetch('/provider-invites/stats', token)
+      const statsData = await adminFetch(`/provider-invites/stats?campaign_type=${campaignType}`, token)
       setStats(statsData)
       // Clear preview
       setPreview([])
@@ -150,7 +151,24 @@ export default function AdminInvitesPage() {
 
   return (
     <div>
-      <h2 className="text-lg font-bold text-gray-900 mb-4">Provider Invites</h2>
+      <h2 className="text-lg font-bold text-gray-900 mb-4">Provider Outreach</h2>
+
+      {/* Campaign type toggle */}
+      <div className="flex gap-2 mb-4">
+        {([['invite', 'Invite to Claim'], ['awareness', 'General Awareness']] as const).map(([value, label]) => (
+          <button
+            key={value}
+            onClick={() => { setCampaignType(value); setPreview([]); setSelected(new Set()); setSendResult(null) }}
+            className={`px-4 py-2 text-sm font-semibold rounded-lg border transition ${
+              campaignType === value
+                ? 'bg-indigo-600 text-white border-indigo-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
 
       {/* Stats cards */}
       {stats && (
@@ -245,7 +263,7 @@ export default function AdminInvitesPage() {
               disabled={sending || selected.size === 0}
               className="px-4 py-1.5 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition disabled:opacity-50"
             >
-              {sending ? 'Sending...' : `Send ${selected.size} invites`}
+              {sending ? 'Sending...' : `Send ${selected.size} ${campaignType === 'awareness' ? 'awareness emails' : 'invites'}`}
             </button>
           </div>
           <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
@@ -286,9 +304,9 @@ export default function AdminInvitesPage() {
 
       <ConfirmModal
         open={showSendConfirm}
-        title="Send invite emails?"
-        message={`Are you sure you want to send invite emails to ${selected.size} nurseries? This cannot be undone.`}
-        confirmLabel="Send invites"
+        title={campaignType === 'awareness' ? 'Send awareness emails?' : 'Send invite emails?'}
+        message={`Are you sure you want to send ${campaignType === 'awareness' ? 'awareness' : 'invite'} emails to ${selected.size} nurseries? This cannot be undone.`}
+        confirmLabel={campaignType === 'awareness' ? 'Send awareness emails' : 'Send invites'}
         variant="danger"
         onConfirm={doSend}
         onCancel={() => setShowSendConfirm(false)}

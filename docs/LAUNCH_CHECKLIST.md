@@ -27,7 +27,7 @@ Last reviewed: 2026-04-27
 
 ### Render env vars (backend)
 
-- [ ] `EMAIL_FROM=NurseryMatch <noreply@nurserymatch.com>`
+- [ ] `EMAIL_FROM=NurseryMatch <hello@nurserymatch.com>`
 - [ ] `FRONTEND_URL=https://nurserymatch.com`
 - [ ] `RESEND_API_KEY=re_…` (from Resend dashboard)
 - [ ] `RESEND_AUDIENCE_ID=aud_…` (from Resend audience created above)
@@ -41,7 +41,7 @@ Last reviewed: 2026-04-27
 - [ ] `GOOGLE_PLACES_API_KEY=AIza…` (Google Cloud → Places API)
 - [ ] `PROPERTYDATA_API_KEY=…` (propertydata.co.uk)
 - [ ] `TURNSTILE_SECRET_KEY=0x…` (from Cloudflare Turnstile site, see below)
-- [ ] `ALERT_EMAIL=byron@example.com` (where ops alerts go)
+- [ ] `ALERT_EMAIL=byron@nurserymatch.com` (where ops alerts go)
 
 ### Vercel env vars (frontend)
 

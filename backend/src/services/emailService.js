@@ -5,7 +5,7 @@
 
 import { logger } from '../logger.js'
 
-const FROM = process.env.EMAIL_FROM || 'NurseryMatch <noreply@nurserymatch.com>'
+const FROM = process.env.EMAIL_FROM || 'NurseryMatch <hello@nurserymatch.com>'
 const SEND_TIMEOUT_MS = 15_000
 export const FRONTEND_URL = process.env.FRONTEND_URL || 'https://nurserymatch.com'
 export const UNSUBSCRIBE_URL = `${FRONTEND_URL}/account?tab=notifications`
@@ -498,6 +498,68 @@ export function renderProviderInviteEmail(nursery = {}) {
   return { subject, html, text }
 }
 
+export function renderAwarenessEmail(nursery = {}) {
+  const name = escapeHtml(nursery.name || 'your nursery')
+  const town = escapeHtml(nursery.town || '')
+  const urn = encodeURIComponent(nursery.urn || '')
+  const frontendUrl = process.env.FRONTEND_URL || 'https://nurserymatch.com'
+  const nurseryUrl = `${frontendUrl}/nursery/${urn}`
+  const safeNurseryUrl = escapeHtml(nurseryUrl)
+  const subject = `Parents are searching for nurseries like ${escapeHtml(nursery.name || 'yours')}`
+
+  const html = shell({
+    title: subject,
+    preheader: `Thousands of parents use NurseryMatch to find nurseries in ${town || 'your area'}.`,
+    bodyHtml: `
+      <p style="margin:0 0 12px 0;">Hi,</p>
+      <p style="margin:0 0 16px 0;">
+        We are writing to let you know about <strong>NurseryMatch</strong> — a free nursery comparison platform used by
+        thousands of UK parents every month to find the right nursery for their child.
+      </p>
+      <p style="margin:0 0 16px 0;">
+        Your nursery, <strong>${name}</strong>${town ? ' in ' + town : ''}, is already listed on NurseryMatch with
+        your Ofsted data. Parents can view your rating, location, and availability right now.
+      </p>
+      <p style="margin:0 0 6px 0;font-weight:600;color:#111827;">What NurseryMatch offers nurseries:</p>
+      <ul style="margin:0 0 16px 0;padding-left:18px;font-size:14px;color:#374151;">
+        <li style="margin:4px 0;">See how parents discover and compare your nursery</li>
+        <li style="margin:4px 0;">Receive enquiries directly from local families looking for spaces</li>
+        <li style="margin:4px 0;">Free to use — upgrade any time for featured placement and analytics</li>
+      </ul>
+      <p style="margin:20px 0;">
+        <a href="${safeNurseryUrl}" style="display:inline-block;padding:14px 24px;background:#4f46e5;color:#ffffff;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">
+          See your nursery page
+        </a>
+      </p>
+      <p style="margin:20px 0 0 0;font-size:13px;color:#6b7280;">
+        If you would like to manage your listing, add photos, or respond to parent reviews, you can
+        <a href="${escapeHtml(frontendUrl)}/claim?urn=${urn}" style="color:#4f46e5;text-decoration:underline;">claim your free profile</a> in just a couple of minutes.
+      </p>
+    `,
+  })
+
+  const text = [
+    'Hi,',
+    '',
+    'We are writing to let you know about NurseryMatch — a free nursery comparison platform used by thousands of UK parents every month.',
+    '',
+    `Your nursery, ${nursery.name || 'yours'}${nursery.town ? ' in ' + nursery.town : ''}, is already listed on NurseryMatch with your Ofsted data.`,
+    '',
+    'What NurseryMatch offers nurseries:',
+    '- See how parents discover and compare your nursery',
+    '- Receive enquiries directly from local families looking for spaces',
+    '- Free to use — upgrade any time for featured placement and analytics',
+    '',
+    `See your nursery page: ${nurseryUrl}`,
+    '',
+    `Claim your free profile: ${frontendUrl}/claim?urn=${nursery.urn || ''}`,
+    '',
+    'Manage preferences: ' + UNSUBSCRIBE_URL,
+  ].join('\n')
+
+  return { subject, html, text }
+}
+
 export default {
   isEmailAvailable,
   sendEmail,
@@ -507,6 +569,7 @@ export default {
   renderEnquiryNotificationEmail,
   renderClaimApprovedEmail,
   renderProviderInviteEmail,
+  renderAwarenessEmail,
   EmailNotConfiguredError,
   EmailSendError,
 }

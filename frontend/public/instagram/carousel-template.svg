@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1080" fill="url(#bg)"/>
+  <!-- Top bar -->
+  <rect x="0" y="0" width="1080" height="6" fill="rgba(255,255,255,0.3)"/>
+  <!-- Brand mark top-left -->
+  <text x="64" y="88" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="32" fill="rgba(255,255,255,0.7)">NurseryMatch</text>
+  <!-- Main content area -->
+  <rect x="64" y="140" width="952" height="740" rx="24" fill="rgba(255,255,255,0.1)"/>
+  <!-- Placeholder headline -->
+  <text x="540" y="440" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="64" fill="white">Your Headline Here</text>
+  <text x="540" y="520" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="400" font-size="36" fill="rgba(255,255,255,0.8)">Supporting text goes here</text>
+  <!-- Slide indicator dots -->
+  <circle cx="480" cy="940" r="8" fill="white"/>
+  <circle cx="516" cy="940" r="8" fill="rgba(255,255,255,0.4)"/>
+  <circle cx="552" cy="940" r="8" fill="rgba(255,255,255,0.4)"/>
+  <circle cx="588" cy="940" r="8" fill="rgba(255,255,255,0.4)"/>
+  <circle cx="624" cy="940" r="8" fill="rgba(255,255,255,0.4)"/>
+  <!-- Bottom bar -->
+  <rect x="64" y="1000" width="952" height="2" fill="rgba(255,255,255,0.15)"/>
+  <text x="540" y="1048" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="500" font-size="24" fill="rgba(255,255,255,0.6)">nurserymatch.com</text>
+</svg>

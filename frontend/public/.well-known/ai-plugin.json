@@ -1,0 +1,17 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "NurseryMatch",
+  "name_for_model": "nurserymatch",
+  "description_for_human": "Compare 27,000+ UK nurseries by Ofsted grade, family score, and fees.",
+  "description_for_model": "Search and compare Ofsted-rated UK nurseries by postcode, district, or name. Returns nursery details including Ofsted grade, inspection date, fees, funded places, availability, reviews, and area family scores. Use for UK parents looking for childcare.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://nursery-finder-6u7r.onrender.com/api/openapi-gpt.json"
+  },
+  "logo_url": "https://nurserymatch.com/opengraph-image",
+  "contact_email": "hello@nurserymatch.com",
+  "legal_info_url": "https://nurserymatch.com/privacy"
+}

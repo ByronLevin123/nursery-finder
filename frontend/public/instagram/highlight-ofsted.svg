@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <circle cx="160" cy="160" r="160" fill="url(#bg)"/>
+  <!-- Star/badge icon -->
+  <polygon points="160,55 182,118 250,118 195,158 215,222 160,185 105,222 125,158 70,118 138,118" fill="none" stroke="white" stroke-width="8" stroke-linejoin="round"/>
+  <!-- Checkmark inside -->
+  <polyline points="128,155 150,177 195,130" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

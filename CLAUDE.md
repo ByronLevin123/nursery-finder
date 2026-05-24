@@ -153,7 +153,7 @@ ADMIN_USER=admin
 ADMIN_PASS=choose-a-strong-password
 INGEST_SECRET=choose-a-random-string
 SENTRY_DSN=https://xxx@sentry.io/xxx
-ALERT_EMAIL=byron@youremail.com
+ALERT_EMAIL=byron@nurserymatch.com
 NODE_ENV=development
 ```
 

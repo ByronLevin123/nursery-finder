@@ -114,7 +114,9 @@ export default function ReviewList({ urn, refreshKey = 0 }: Props) {
               <p className="text-sm text-gray-700 whitespace-pre-line mt-1">{r.body}</p>
               <p className="text-xs text-gray-500 mt-2">
                 — {r.author_display_name || 'Anonymous parent'}
-                {r.would_recommend ? ' · would recommend' : ' · would not recommend'}
+                {(r as any).source === 'google'
+                  ? <span className="ml-1 inline-flex items-center gap-0.5 text-xs text-gray-400">· via Google</span>
+                  : r.would_recommend ? ' · would recommend' : ' · would not recommend'}
               </p>
             </li>
           ))}

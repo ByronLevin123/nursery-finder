@@ -211,6 +211,7 @@ export interface Review {
   attended_from: string | null
   attended_to: string | null
   author_display_name: string | null
+  source: string | null
   status: string
   created_at: string
 }

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5"/>
+      <stop offset="50%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1920" fill="url(#bg)"/>
+  <!-- Decorative circles -->
+  <circle cx="200" cy="300" r="180" fill="rgba(255,255,255,0.05)"/>
+  <circle cx="880" cy="1600" r="220" fill="rgba(255,255,255,0.05)"/>
+  <circle cx="900" cy="500" r="120" fill="rgba(255,255,255,0.03)"/>
+  <!-- Brand top -->
+  <text x="540" y="200" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="36" fill="rgba(255,255,255,0.7)" letter-spacing="4">NURSERYMATCH</text>
+  <!-- Main content area -->
+  <rect x="80" y="580" width="920" height="700" rx="32" fill="rgba(255,255,255,0.1)"/>
+  <!-- Headline -->
+  <text x="540" y="860" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="72" fill="white">Your Title</text>
+  <text x="540" y="950" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="72" fill="white">Goes Here</text>
+  <text x="540" y="1060" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="400" font-size="36" fill="rgba(255,255,255,0.8)">Subheading text</text>
+  <!-- Play button indicator -->
+  <circle cx="540" cy="1500" r="48" fill="rgba(255,255,255,0.2)" stroke="white" stroke-width="3"/>
+  <polygon points="525,1478 525,1522 565,1500" fill="white"/>
+  <!-- URL bottom -->
+  <text x="540" y="1820" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="500" font-size="28" fill="rgba(255,255,255,0.6)">nurserymatch.com</text>
+</svg>

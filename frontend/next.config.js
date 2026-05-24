@@ -1,5 +1,14 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {}
+const nextConfig = {
+  async rewrites() {
+    return [
+      {
+        source: '/.well-known/:path*',
+        destination: '/.well-known/:path*',
+      },
+    ]
+  },
+}
 
 if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
   // Only load the Sentry wrapper when a DSN is configured, so builds work

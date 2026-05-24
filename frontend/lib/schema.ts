@@ -163,6 +163,32 @@ export function searchResultsSchema(nurseries: AnyObj[], query: string): AnyObj 
   }
 }
 
+export function howToSchema(guide: {
+  title: string
+  description: string
+  slug: string
+  date?: string | null
+  steps: { name: string; text: string }[]
+  totalTime?: string
+}): AnyObj {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name: guide.title,
+    description: guide.description,
+    url: `${SITE_URL}/guides/${guide.slug}`,
+    ...(guide.date ? { datePublished: guide.date } : {}),
+    ...(guide.totalTime ? { totalTime: guide.totalTime } : {}),
+    author: { '@type': 'Organization', name: 'NurseryMatch', url: SITE_URL },
+    step: guide.steps.map((s, i) => ({
+      '@type': 'HowToStep',
+      position: i + 1,
+      name: s.name,
+      text: s.text,
+    })),
+  }
+}
+
 export function jsonLdScript(obj: AnyObj | AnyObj[]): string {
   return JSON.stringify(obj)
 }

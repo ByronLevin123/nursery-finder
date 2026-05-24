@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <circle cx="160" cy="160" r="160" fill="url(#bg)"/>
+  <!-- Lightbulb icon -->
+  <path d="M160 70 C120 70 90 100 90 140 C90 168 106 192 130 204 L130 230 L190 230 L190 204 C214 192 230 168 230 140 C230 100 200 70 160 70Z" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="130" y1="250" x2="190" y2="250" stroke="white" stroke-width="8" stroke-linecap="round"/>
+  <line x1="140" y1="270" x2="180" y2="270" stroke="white" stroke-width="8" stroke-linecap="round"/>
+  <!-- Rays -->
+  <line x1="160" y1="40" x2="160" y2="55" stroke="white" stroke-width="6" stroke-linecap="round"/>
+  <line x1="245" y1="85" x2="235" y2="95" stroke="white" stroke-width="6" stroke-linecap="round"/>
+  <line x1="75" y1="85" x2="85" y2="95" stroke="white" stroke-width="6" stroke-linecap="round"/>
+</svg>
