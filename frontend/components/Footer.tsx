@@ -31,6 +31,17 @@ export default function Footer() {
               </div>
             </div>
             <div>
+              <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Developers</p>
+              <div className="flex flex-col gap-1 text-sm">
+                <Link href="/developers" className="text-gray-500 hover:text-gray-700">
+                  Developer Platform
+                </Link>
+                <Link href="/api" className="text-gray-500 hover:text-gray-700">
+                  API Reference
+                </Link>
+              </div>
+            </div>
+            <div>
               <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Company</p>
               <div className="flex flex-col gap-1 text-sm">
                 <Link href="/about" className="text-gray-500 hover:text-gray-700">

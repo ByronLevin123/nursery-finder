@@ -63,8 +63,25 @@ export default function AdminDocsPage() {
         </p>
       </header>
 
+      {/* Mobile TOC */}
+      <nav className="lg:hidden mb-6 flex flex-wrap gap-2">
+        {SECTIONS.map((s) => (
+          <a
+            key={s.id}
+            href={`#${s.id}`}
+            className={`px-3 py-1.5 text-xs rounded-full border transition ${
+              activeId === s.id
+                ? 'bg-indigo-50 text-indigo-700 border-indigo-200 font-medium'
+                : 'text-gray-600 border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            {s.title}
+          </a>
+        ))}
+      </nav>
+
       <div className="flex gap-8">
-        {/* Sticky TOC */}
+        {/* Sticky TOC (desktop) */}
         <aside className="hidden lg:block w-56 shrink-0">
           <nav className="sticky top-4 space-y-1">
             {SECTIONS.map((s) => (
@@ -198,7 +215,7 @@ function UserRoles() {
         a mix of <b>frontend route guards</b> (e.g. <Path>admin/layout.tsx</Path>) and{' '}
         <b>backend middleware</b> (<Path>backend/src/middleware/auth.js</Path>).
       </p>
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto -mx-1"><table className="w-full text-sm min-w-[500px]">
         <thead className="bg-gray-50 border-y border-gray-200">
           <tr>
             <th className="text-left p-2 font-semibold">Role</th>
@@ -223,7 +240,7 @@ function UserRoles() {
             <td className="p-2"><Code>requireRole(&apos;admin&apos;)</Code></td>
           </tr>
         </tbody>
-      </table>
+      </table></div>
       <SubHeading>Login / signup routes</SubHeading>
       <ul className="list-disc pl-6 space-y-1 text-gray-700">
         <li><Path>/login</Path> — email + password or magic link</li>
@@ -375,7 +392,7 @@ function AdminFeatures() {
         gated by <Code>requireRole(&apos;admin&apos;)</Code> on the backend.
       </p>
 
-      <table className="w-full text-sm border-y border-gray-200">
+      <div className="overflow-x-auto -mx-1"><table className="w-full text-sm border-y border-gray-200 min-w-[500px]">
         <thead className="bg-gray-50">
           <tr>
             <th className="text-left p-2 font-semibold">Page</th>
@@ -424,7 +441,7 @@ function AdminFeatures() {
             <td className="p-2">This page.</td>
           </tr>
         </tbody>
-      </table>
+      </table></div>
     </section>
   )
 }
@@ -467,7 +484,7 @@ function Emails() {
         consistent footer. Sender is <Code>EMAIL_FROM</Code>; unsubscribe link goes to
         <Path> /account?tab=notifications</Path>.
       </p>
-      <table className="w-full text-sm border-y border-gray-200">
+      <div className="overflow-x-auto -mx-1"><table className="w-full text-sm border-y border-gray-200 min-w-[500px]">
         <thead className="bg-gray-50">
           <tr>
             <th className="text-left p-2 font-semibold">Template</th>
@@ -492,7 +509,7 @@ function Emails() {
           <tr><td className="p-2">Parent comparison email</td><td className="p-2">User hits &quot;email this comparison&quot;</td></tr>
           <tr><td className="p-2">Claim approved</td><td className="p-2">Admin approves a claim (same flow as provider welcome)</td></tr>
         </tbody>
-      </table>
+      </table></div>
       <p className="text-gray-700 mt-3">
         Supabase sends 4 separate auth emails (confirm signup, magic link, reset password, change
         email). Those templates live in the <b>Supabase dashboard → Authentication → Email
@@ -510,7 +527,7 @@ function CronJobs() {
         Background work runs in a separate process (<Path>backend/src/worker.js</Path>) so long
         jobs never block API responses. Deployed as a Render background worker.
       </p>
-      <table className="w-full text-sm border-y border-gray-200">
+      <div className="overflow-x-auto -mx-1"><table className="w-full text-sm border-y border-gray-200 min-w-[500px]">
         <thead className="bg-gray-50">
           <tr>
             <th className="text-left p-2 font-semibold">Job</th>
@@ -529,7 +546,7 @@ function CronJobs() {
           <tr><td className="p-2">Ofsted ingest</td><td className="p-2 font-mono text-xs">monthly</td><td className="p-2">Scrape Ofsted register CSV, upsert nurseries, geocode new ones</td></tr>
           <tr><td className="p-2">Postcodes geocoding</td><td className="p-2 font-mono text-xs">on-demand</td><td className="p-2">Bulk batch (100/request) postcodes.io calls</td></tr>
         </tbody>
-      </table>
+      </table></div>
     </section>
   )
 }
@@ -541,7 +558,7 @@ function ExternalData() {
       <p className="text-gray-700">
         Every third-party API, where we hit it, and the rate limits we respect.
       </p>
-      <table className="w-full text-sm border-y border-gray-200">
+      <div className="overflow-x-auto -mx-1"><table className="w-full text-sm border-y border-gray-200 min-w-[500px]">
         <thead className="bg-gray-50">
           <tr>
             <th className="text-left p-2 font-semibold">Source</th>
@@ -626,7 +643,7 @@ function ExternalData() {
             <td className="p-2 text-xs"><Code>NEXT_PUBLIC_PLAUSIBLE_DOMAIN</Code></td>
           </tr>
         </tbody>
-      </table>
+      </table></div>
     </section>
   )
 }
