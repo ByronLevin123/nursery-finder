@@ -13,7 +13,8 @@ type CommuteFrom = 'home' | 'work' | 'both'
 
 interface QuizData {
   child_name: string
-  child_dob: string
+  child_age_years: number | null
+  child_age_months: number | null
   urgency: Urgency | ''
   commute_from: CommuteFrom | ''
   commute_postcode: string
@@ -50,12 +51,17 @@ const MUST_HAVE_OPTIONS = [
   { id: 'montessori', label: 'Montessori' },
 ]
 
-function ageInMonths(dob: string): number | null {
-  if (!dob) return null
-  const d = new Date(dob)
+function totalAgeMonths(years: number | null, months: number | null): number | null {
+  if (years == null && months == null) return null
+  return (years ?? 0) * 12 + (months ?? 0)
+}
+
+function ageToDob(years: number | null, months: number | null): string | null {
+  const total = totalAgeMonths(years, months)
+  if (total == null) return null
   const now = new Date()
-  const months = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth())
-  return Math.max(0, months)
+  now.setMonth(now.getMonth() - total)
+  return now.toISOString().split('T')[0]
 }
 
 export default function QuizPage() {
@@ -67,7 +73,8 @@ export default function QuizPage() {
 
   const [data, setData] = useState<QuizData>({
     child_name: '',
-    child_dob: '',
+    child_age_years: null,
+    child_age_months: null,
     urgency: '',
     commute_from: '',
     commute_postcode: '',
@@ -94,7 +101,7 @@ export default function QuizPage() {
 
   const totalSteps = 5
   const progress = (step / totalSteps) * 100
-  const age = ageInMonths(data.child_dob)
+  const age = totalAgeMonths(data.child_age_years, data.child_age_months)
 
   function updateData(patch: Partial<QuizData>) {
     setData((prev) => ({ ...prev, ...patch }))
@@ -106,7 +113,7 @@ export default function QuizPage() {
     try {
       const body: Record<string, unknown> = {
         child_name: data.child_name || null,
-        child_dob: data.child_dob || null,
+        child_dob: ageToDob(data.child_age_years, data.child_age_months),
         urgency: data.urgency || null,
         commute_from: data.commute_from || null,
         commute_postcode: data.commute_postcode || null,
@@ -181,14 +188,34 @@ export default function QuizPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Date of birth
+                Child&apos;s age
               </label>
-              <input
-                type="date"
-                value={data.child_dob}
-                onChange={(e) => updateData({ child_dob: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-indigo-500 focus:outline-none"
-              />
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <select
+                    value={data.child_age_years ?? ''}
+                    onChange={(e) => updateData({ child_age_years: e.target.value === '' ? null : Number(e.target.value) })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                  >
+                    <option value="">Years</option>
+                    {[0, 1, 2, 3, 4, 5].map((y) => (
+                      <option key={y} value={y}>{y} {y === 1 ? 'year' : 'years'}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <select
+                    value={data.child_age_months ?? ''}
+                    onChange={(e) => updateData({ child_age_months: e.target.value === '' ? null : Number(e.target.value) })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                  >
+                    <option value="">Months</option>
+                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((m) => (
+                      <option key={m} value={m}>{m} {m === 1 ? 'month' : 'months'}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
               {age !== null && (
                 <p className="text-sm text-indigo-600 mt-1 font-medium">{age} months old</p>
               )}
