@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useSession } from '@/components/SessionProvider'
-import { getAuthToken, adminFetch } from '@/lib/api'
+import { getAuthToken, adminFetch, API_URL } from '@/lib/api'
 
 interface AdminUser {
   id: string
@@ -29,6 +29,16 @@ export default function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState('')
   const [page, setPage] = useState(1)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Create user form
+  const [showCreate, setShowCreate] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [createSuccess, setCreateSuccess] = useState('')
+  const [createError, setCreateError] = useState('')
+  const [newName, setNewName] = useState('')
+  const [newEmail, setNewEmail] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [newRole, setNewRole] = useState('customer')
 
   const load = useCallback(async (s: string, r: string, p: number) => {
     setLoading(true)
@@ -80,11 +90,129 @@ export default function AdminUsersPage() {
     }
   }
 
+  async function handleCreateUser(e: React.FormEvent) {
+    e.preventDefault()
+    setCreating(true)
+    setCreateError('')
+    setCreateSuccess('')
+    try {
+      const token = await getAuthToken()
+      if (!token) throw new Error('No auth token')
+      const res = await fetch(`${API_URL}/api/v1/admin/users`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: newEmail.trim(),
+          full_name: newName.trim(),
+          password: newPassword,
+          role: newRole,
+        }),
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => null)
+        throw new Error(j?.error || `Failed (${res.status})`)
+      }
+      const created = await res.json()
+      setCreateSuccess(`User created: ${created.email} (${created.role})`)
+      setNewName('')
+      setNewEmail('')
+      setNewPassword('')
+      setNewRole('customer')
+      setShowCreate(false)
+      load(search, roleFilter, page)
+    } catch (err: any) {
+      setCreateError(err.message || 'Failed to create user')
+    } finally {
+      setCreating(false)
+    }
+  }
+
   if (role !== 'admin') return null
 
   return (
     <div>
-      <h2 className="text-lg font-bold text-gray-900 mb-4">Users</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-bold text-gray-900">Users</h2>
+        <button
+          onClick={() => { setShowCreate(!showCreate); setCreateError(''); setCreateSuccess('') }}
+          className="px-4 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+        >
+          {showCreate ? 'Cancel' : 'Create User'}
+        </button>
+      </div>
+
+      {createSuccess && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">
+          {createSuccess}
+        </div>
+      )}
+
+      {showCreate && (
+        <form onSubmit={handleCreateUser} className="mb-6 bg-white border border-gray-200 rounded-xl p-5">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">Create new user</h3>
+          {createError && (
+            <div className="mb-3 p-2 bg-red-50 border border-red-200 text-red-700 rounded text-sm">
+              {createError}
+            </div>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Full name *</label>
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                required
+                minLength={2}
+                placeholder="Larry Ioannidis"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Email *</label>
+              <input
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                required
+                placeholder="user@example.com"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Temporary password *</label>
+              <input
+                type="text"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                minLength={8}
+                placeholder="Min 8 characters"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Role</label>
+              <select
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="customer">Customer</option>
+                <option value="provider">Provider</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={creating || !newName.trim() || !newEmail.trim() || newPassword.length < 8}
+            className="px-4 py-2 text-sm font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition disabled:opacity-50"
+          >
+            {creating ? 'Creating...' : 'Create User'}
+          </button>
+        </form>
+      )}
 
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
