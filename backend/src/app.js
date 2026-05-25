@@ -82,6 +82,10 @@ import blogRouter from './routes/blog.js'
 // Schools (nearby primary schools overlay)
 import schoolsRouter from './routes/schools.js'
 
+// Developer platform — API key management
+import developerRouter from './routes/developer.js'
+import { apiKeyAuth } from './middleware/apiKeyAuth.js'
+
 // AI feature routes (Claude-powered) — separate block, do not merge with mounts above
 import aiRouter from './routes/ai.js'
 import assistantRouter from './routes/assistant.js'
@@ -216,6 +220,7 @@ const publicLimiter = rateLimit({
   max: 300,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.apiKeyAuthenticated === true,
   message: { error: 'Too many requests, please try again later' },
 })
 app.use('/api/v1/nurseries', publicLimiter)
@@ -237,6 +242,9 @@ app.use(express.json({ limit: '8mb' }))
 
 // Optional auth — attaches req.user if a valid bearer token is present
 app.use(optionalAuth)
+
+// Developer API key auth — attaches req.apiKey if X-Api-Key header present
+app.use(apiKeyAuth)
 
 // Track last_active_at for authenticated users (debounced — 1 hour)
 const _lastActiveCache = new Map() // userId -> timestamp of last DB write
@@ -299,6 +307,7 @@ app.use('/api/v1/promotions', promotionsRouter)
 app.use('/api/v1/provider', providerReportsRouter)
 app.use('/api/v1/blog', blogRouter)
 app.use('/api/v1/schools', schoolsRouter)
+app.use('/api/v1/developer', developerRouter)
 
 // Public OpenAPI spec — full (165+ ops) and GPT-trimmed (30 ops)
 app.get('/api/openapi.json', (req, res, next) => {
