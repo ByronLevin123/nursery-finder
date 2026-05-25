@@ -72,12 +72,16 @@ export async function requireAuth(req, res, next) {
  * Used for enquiries, reviews, claims — anything where an unverified
  * account could spam real recipients (other parents, providers, admins).
  */
-export function requireVerifiedEmail(req, res, next) {
+export async function requireVerifiedEmail(req, res, next) {
   if (!req.user) {
-    // Defense in depth — should never hit this when chained after requireAuth.
     return res.status(401).json({ error: 'Authentication required' })
   }
   if (req.user.email_confirmed_at) return next()
+  // Admins (created via dashboard) may not have email_confirmed_at set
+  if (db) {
+    const { data } = await db.from('user_profiles').select('role').eq('id', req.user.id).maybeSingle()
+    if (data?.role === 'admin') return next()
+  }
   return res.status(403).json({
     error: 'Please verify your email address before continuing.',
     code: 'email_not_verified',
