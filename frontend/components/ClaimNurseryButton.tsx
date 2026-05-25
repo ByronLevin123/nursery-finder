@@ -142,8 +142,12 @@ export default function ClaimNurseryButton({
         }),
       })
       if (!res.ok) {
-        const j = await res.json().catch(() => ({}))
-        setError(j.error || 'Failed to submit claim')
+        const j = await res.json().catch(() => null)
+        if (res.status === 403 && j?.code === 'email_not_verified') {
+          setError('Please verify your email address first. Check your inbox for a confirmation link.')
+        } else {
+          setError(j?.error || `Failed to submit claim (${res.status})`)
+        }
       } else {
         const j = await res.json()
         trackEvent('Claim Submit', { urn })
