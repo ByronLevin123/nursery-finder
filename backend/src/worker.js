@@ -105,6 +105,13 @@ cron.schedule('30 4 * * *', async () => {
 // Nightly: recalculate family scores
 cron.schedule('0 5 * * *', async () => {
   logger.info('cron: recalculating family scores')
+  try {
+    const { data, error } = await db.rpc('calculate_all_family_scores')
+    if (error) throw error
+    logger.info({ districts: data }, 'cron: family scores complete')
+  } catch (err) {
+    logger.error({ err: err.message }, 'cron: family scores failed')
+  }
 })
 
 // Daily: saved-search digest (8am UTC)
