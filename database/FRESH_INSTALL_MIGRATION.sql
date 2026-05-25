@@ -177,6 +177,7 @@ CREATE TABLE postcode_areas (
   price_growth_1yr_pct      DECIMAL(5,2),
   propertydata_sample_postcode TEXT,
   propertydata_updated_at   TIMESTAMPTZ,
+  imd_last_updated          TIMESTAMPTZ,
   family_score              DECIMAL(5,1) CHECK (family_score IS NULL OR (family_score BETWEEN 0 AND 100)),
   family_score_breakdown    JSONB,
   lat                       DECIMAL(10,7),
