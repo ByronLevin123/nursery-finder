@@ -211,19 +211,22 @@ export default function AdminOverview() {
         const token = await getAuthToken()
         if (!token) throw new Error('No auth token')
         const [statsData, growthData, qualityData, activityData, funnelData] = await Promise.all([
-          adminFetch('/stats', token),
+          adminFetch('/stats', token).catch((e) => { console.error('admin /stats failed:', e.message); return null }),
           getAdminGrowthStats(token).catch(() => null),
           getAdminDataQuality(token).catch(() => null),
           getAdminActivity(token, 50).catch(() => []),
           adminFetch('/funnel?days=30', token).catch(() => null),
         ])
         if (!cancelled) {
+          if (!statsData) {
+            setError('Failed to load dashboard stats. The API returned an error.')
+          }
           // Map API response to expected shape — fill in derived top-level fields
-          const mapped = {
+          const mapped = statsData ? {
             ...statsData,
             mrr: statsData?.subscriptions?.mrr_gbp ?? statsData?.mrr ?? 0,
             enquiries_this_month: statsData?.enquiries?.this_month ?? statsData?.enquiries_this_month ?? 0,
-          }
+          } : null
           setStats(mapped)
           setGrowth(growthData)
           setQuality(qualityData)

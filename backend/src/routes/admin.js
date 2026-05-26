@@ -114,6 +114,21 @@ router.get('/stats', async (req, res, next) => {
         ),
     ])
 
+    // Log any Supabase query errors (they don't throw but set .error)
+    const queryResults = {
+      usersTotal, usersCustomers, usersProviders, usersAdmins,
+      nurseriesTotal, nurseriesClaimed, nurseriesFeatured,
+      claimsPending, claimsApproved, claimsRejected,
+      reviewsPending, reviewsApproved, reviewsFlagged,
+      providerPro, providerPremium,
+      enquiriesTotal, enquiriesThisMonth, visitsTotal, visitsThisMonth,
+    }
+    for (const [name, result] of Object.entries(queryResults)) {
+      if (result?.error) {
+        logger.warn({ query: name, error: result.error.message }, 'admin stats query failed')
+      }
+    }
+
     const proCount = providerPro.count ?? 0
     const premiumCount = providerPremium.count ?? 0
     const mrr_gbp = proCount * 29 + premiumCount * 79
