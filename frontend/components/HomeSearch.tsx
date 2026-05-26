@@ -3,7 +3,22 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { conversationalSearch, getSearchSuggestions, SearchSuggestion } from '@/lib/api'
 
-export default function HomeSearch() {
+type SearchType = 'nursery' | 'childminder' | 'school'
+
+const PLACEHOLDERS: Record<SearchType, string> = {
+  nursery: 'Postcode, area, or nursery name...',
+  childminder: 'Postcode, area, or childminder name...',
+  school: 'Enter a postcode to find schools...',
+}
+
+function buildSearchUrl(query: string, searchType: SearchType): string {
+  const q = encodeURIComponent(query)
+  if (searchType === 'school') return `/search/schools?q=${q}`
+  if (searchType === 'childminder') return `/search?q=${q}&provider_type=Childminder`
+  return `/search?q=${q}`
+}
+
+export default function HomeSearch({ searchType = 'nursery' as SearchType }: { searchType?: SearchType }) {
   const [query, setQuery] = useState('')
   const [error, setError] = useState('')
   const [smart, setSmart] = useState(false)
@@ -34,11 +49,12 @@ export default function HomeSearch() {
 
   function selectSuggestion(s: SearchSuggestion) {
     setShowSuggestions(false)
-    if (s.type === 'nursery' && s.urn) {
+    if (s.type === 'nursery' && s.urn && searchType === 'nursery') {
       router.push(`/nursery/${s.urn}`)
     } else {
-      setQuery(s.postcode || s.label)
-      router.push(`/search?q=${encodeURIComponent(s.postcode || s.label)}`)
+      const term = s.postcode || s.label
+      setQuery(term)
+      router.push(buildSearchUrl(term, searchType))
     }
   }
 
@@ -60,8 +76,8 @@ export default function HomeSearch() {
     if (!cleaned) { setError('Please enter a postcode, area, or nursery name'); return }
     setError('')
 
-    if (!smart) {
-      router.push(`/search?q=${encodeURIComponent(cleaned)}`)
+    if (!smart || searchType !== 'nursery') {
+      router.push(buildSearchUrl(cleaned, searchType))
       return
     }
 
@@ -94,7 +110,7 @@ export default function HomeSearch() {
             value={query}
             onChange={e => handleInputChange(e.target.value)}
             onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-            placeholder={smart ? 'Try: "Outstanding nurseries near SW11 with funded 2 year places"' : 'Postcode, area, or nursery name...'}
+            placeholder={smart && searchType === 'nursery' ? 'Try: "Outstanding nurseries near SW11 with funded 2 year places"' : PLACEHOLDERS[searchType]}
             className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none"
             autoComplete="off"
           />

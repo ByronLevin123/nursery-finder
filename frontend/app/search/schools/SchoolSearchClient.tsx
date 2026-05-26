@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { searchSchools, School, SchoolSearchResult } from '@/lib/api'
 import SchoolCard from '@/components/SchoolCard'
@@ -58,6 +58,10 @@ function SchoolSearchContent() {
     }
     setLoading(false)
   }
+
+  useEffect(() => {
+    if (initialQuery) doSearch()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] relative">
