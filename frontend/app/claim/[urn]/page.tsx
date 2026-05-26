@@ -92,13 +92,17 @@ export default function ClaimPage({ params }: { params: { urn: string } }) {
         }),
       })
       if (!res.ok) {
-        const j = await res.json().catch(() => ({}))
-        setError(j.error || 'Failed to submit claim')
+        const j = await res.json().catch(() => null)
+        if (res.status === 403 && j?.code === 'email_not_verified') {
+          setError('Please verify your email address before claiming a nursery. Check your inbox (or spam folder) for a confirmation link.')
+        } else {
+          setError(j?.error || `Failed to submit claim (${res.status})`)
+        }
       } else {
         setSubmitted(true)
       }
     } catch {
-      setError('Failed to submit claim')
+      setError('Network error — please check your connection and try again.')
     }
     setSubmitting(false)
   }

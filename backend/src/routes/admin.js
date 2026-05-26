@@ -2,12 +2,27 @@
 // ALL routes require requireRole('admin').
 
 import express from 'express'
+import { createClient } from '@supabase/supabase-js'
 import db from '../db.js'
 import { requireRole } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
 import { escapeLike } from '../utils.js'
 
+let adminAuth = null
+if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+  adminAuth = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+}
+
 const router = express.Router()
+
+function getMonday() {
+  const d = new Date()
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+  return new Date(d.getFullYear(), d.getMonth(), diff)
+}
 
 // Every route on this router requires admin role
 router.use(requireRole('admin'))
@@ -67,6 +82,7 @@ router.get('/stats', async (req, res, next) => {
       proCount, premiumCount,
       enquiriesTotal, enquiriesThisMonth,
       visitsTotal, visitsThisMonth,
+      visitorsToday, visitorsWeek, visitorsMonth, visitorsTotal,
     ] = await Promise.all([
       safeCount('user_profiles'),
       safeCount('user_profiles', { role: 'customer' }),
@@ -87,6 +103,10 @@ router.get('/stats', async (req, res, next) => {
       safeCount('enquiries', { _gte: { col: 'sent_at', val: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString() } }),
       safeCount('visit_bookings'),
       safeCount('visit_bookings', { _gte: { col: 'created_at', val: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString() } }),
+      db.rpc('count_unique_visitors', { since: new Date().toISOString().slice(0, 10) + 'T00:00:00Z' }).catch(() => ({ data: null })),
+      db.rpc('count_unique_visitors', { since: getMonday().toISOString() }).catch(() => ({ data: null })),
+      db.rpc('count_unique_visitors', { since: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString() }).catch(() => ({ data: null })),
+      db.rpc('count_unique_visitors', { since: '2020-01-01T00:00:00Z' }).catch(() => ({ data: null })),
     ])
 
     const mrr_gbp = proCount * 29 + premiumCount * 79
@@ -126,6 +146,12 @@ router.get('/stats', async (req, res, next) => {
       visits: {
         total_booked: visitsTotal,
         this_month: visitsThisMonth,
+      },
+      visitors: {
+        today: visitorsToday.data ?? 0,
+        this_week: visitorsWeek.data ?? 0,
+        this_month: visitorsMonth.data ?? 0,
+        total: visitorsTotal.data ?? 0,
       },
     }
 
@@ -200,6 +226,79 @@ router.patch('/users/:id/role', async (req, res, next) => {
     return res.json(data)
   } catch (err) {
     logger.error({ err: err?.message }, 'admin update user role failed')
+    next(err)
+  }
+})
+
+// ---------------------------------------------------------------------------
+// POST /users — create a new user (admin-only)
+// ---------------------------------------------------------------------------
+router.post('/users', async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+    if (!adminAuth) return res.status(503).json({ error: 'Auth service not configured' })
+
+    const { email, full_name, password, role } = req.body || {}
+
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
+      return res.status(400).json({ error: 'A valid email is required' })
+    }
+    if (!full_name || typeof full_name !== 'string' || full_name.trim().length < 2) {
+      return res.status(400).json({ error: 'full_name is required (min 2 characters)' })
+    }
+    if (!password || typeof password !== 'string' || password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' })
+    }
+    if (password.length > 72) {
+      return res.status(400).json({ error: 'Password must be at most 72 characters' })
+    }
+
+    const validRoles = ['customer', 'provider', 'admin']
+    const userRole = validRoles.includes(role) ? role : 'customer'
+
+    const { data: newUser, error: createErr } = await adminAuth.auth.admin.createUser({
+      email: email.trim().toLowerCase(),
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: full_name.trim() },
+    })
+
+    if (createErr) {
+      if (createErr.message?.includes('already been registered') || createErr.message?.includes('already exists')) {
+        return res.status(409).json({ error: 'A user with this email already exists' })
+      }
+      logger.error({ err: createErr.message, email }, 'admin: user creation failed')
+      return res.status(400).json({ error: 'Failed to create user: ' + createErr.message })
+    }
+
+    const userId = newUser.user.id
+    const now = new Date().toISOString()
+
+    const { error: profileErr } = await db.from('user_profiles').upsert({
+      id: userId,
+      email: email.trim().toLowerCase(),
+      full_name: full_name.trim(),
+      display_name: full_name.trim(),
+      role: userRole,
+      created_at: now,
+      updated_at: now,
+    }, { onConflict: 'id' })
+
+    if (profileErr) {
+      logger.error({ err: profileErr.message, userId }, 'admin: user profile creation failed')
+      return res.status(500).json({ error: 'User created in auth but profile insert failed' })
+    }
+
+    logger.info({ userId, email, role: userRole, by: req.user.id }, 'admin created user')
+
+    return res.status(201).json({
+      id: userId,
+      email: email.trim().toLowerCase(),
+      full_name: full_name.trim(),
+      role: userRole,
+    })
+  } catch (err) {
+    logger.error({ err: err?.message }, 'admin create user failed')
     next(err)
   }
 })
