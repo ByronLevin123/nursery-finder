@@ -780,6 +780,44 @@ export async function getNearbySchools(
   }
 }
 
+// School search + detail --------------------------------------------------------
+
+export interface SchoolSearchResult {
+  data: School[]
+  meta: {
+    total: number
+    search_lat: number
+    search_lng: number
+  }
+}
+
+export async function searchSchools(params: {
+  postcode: string
+  radius_km?: number
+  phase?: string | null
+  ofsted_rating?: string | null
+}): Promise<SchoolSearchResult> {
+  const res = await fetch(`${API_URL}/api/v1/schools/search`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+    cache: 'no-store',
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `School search failed: ${res.status}`)
+  }
+  return res.json()
+}
+
+export async function getSchool(urn: string): Promise<School> {
+  const res = await fetch(`${API_URL}/api/v1/schools/${encodeURIComponent(urn)}`, {
+    next: { revalidate: 3600 },
+  })
+  if (!res.ok) throw new Error(`School not found: ${urn}`)
+  return res.json()
+}
+
 // Similar nurseries + autocomplete ---------------------------------------------
 
 export async function getSimilarNurseries(urn: string): Promise<Nursery[]> {

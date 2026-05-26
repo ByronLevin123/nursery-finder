@@ -1,10 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   getShortlist,
+  getShortlistUrns,
   addToShortlist,
   removeFromShortlist,
   isInShortlist,
   getShortlistCount,
+  getShortlistByType,
 } from '@/lib/shortlist'
 
 describe('shortlist', () => {
@@ -17,14 +19,38 @@ describe('shortlist', () => {
       expect(getShortlist()).toEqual([])
     })
 
-    it('returns stored URNs', () => {
-      localStorage.setItem('nursery-shortlist', JSON.stringify(['urn-1', 'urn-2']))
-      expect(getShortlist()).toEqual(['urn-1', 'urn-2'])
+    it('returns stored entries', () => {
+      addToShortlist('urn-1')
+      addToShortlist('urn-2')
+      expect(getShortlist()).toEqual([
+        { type: 'nursery', urn: 'urn-1' },
+        { type: 'nursery', urn: 'urn-2' },
+      ])
     })
 
     it('handles corrupt data gracefully', () => {
       localStorage.setItem('nursery-shortlist', 'bad-json')
       expect(getShortlist()).toEqual([])
+    })
+
+    it('migrates old string[] format to new ShortlistEntry[] format', () => {
+      localStorage.setItem('nursery-shortlist', JSON.stringify(['urn-1', 'urn-2']))
+      const result = getShortlist()
+      expect(result).toEqual([
+        { type: 'nursery', urn: 'urn-1' },
+        { type: 'nursery', urn: 'urn-2' },
+      ])
+      // Verify migration was persisted
+      const raw = JSON.parse(localStorage.getItem('nursery-shortlist')!)
+      expect(raw[0]).toHaveProperty('type', 'nursery')
+    })
+  })
+
+  describe('getShortlistUrns', () => {
+    it('returns just the URN strings', () => {
+      addToShortlist('urn-1')
+      addToShortlist('urn-2', 'school')
+      expect(getShortlistUrns()).toEqual(['urn-1', 'urn-2'])
     })
   })
 
@@ -32,7 +58,16 @@ describe('shortlist', () => {
     it('adds a URN and returns "added"', () => {
       const result = addToShortlist('urn-1')
       expect(result).toBe('added')
-      expect(getShortlist()).toEqual(['urn-1'])
+      expect(getShortlist()).toEqual([{ type: 'nursery', urn: 'urn-1' }])
+    })
+
+    it('supports adding different types', () => {
+      addToShortlist('urn-1', 'nursery')
+      addToShortlist('urn-2', 'school')
+      expect(getShortlist()).toEqual([
+        { type: 'nursery', urn: 'urn-1' },
+        { type: 'school', urn: 'urn-2' },
+      ])
     })
 
     it('returns "duplicate" for existing URN', () => {
@@ -42,7 +77,7 @@ describe('shortlist', () => {
       expect(getShortlist()).toHaveLength(1)
     })
 
-    it('allows adding up to 10 nurseries without auth (free for all)', () => {
+    it('allows adding up to 10 items without auth (free for all)', () => {
       for (let i = 0; i < 9; i++) {
         addToShortlist(`urn-${i}`)
       }
@@ -73,7 +108,7 @@ describe('shortlist', () => {
       addToShortlist('urn-1')
       addToShortlist('urn-2')
       removeFromShortlist('urn-1')
-      expect(getShortlist()).toEqual(['urn-2'])
+      expect(getShortlist()).toEqual([{ type: 'nursery', urn: 'urn-2' }])
     })
 
     it('dispatches event', () => {
@@ -102,6 +137,21 @@ describe('shortlist', () => {
       addToShortlist('urn-1')
       addToShortlist('urn-2')
       expect(getShortlistCount()).toBe(2)
+    })
+  })
+
+  describe('getShortlistByType', () => {
+    it('filters by type', () => {
+      addToShortlist('urn-1', 'nursery')
+      addToShortlist('urn-2', 'school')
+      addToShortlist('urn-3', 'nursery')
+      expect(getShortlistByType('nursery')).toEqual([
+        { type: 'nursery', urn: 'urn-1' },
+        { type: 'nursery', urn: 'urn-3' },
+      ])
+      expect(getShortlistByType('school')).toEqual([
+        { type: 'school', urn: 'urn-2' },
+      ])
     })
   })
 })

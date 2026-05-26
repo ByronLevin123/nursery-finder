@@ -48,142 +48,104 @@ router.get('/stats', async (req, res, next) => {
   try {
     if (!db) return res.status(503).json({ error: 'Database not configured' })
 
-    // Run all count queries in parallel
+    // Helper: run a count query and return 0 on failure
+    async function safeCount(table, filters = {}) {
+      try {
+        let q = db.from(table).select('id', { count: 'exact', head: true })
+        for (const [col, val] of Object.entries(filters)) {
+          if (col === '_not') {
+            q = q.not(val.col, 'is', null)
+          } else if (col === '_gte') {
+            q = q.gte(val.col, val.val)
+          } else {
+            q = q.eq(col, val)
+          }
+        }
+        const { count, error } = await q
+        if (error) {
+          logger.warn({ table, filters, error: error.message }, 'admin stats query error')
+          return 0
+        }
+        return count ?? 0
+      } catch (err) {
+        logger.warn({ table, error: err?.message }, 'admin stats query exception')
+        return 0
+      }
+    }
+
+    // Run all count queries in parallel — each one is independently safe
     const [
-      usersTotal,
-      usersCustomers,
-      usersProviders,
-      usersAdmins,
-      nurseriesTotal,
-      nurseriesClaimed,
-      nurseriesFeatured,
-      claimsPending,
-      claimsApproved,
-      claimsRejected,
-      reviewsPending,
-      reviewsApproved,
-      reviewsFlagged,
-      providerPro,
-      providerPremium,
-      parentPremium,
-      enquiriesTotal,
-      enquiriesThisMonth,
-      visitsTotal,
-      visitsThisMonth,
-      visitorsToday,
-      visitorsWeek,
-      visitorsMonth,
-      visitorsTotal,
+      usersTotal, usersCustomers, usersProviders, usersAdmins,
+      nurseriesTotal, nurseriesClaimed, nurseriesFeatured,
+      claimsPending, claimsApproved, claimsRejected,
+      reviewsPending, reviewsApproved, reviewsFlagged,
+      proCount, premiumCount,
+      enquiriesTotal, enquiriesThisMonth,
+      visitsTotal, visitsThisMonth,
+      visitorsToday, visitorsWeek, visitorsMonth, visitorsTotal,
     ] = await Promise.all([
-      db.from('user_profiles').select('id', { count: 'exact', head: true }),
-      db.from('user_profiles').select('id', { count: 'exact', head: true }).eq('role', 'customer'),
-      db.from('user_profiles').select('id', { count: 'exact', head: true }).eq('role', 'provider'),
-      db.from('user_profiles').select('id', { count: 'exact', head: true }).eq('role', 'admin'),
-      db.from('nurseries').select('id', { count: 'exact', head: true }),
-      db
-        .from('nurseries')
-        .select('id', { count: 'exact', head: true })
-        .not('claimed_by_user_id', 'is', null),
-      db.from('nurseries').select('id', { count: 'exact', head: true }).eq('featured', true),
-      db
-        .from('nursery_claims')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'pending'),
-      db
-        .from('nursery_claims')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'approved'),
-      db
-        .from('nursery_claims')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'rejected'),
-      db
-        .from('nursery_reviews')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'pending'),
-      db
-        .from('nursery_reviews')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'published'),
-      db
-        .from('nursery_reviews')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'flagged'),
-      db
-        .from('provider_subscriptions')
-        .select('id', { count: 'exact', head: true })
-        .eq('tier', 'pro')
-        .eq('status', 'active'),
-      db
-        .from('provider_subscriptions')
-        .select('id', { count: 'exact', head: true })
-        .eq('tier', 'premium')
-        .eq('status', 'active'),
-      db
-        .from('parent_subscriptions')
-        .select('id', { count: 'exact', head: true })
-        .eq('tier', 'premium')
-        .eq('status', 'active'),
-      db.from('enquiries').select('id', { count: 'exact', head: true }),
-      db
-        .from('enquiries')
-        .select('id', { count: 'exact', head: true })
-        .gte('sent_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()),
-      db.from('visit_bookings').select('id', { count: 'exact', head: true }),
-      db
-        .from('visit_bookings')
-        .select('id', { count: 'exact', head: true })
-        .gte(
-          'created_at',
-          new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
-        ),
-      // Unique site visitors (distinct ip_hash for page_visit events)
+      safeCount('user_profiles'),
+      safeCount('user_profiles', { role: 'customer' }),
+      safeCount('user_profiles', { role: 'provider' }),
+      safeCount('user_profiles', { role: 'admin' }),
+      safeCount('nurseries'),
+      safeCount('nurseries', { _not: { col: 'claimed_by_user_id' } }),
+      safeCount('nurseries', { featured: true }),
+      safeCount('nursery_claims', { status: 'pending' }),
+      safeCount('nursery_claims', { status: 'approved' }),
+      safeCount('nursery_claims', { status: 'rejected' }),
+      safeCount('nursery_reviews', { status: 'pending' }),
+      safeCount('nursery_reviews', { status: 'published' }),
+      safeCount('nursery_reviews', { status: 'flagged' }),
+      safeCount('provider_subscriptions', { tier: 'pro', status: 'active' }),
+      safeCount('provider_subscriptions', { tier: 'premium', status: 'active' }),
+      safeCount('enquiries'),
+      safeCount('enquiries', { _gte: { col: 'sent_at', val: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString() } }),
+      safeCount('visit_bookings'),
+      safeCount('visit_bookings', { _gte: { col: 'created_at', val: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString() } }),
       db.rpc('count_unique_visitors', { since: new Date().toISOString().slice(0, 10) + 'T00:00:00Z' }).catch(() => ({ data: null })),
       db.rpc('count_unique_visitors', { since: getMonday().toISOString() }).catch(() => ({ data: null })),
       db.rpc('count_unique_visitors', { since: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString() }).catch(() => ({ data: null })),
       db.rpc('count_unique_visitors', { since: '2020-01-01T00:00:00Z' }).catch(() => ({ data: null })),
     ])
 
-    const proCount = providerPro.count ?? 0
-    const premiumCount = providerPremium.count ?? 0
-    const parentPremCount = parentPremium.count ?? 0
-    const mrr_gbp = proCount * 29 + premiumCount * 79 + parentPremCount * 4.99
+    const mrr_gbp = proCount * 29 + premiumCount * 79
 
     const stats = {
       users: {
-        total: usersTotal.count ?? 0,
-        customers: usersCustomers.count ?? 0,
-        providers: usersProviders.count ?? 0,
-        admins: usersAdmins.count ?? 0,
+        total: usersTotal,
+        customers: usersCustomers,
+        providers: usersProviders,
+        admins: usersAdmins,
       },
       nurseries: {
-        total: nurseriesTotal.count ?? 0,
-        claimed: nurseriesClaimed.count ?? 0,
-        featured: nurseriesFeatured.count ?? 0,
+        total: nurseriesTotal,
+        claimed: nurseriesClaimed,
+        featured: nurseriesFeatured,
       },
       claims: {
-        pending: claimsPending.count ?? 0,
-        approved: claimsApproved.count ?? 0,
-        rejected: claimsRejected.count ?? 0,
+        pending: claimsPending,
+        approved: claimsApproved,
+        rejected: claimsRejected,
       },
       reviews: {
-        pending: reviewsPending.count ?? 0,
-        approved: reviewsApproved.count ?? 0,
-        flagged: reviewsFlagged.count ?? 0,
+        pending: reviewsPending,
+        approved: reviewsApproved,
+        flagged: reviewsFlagged,
       },
       subscriptions: {
         provider_pro: proCount,
         provider_premium: premiumCount,
-        parent_premium: parentPremCount,
+        parent_premium: 0,
         mrr_gbp: Math.round(mrr_gbp * 100) / 100,
       },
       enquiries: {
-        total: enquiriesTotal.count ?? 0,
-        this_month: enquiriesThisMonth.count ?? 0,
+        total: enquiriesTotal,
+        this_month: enquiriesThisMonth,
       },
       visits: {
-        total_booked: visitsTotal.count ?? 0,
-        this_month: visitsThisMonth.count ?? 0,
+        total_booked: visitsTotal,
+        this_month: visitsThisMonth,
       },
       visitors: {
         today: visitorsToday.data ?? 0,

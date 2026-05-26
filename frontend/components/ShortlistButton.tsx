@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { addToShortlist, removeFromShortlist, isInShortlist } from '@/lib/shortlist'
+import { addToShortlist, removeFromShortlist, isInShortlist, ShortlistItemType } from '@/lib/shortlist'
 
 interface Props {
   urn: string
+  type?: ShortlistItemType
 }
 
-export default function ShortlistButton({ urn }: Props) {
+export default function ShortlistButton({ urn, type = 'nursery' }: Props) {
   const [saved, setSaved] = useState(false)
   const [alertMsg, setAlertMsg] = useState('')
 
@@ -23,7 +24,7 @@ export default function ShortlistButton({ urn }: Props) {
       removeFromShortlist(urn)
       return
     }
-    const result = addToShortlist(urn)
+    const result = addToShortlist(urn, type)
     if (result === 'full') {
       setAlertMsg('Shortlist is full (10 max).')
       setTimeout(() => setAlertMsg(''), 3000)

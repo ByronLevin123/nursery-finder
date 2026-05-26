@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { getNursery, getNurseriesInDistrict } from '@/lib/api'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import ClaimNurseryButton from '@/components/ClaimNurseryButton'
 import Breadcrumbs from '@/components/Breadcrumbs'
@@ -87,6 +87,10 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
     nursery = await getNursery(params.urn)
   } catch {
     notFound()
+  }
+
+  if (nursery.provider_type === 'Childminder') {
+    redirect(`/childminder/${nursery.urn}`)
   }
 
   // Read the current user's profile (if signed in) so TravelTimePanel can
