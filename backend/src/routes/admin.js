@@ -50,7 +50,6 @@ router.get('/stats', async (req, res, next) => {
       reviewsFlagged,
       providerPro,
       providerPremium,
-      parentPremium,
       enquiriesTotal,
       enquiriesThisMonth,
       visitsTotal,
@@ -100,11 +99,6 @@ router.get('/stats', async (req, res, next) => {
         .select('id', { count: 'exact', head: true })
         .eq('tier', 'premium')
         .eq('status', 'active'),
-      db
-        .from('parent_subscriptions')
-        .select('id', { count: 'exact', head: true })
-        .eq('tier', 'premium')
-        .eq('status', 'active'),
       db.from('enquiries').select('id', { count: 'exact', head: true }),
       db
         .from('enquiries')
@@ -122,8 +116,7 @@ router.get('/stats', async (req, res, next) => {
 
     const proCount = providerPro.count ?? 0
     const premiumCount = providerPremium.count ?? 0
-    const parentPremCount = parentPremium.count ?? 0
-    const mrr_gbp = proCount * 29 + premiumCount * 79 + parentPremCount * 4.99
+    const mrr_gbp = proCount * 29 + premiumCount * 79
 
     const stats = {
       users: {
@@ -150,7 +143,7 @@ router.get('/stats', async (req, res, next) => {
       subscriptions: {
         provider_pro: proCount,
         provider_premium: premiumCount,
-        parent_premium: parentPremCount,
+        parent_premium: 0,
         mrr_gbp: Math.round(mrr_gbp * 100) / 100,
       },
       enquiries: {
