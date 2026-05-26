@@ -1,6 +1,6 @@
 import { Metadata } from 'next'
 import dynamic from 'next/dynamic'
-import HomeSearch from '@/components/HomeSearch'
+import HomeHero from '@/components/HomeHero'
 import AreaSummaryCard from '@/components/AreaSummaryCard'
 import NewsletterSignup from '@/components/NewsletterSignup'
 import OglAttribution from '@/components/OglAttribution'
@@ -67,42 +67,7 @@ export default function HomePage() {
             Compare UK nurseries, childminders, and schools with real Ofsted ratings, live market data, and parent reviews.
           </p>
 
-          {/* Type selector tabs */}
-          <div className="flex justify-center mb-6">
-            <div className="inline-flex bg-white rounded-xl border border-gray-200 shadow-sm p-1">
-              <a
-                href="/search"
-                className="px-5 py-2.5 text-sm font-semibold rounded-lg bg-indigo-600 text-white transition-colors"
-              >
-                Nurseries
-              </a>
-              <a
-                href="/search?provider_type=Childminder"
-                className="px-5 py-2.5 text-sm font-semibold rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-              >
-                Childminders
-              </a>
-              <a
-                href="/search/schools"
-                className="px-5 py-2.5 text-sm font-semibold rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-              >
-                Schools
-              </a>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-            <a
-              href="/quiz"
-              className="inline-flex items-center justify-center gap-2 px-6 py-4 bg-indigo-600 text-white rounded-xl font-semibold text-lg shadow-md hover:bg-indigo-700 transition"
-            >
-              Take the 2-min quiz &rarr;
-            </a>
-          </div>
-          <div id="nursery-search">
-            <HomeSearch />
-          </div>
-          <p className="text-xs text-gray-400 mt-2">Or search by postcode above</p>
+          <HomeHero />
           <div className="flex flex-wrap justify-center gap-3 mt-6">
             <span className="px-3 py-1 bg-white/80 rounded-full text-xs font-medium text-gray-700 border border-gray-200 shadow-sm">
               27,808 nurseries compared
