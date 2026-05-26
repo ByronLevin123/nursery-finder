@@ -63,6 +63,7 @@ function SchoolSearchContent() {
     if (initialQuery) doSearch()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] relative">
       {/* Mobile List/Map toggle */}
