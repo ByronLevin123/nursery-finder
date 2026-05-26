@@ -157,7 +157,7 @@ router.post('/compare', async (req, res, next) => {
     if (error) throw error
 
     for (const u of urns) {
-      db.rpc('increment_compare_count', { nursery_urn: u }).catch(() => {})
+      Promise.resolve(db.rpc('increment_compare_count', { nursery_urn: u })).catch(() => {})
     }
     trackActivity(req.user?.id, 'compare', { metadata: { urns }, req })
 
