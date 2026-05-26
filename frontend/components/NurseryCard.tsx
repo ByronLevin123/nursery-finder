@@ -18,6 +18,9 @@ interface Props {
 }
 
 export default function NurseryCard({ nursery, showDistance = true, onClick, match }: Props) {
+  const isChildminder = nursery.provider_type === 'Childminder'
+  const profileHref = isChildminder ? `/childminder/${nursery.urn}` : `/nursery/${nursery.urn}`
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
       <NurseryCardThumbnail
@@ -37,7 +40,7 @@ export default function NurseryCard({ nursery, showDistance = true, onClick, mat
           </button>
         ) : (
           <Link
-            href={`/nursery/${nursery.urn}`}
+            href={profileHref}
             className="font-semibold text-gray-900 hover:text-blue-600 line-clamp-2 flex-1"
           >
             {nursery.name}
@@ -51,6 +54,11 @@ export default function NurseryCard({ nursery, showDistance = true, onClick, mat
 
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         <GradeBadge grade={nursery.ofsted_overall_grade} size="sm" />
+        {isChildminder && (
+          <span className="text-xs px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200 font-medium">
+            Childminder
+          </span>
+        )}
         {nursery.featured && <FeaturedBadge />}
         {match && <MatchBadge score={match.excluded ? null : match.score} excluded={match.excluded} />}
         <AvailabilityBadge nursery={nursery} />

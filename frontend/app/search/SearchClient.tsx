@@ -33,6 +33,11 @@ const NurseryMap = dynamic(() => import('@/components/NurseryMap'), { ssr: false
 function SearchContent() {
   const searchParams = useSearchParams()
   const initialQuery = searchParams.get('q') || searchParams.get('postcode') || ''
+  const urlProviderType = searchParams.get('provider_type') || null
+
+  const isChildminderMode = urlProviderType === 'Childminder'
+  const entityLabel = isChildminderMode ? 'childminder' : 'nursery'
+  const entityLabelPlural = isChildminderMode ? 'childminders' : 'nurseries'
 
   const [query, setQuery] = useState(initialQuery)
   const [selectedUrn, setSelectedUrn] = useState<string | null>(null)
@@ -40,7 +45,10 @@ function SearchContent() {
   const [grade, setGrade] = useState<string | null>(null)
   const [funded2yr, setFunded2yr] = useState(false)
   const [funded3yr, setFunded3yr] = useState(false)
-  const [advancedFilters, setAdvancedFilters] = useState<SearchFilterValues>(DEFAULT_FILTERS)
+  const [advancedFilters, setAdvancedFilters] = useState<SearchFilterValues>({
+    ...DEFAULT_FILTERS,
+    ...(urlProviderType ? { provider_type: urlProviderType } : {}),
+  })
   const [results, setResults] = useState<SearchResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -330,7 +338,7 @@ function SearchContent() {
                     doSearch()
                   }
                 }}
-                placeholder="Postcode, area, or nursery name..."
+                placeholder={`Postcode, area, or ${entityLabel} name...`}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                 autoComplete="off"
               />
@@ -494,7 +502,7 @@ function SearchContent() {
                   has_funded_3yr: advancedFilters.has_funded_3yr,
                   preferences: prefs,
                 }}
-                defaultName={query ? `Nurseries near ${query}` : 'Nursery search'}
+                defaultName={query ? `${isChildminderMode ? 'Childminders' : 'Nurseries'} near ${query}` : `${isChildminderMode ? 'Childminder' : 'Nursery'} search`}
               />
             </div>
           </div>
@@ -557,8 +565,8 @@ function SearchContent() {
                   {prefsActive
                     ? `${visibleResults.length} of ${results.meta.total} match your priorities`
                     : results.meta.mode === 'place'
-                      ? `${results.meta.total} nurseries found near ${(results.meta as any).place_name || query}`
-                      : `${results.meta.total} nurseries found${results.meta.mode === 'postcode' ? ` within ${radiusKm}km` : ''}`}
+                      ? `${results.meta.total} ${entityLabelPlural} found near ${(results.meta as any).place_name || query}`
+                      : `${results.meta.total} ${entityLabelPlural} found${results.meta.mode === 'postcode' ? ` within ${radiusKm}km` : ''}`}
                 </p>
                 {prefsActive && excludedCount > 0 && (
                   <button
@@ -597,8 +605,8 @@ function SearchContent() {
             <div className="text-center py-8">
               <p className="text-gray-500">
                 {prefsActive
-                  ? 'No nurseries match your priorities. Try loosening the filters.'
-                  : 'No nurseries found. Try increasing the search radius.'}
+                  ? `No ${entityLabelPlural} match your priorities. Try loosening the filters.`
+                  : `No ${entityLabelPlural} found. Try increasing the search radius.`}
               </p>
             </div>
           )}
@@ -618,7 +626,7 @@ function SearchContent() {
           />
         ) : (
           <div className="h-full bg-gray-100 flex items-center justify-center">
-            <p className="text-gray-400">Search by postcode, area, or nursery name</p>
+            <p className="text-gray-400">Search by postcode, area, or {entityLabel} name</p>
           </div>
         )}
       </div>

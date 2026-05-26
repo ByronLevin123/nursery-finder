@@ -9,14 +9,14 @@ const RecentlyViewed = dynamic(() => import('@/components/RecentlyViewed'), { ss
 const TestimonialCarousel = dynamic(() => import('@/components/TestimonialCarousel'), { ssr: false })
 
 export const metadata: Metadata = {
-  title: 'NurseryMatch — Compare UK Nurseries by Ofsted Grade',
+  title: 'NurseryMatch — Compare UK Nurseries, Childminders & Schools',
   description:
-    'Compare 27,000+ UK nurseries with real Ofsted ratings, family scores by area, live property data, and anonymous parent reviews.',
+    'Compare UK nurseries, childminders, and schools with real Ofsted ratings, family scores by area, live property data, and anonymous parent reviews.',
   alternates: { canonical: '/' },
   openGraph: {
-    title: 'NurseryMatch — Compare UK Nurseries by Ofsted Grade',
+    title: 'NurseryMatch — Compare UK Nurseries, Childminders & Schools',
     description:
-      'Compare 27,000+ UK nurseries with real Ofsted ratings, family scores by area, live property data, and anonymous parent reviews.',
+      'Compare UK nurseries, childminders, and schools with real Ofsted ratings, family scores by area, live property data, and anonymous parent reviews.',
     url: '/',
     siteName: 'NurseryMatch',
     type: 'website',
@@ -61,11 +61,36 @@ export default function HomePage() {
       <section className="px-4 pt-16 pb-14">
         <div className="max-w-3xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">
-            Find the right nursery for your child
+            Find the right childcare for your family
           </h1>
-          <p className="text-lg md:text-xl text-gray-600 mb-10">
-            Compare 27,000+ UK nurseries with real Ofsted ratings, live market data, and parent reviews.
+          <p className="text-lg md:text-xl text-gray-600 mb-6">
+            Compare UK nurseries, childminders, and schools with real Ofsted ratings, live market data, and parent reviews.
           </p>
+
+          {/* Type selector tabs */}
+          <div className="flex justify-center mb-6">
+            <div className="inline-flex bg-white rounded-xl border border-gray-200 shadow-sm p-1">
+              <a
+                href="/search"
+                className="px-5 py-2.5 text-sm font-semibold rounded-lg bg-indigo-600 text-white transition-colors"
+              >
+                Nurseries
+              </a>
+              <a
+                href="/search?provider_type=Childminder"
+                className="px-5 py-2.5 text-sm font-semibold rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                Childminders
+              </a>
+              <a
+                href="/search/schools"
+                className="px-5 py-2.5 text-sm font-semibold rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                Schools
+              </a>
+            </div>
+          </div>
+
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
             <a
               href="/quiz"

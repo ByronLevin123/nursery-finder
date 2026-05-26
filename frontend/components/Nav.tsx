@@ -54,6 +54,12 @@ export default function Nav() {
               <Link href="/search" className="text-sm text-gray-600 hover:text-gray-900">
                 Search
               </Link>
+              <Link href="/search?provider_type=Childminder" className="text-sm text-gray-600 hover:text-gray-900">
+                Childminders
+              </Link>
+              <Link href="/search/schools" className="text-sm text-gray-600 hover:text-gray-900">
+                Schools
+              </Link>
               <Link href="/find-an-area" className="text-sm text-gray-600 hover:text-gray-900">
                 Find an Area
               </Link>
@@ -235,6 +241,8 @@ export default function Nav() {
           {isParent && (
             <>
               <Link href="/search" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Search</Link>
+              <Link href="/search?provider_type=Childminder" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Childminders</Link>
+              <Link href="/search/schools" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Schools</Link>
               <Link href="/find-an-area" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Find an Area</Link>
               <Link href="/shortlist" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>
                 Shortlist {shortlistCount > 0 && `(${shortlistCount})`}
