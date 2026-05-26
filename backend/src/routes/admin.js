@@ -17,6 +17,13 @@ if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
 
 const router = express.Router()
 
+function getMonday() {
+  const d = new Date()
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+  return new Date(d.getFullYear(), d.getMonth(), diff)
+}
+
 // Every route on this router requires admin role
 router.use(requireRole('admin'))
 
@@ -63,6 +70,10 @@ router.get('/stats', async (req, res, next) => {
       enquiriesThisMonth,
       visitsTotal,
       visitsThisMonth,
+      visitorsToday,
+      visitorsWeek,
+      visitorsMonth,
+      visitorsTotal,
     ] = await Promise.all([
       db.from('user_profiles').select('id', { count: 'exact', head: true }),
       db.from('user_profiles').select('id', { count: 'exact', head: true }).eq('role', 'customer'),
@@ -126,6 +137,11 @@ router.get('/stats', async (req, res, next) => {
           'created_at',
           new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
         ),
+      // Unique site visitors (distinct ip_hash for page_visit events)
+      db.rpc('count_unique_visitors', { since: new Date().toISOString().slice(0, 10) + 'T00:00:00Z' }).catch(() => ({ data: null })),
+      db.rpc('count_unique_visitors', { since: getMonday().toISOString() }).catch(() => ({ data: null })),
+      db.rpc('count_unique_visitors', { since: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString() }).catch(() => ({ data: null })),
+      db.rpc('count_unique_visitors', { since: '2020-01-01T00:00:00Z' }).catch(() => ({ data: null })),
     ])
 
     const proCount = providerPro.count ?? 0
@@ -168,6 +184,12 @@ router.get('/stats', async (req, res, next) => {
       visits: {
         total_booked: visitsTotal.count ?? 0,
         this_month: visitsThisMonth.count ?? 0,
+      },
+      visitors: {
+        today: visitorsToday.data ?? 0,
+        this_week: visitorsWeek.data ?? 0,
+        this_month: visitorsMonth.data ?? 0,
+        total: visitorsTotal.data ?? 0,
       },
     }
 

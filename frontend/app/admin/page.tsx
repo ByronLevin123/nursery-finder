@@ -22,6 +22,7 @@ interface AdminStats {
   reviews: { pending: number; approved: number; flagged: number; rejected?: number }
   subscriptions?: { provider_pro: number; provider_premium: number; parent_premium: number; mrr_gbp: number }
   enquiries?: { total: number; this_month: number }
+  visitors?: { today: number; this_week: number; this_month: number; total: number }
   mrr: number
   enquiries_this_month: number
 }
@@ -385,6 +386,31 @@ export default function AdminOverview() {
           </>
         ) : null}
       </div>
+
+      {/* Site Visitors */}
+      {stats?.visitors && (
+        <>
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">Site Visitors (Unique)</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+              <p className="text-sm font-medium text-gray-500 mb-1">Today</p>
+              <p className="text-2xl font-bold text-gray-900">{(stats.visitors.today ?? 0).toLocaleString()}</p>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+              <p className="text-sm font-medium text-gray-500 mb-1">This Week</p>
+              <p className="text-2xl font-bold text-gray-900">{(stats.visitors.this_week ?? 0).toLocaleString()}</p>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+              <p className="text-sm font-medium text-gray-500 mb-1">This Month</p>
+              <p className="text-2xl font-bold text-gray-900">{(stats.visitors.this_month ?? 0).toLocaleString()}</p>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+              <p className="text-sm font-medium text-gray-500 mb-1">All Time</p>
+              <p className="text-2xl font-bold text-gray-900">{(stats.visitors.total ?? 0).toLocaleString()}</p>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Conversion funnel */}
       {funnel && (

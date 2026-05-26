@@ -244,6 +244,11 @@ app.use(express.json({ limit: '8mb' }))
 // Optional auth — attaches req.user if a valid bearer token is present
 app.use(optionalAuth)
 
+// Track unique visitors on public API routes
+import { visitorTracker } from './middleware/visitorTracker.js'
+app.use('/api/v1/nurseries', visitorTracker)
+app.use('/api/v1/areas', visitorTracker)
+
 // Developer API key auth — attaches req.apiKey if X-Api-Key header present
 app.use(apiKeyAuth)
 
