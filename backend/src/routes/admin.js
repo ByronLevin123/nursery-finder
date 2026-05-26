@@ -103,10 +103,10 @@ router.get('/stats', async (req, res, next) => {
       safeCount('enquiries', { _gte: { col: 'sent_at', val: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString() } }),
       safeCount('visit_bookings'),
       safeCount('visit_bookings', { _gte: { col: 'created_at', val: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString() } }),
-      db.rpc('count_unique_visitors', { since: new Date().toISOString().slice(0, 10) + 'T00:00:00Z' }).catch(() => ({ data: null })),
-      db.rpc('count_unique_visitors', { since: getMonday().toISOString() }).catch(() => ({ data: null })),
-      db.rpc('count_unique_visitors', { since: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString() }).catch(() => ({ data: null })),
-      db.rpc('count_unique_visitors', { since: '2020-01-01T00:00:00Z' }).catch(() => ({ data: null })),
+      Promise.resolve(db.rpc('count_unique_visitors', { since: new Date().toISOString().slice(0, 10) + 'T00:00:00Z' })).catch(() => ({ data: null })),
+      Promise.resolve(db.rpc('count_unique_visitors', { since: getMonday().toISOString() })).catch(() => ({ data: null })),
+      Promise.resolve(db.rpc('count_unique_visitors', { since: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString() })).catch(() => ({ data: null })),
+      Promise.resolve(db.rpc('count_unique_visitors', { since: '2020-01-01T00:00:00Z' })).catch(() => ({ data: null })),
     ])
 
     const mrr_gbp = proCount * 29 + premiumCount * 79
