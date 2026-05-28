@@ -3,6 +3,7 @@ import cron from 'node-cron'
 import { execFile } from 'child_process'
 import { ingestOfstedRegister } from './services/ofstedIngest.js'
 import { geocodeNurseriesBatch } from './services/geocoding.js'
+import { geocodeSchoolsBatch } from './services/schoolIngest.js'
 import { ingestLandRegistryYear, refreshPropertyStats } from './services/landRegistry.js'
 import { runDailyDigest } from './services/digestJob.js'
 import { recomputeAllDimensionScores } from './services/scoringEngine.js'
@@ -27,6 +28,14 @@ cron.schedule('0 3 * * *', async () => {
     logger.info(result, 'cron: geocoding complete')
   } catch (err) {
     logger.error({ err: err.message }, 'cron: geocoding failed')
+  }
+
+  // Also geocode schools that have postcodes but no lat/lng
+  try {
+    const schoolResult = await geocodeSchoolsBatch(200)
+    logger.info(schoolResult, 'cron: school geocoding complete')
+  } catch (err) {
+    logger.error({ err: err.message }, 'cron: school geocoding failed')
   }
 })
 

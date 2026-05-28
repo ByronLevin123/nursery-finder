@@ -57,16 +57,19 @@ function mapRow(row) {
   const gradeRaw = row['Most Recent Full: Overall Effectiveness']?.trim()
   const grade = GRADE_MAP[gradeRaw] || null
 
-  // Skip childminders with REDACTED addresses — we can't geocode them
-  const address = row['Provider Address Line 1']?.trim()
-  if (address === 'REDACTED' || !address) return null
+  const rawAddress = row['Provider Address Line 1']?.trim()
+  const address = rawAddress === 'REDACTED' ? null : rawAddress || null
+
+  // Require either a real address or a postcode for geocoding
+  const postcode = row['Provider Postcode']?.trim().toUpperCase() || null
+  if (!address && !postcode) return null
 
   return {
     urn: row['Provider URN']?.trim(),
     name: row['Provider Name']?.trim(),
     provider_type: row['Provider Type']?.trim(),
     registration_status: row['Provider Status']?.trim(),
-    address_line1: address || null,
+    address_line1: address,
     address_line2: row['Provider Address Line 2']?.trim() || null,
     town: row['Provider Town']?.trim() || null,
     postcode: row['Provider Postcode']?.trim().toUpperCase() || null,
