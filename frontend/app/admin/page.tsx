@@ -502,13 +502,13 @@ export default function AdminOverview() {
 }
 
 const INGEST_STEPS = [
-  { id: 'ofsted', label: 'Ofsted Import', desc: 'Download and import the full Ofsted CSV (~27k nurseries)', path: '/api/v1/ingest/ofsted' },
-  { id: 'geocode', label: 'Geocode Nurseries', desc: 'Geocode up to 2000 nurseries via Postcodes.io', path: '/api/v1/ingest/geocode?limit=2000' },
+  { id: 'ofsted', label: 'Ofsted Import', desc: 'Download and import the full Ofsted CSV — nurseries, childminders, and pre-schools', path: '/api/v1/ingest/ofsted' },
+  { id: 'geocode', label: 'Geocode Nurseries', desc: 'Geocode up to 2000 nurseries & childminders via Postcodes.io', path: '/api/v1/ingest/geocode?limit=2000' },
   { id: 'aggregate', label: 'Aggregate Areas', desc: 'Recompute nursery stats per postcode district', path: '/api/v1/ingest/aggregate-areas' },
   { id: 'family', label: 'Family Scores', desc: 'Recompute family scores for all districts', path: '/api/v1/ingest/family-scores' },
   { id: 'crime', label: 'Crime Data', desc: 'Import police crime data', path: '/api/v1/ingest/crime' },
   { id: 'imd', label: 'IMD Data', desc: 'Import deprivation index data', path: '/api/v1/ingest/imd' },
-  { id: 'schools', label: 'Schools', desc: 'Import school data from CSV', path: '/api/v1/overlays/schools/ingest' },
+  { id: 'schools', label: 'Schools Import', desc: 'Import UK schools from GIAS CSV (run Geocode Schools after)', path: '/api/v1/overlays/schools/ingest' },
   { id: 'schools-geo', label: 'Geocode Schools', desc: 'Geocode schools missing lat/lng (500 per batch)', path: '/api/v1/overlays/schools/geocode' },
   { id: 'google', label: 'Google Places Sync', desc: 'Fetch Google ratings + photos for 100 nurseries', path: '/api/v1/ingest/google-places' },
   { id: 'snapshot', label: 'Snapshot Reports', desc: 'Capture today\'s metrics for the reports timeseries', path: '/api/v1/admin/reports/snapshot' },
