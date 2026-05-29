@@ -1,0 +1,57 @@
+name: Post-Deploy Validation
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: deploy-validation
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Smoke test production
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for auto-deploys to propagate
+        run: sleep 180
+
+      - name: Backend health check
+        env:
+          API_URL: ${{ secrets.PRODUCTION_API_URL }}
+        run: |
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL/api/v1/health")
+            if [ "$STATUS" = "200" ]; then
+              echo "Health check passed (attempt $i)"
+              exit 0
+            fi
+            echo "Health check returned $STATUS (attempt $i), retrying in 15s..."
+            sleep 15
+          done
+          echo "Health check failed after 5 attempts"
+          exit 1
+
+      - name: Smoke test (search + health)
+        env:
+          API_URL: ${{ secrets.PRODUCTION_API_URL }}
+        run: bash scripts/check-deploy.sh
+
+      - name: Frontend availability check
+        env:
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL || 'https://nurserymatch.com' }}
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$FRONTEND_URL")
+          if [ "$STATUS" != "200" ]; then
+            echo "Frontend returned $STATUS"
+            exit 1
+          fi
+          echo "Frontend is live"
