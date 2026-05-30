@@ -233,6 +233,7 @@ router.post('/google-places-refresh', async (req, res, next) => {
   }
 })
 
+<<<<<<< HEAD
 // POST /api/v1/ingest/care-inspectorate — import Scottish childcare data
 router.post('/care-inspectorate', async (req, res, next) => {
   try {
@@ -269,6 +270,8 @@ router.post('/ciw', async (req, res, next) => {
   }
 })
 
+=======
+>>>>>>> origin/main
 // ---------------------------------------------------------------------------
 // POST /api/v1/ingest/full-cycle — run all ingest steps in dependency order
 // ---------------------------------------------------------------------------
