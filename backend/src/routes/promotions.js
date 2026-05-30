@@ -183,6 +183,7 @@ adminPromotionsRouter.post('/', requireRole('admin'), async (req, res, next) => 
       'language',
       'childcare',
       'health',
+      'soft_play',
       'other',
     ]
     if (!validCategories.includes(category)) {
