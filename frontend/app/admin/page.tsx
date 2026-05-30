@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { useSession } from '@/components/SessionProvider'
 import {
@@ -532,13 +532,93 @@ function IngestPanel() {
   const [results, setResults] = useState<Record<string, { ok: boolean; status?: string; data?: any; error?: string }>>({})
   const [history, setHistory] = useState<Record<string, any[]>>({})
   const [showHistory, setShowHistory] = useState<string | null>(null)
+  const [fullCycleRunning, setFullCycleRunning] = useState(false)
+  const [fullCycleError, setFullCycleError] = useState<string | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const fullCyclePollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const stopPolling = useCallback(() => {
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
   }, [])
 
-  useEffect(() => () => stopPolling(), [stopPolling])
+  const stopFullCyclePolling = useCallback(() => {
+    if (fullCyclePollRef.current) { clearInterval(fullCyclePollRef.current); fullCyclePollRef.current = null }
+  }, [])
+
+  useEffect(() => () => { stopPolling(); stopFullCyclePolling() }, [stopPolling, stopFullCyclePolling])
+
+  async function runFullCycle() {
+    const token = await getAuthToken()
+    if (!token) return
+    setFullCycleRunning(true)
+    setFullCycleError(null)
+    // Mark all steps as pending
+    const pending: Record<string, { ok: boolean; status: string }> = {}
+    for (const step of INGEST_STEPS) pending[step.id] = { ok: true, status: 'pending' }
+    setResults(pending)
+
+    try {
+      const res = await fetch(`${API_URL}/api/v1/ingest/full-cycle`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || `Failed (${res.status})`)
+      if (!data.jobId) throw new Error('No job ID returned')
+
+      // Poll for full-cycle progress
+      stopFullCyclePolling()
+      fullCyclePollRef.current = setInterval(async () => {
+        try {
+          const jr = await fetch(`${API_URL}/api/v1/admin/jobs/${data.jobId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          if (!jr.ok) return
+          const job = await jr.json()
+          const steps = job.result?.steps || {}
+
+          // Update each step's status from the full-cycle result
+          setResults((prev) => {
+            const next = { ...prev }
+            for (const [id, info] of Object.entries(steps) as [string, any][]) {
+              if (info.status === 'completed') {
+                next[id] = { ok: true, status: 'completed', data: info.result }
+              } else if (info.status === 'failed') {
+                next[id] = { ok: false, status: 'failed', error: info.error }
+              } else if (info.status === 'skipped') {
+                next[id] = { ok: false, status: 'failed', error: info.reason || 'Skipped' }
+              } else if (info.status === 'running') {
+                next[id] = { ok: true, status: 'running' }
+              }
+            }
+            return next
+          })
+
+          if (job.status === 'completed' || job.status === 'failed') {
+            stopFullCyclePolling()
+            setFullCycleRunning(false)
+            if (job.status === 'failed') setFullCycleError(job.result?.error || 'Full cycle failed')
+          }
+        } catch { /* ignore polling errors */ }
+      }, 3000)
+    } catch (err: unknown) {
+      setFullCycleRunning(false)
+      setFullCycleError(err instanceof Error ? err.message : 'Failed to start')
+    }
+  }
+
+  const fullCycleSummary = useMemo(() => {
+    if (!fullCycleRunning) return null
+    let completed = 0, failed = 0, pending = 0, runningCount = 0, currentStep = ''
+    for (const step of INGEST_STEPS) {
+      const r = results[step.id]
+      if (r?.status === 'completed') completed++
+      else if (r?.status === 'failed') failed++
+      else if (r?.status === 'running') { runningCount++; currentStep = step.label }
+      else pending++
+    }
+    return { completed, failed, pending, running: runningCount, currentStep, total: INGEST_STEPS.length }
+  }, [results, fullCycleRunning])
 
   async function pollJob(stepId: string, jobId: string) {
     const token = await getAuthToken()
@@ -622,7 +702,47 @@ function IngestPanel() {
     <>
       <h3 className="text-sm font-semibold text-gray-700 mb-3">Data Ingest</h3>
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 mb-8">
-        <p className="text-xs text-gray-500 mb-4">Run data pipelines manually. Background jobs poll for completion automatically.</p>
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-xs text-gray-500">Run data pipelines manually. Background jobs poll for completion automatically.</p>
+          <button
+            onClick={runFullCycle}
+            disabled={running !== null || fullCycleRunning}
+            className={`px-5 py-2.5 text-sm font-semibold rounded-lg whitespace-nowrap transition ${
+              fullCycleRunning
+                ? 'bg-indigo-100 text-indigo-700 cursor-wait'
+                : 'bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50'
+            }`}
+          >
+            {fullCycleRunning ? 'Running...' : 'Run All Steps'}
+          </button>
+        </div>
+        {fullCycleSummary && (
+          <div className="mb-4 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="inline-block w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
+              <span className="text-sm font-medium text-indigo-900">
+                {fullCycleSummary.currentStep ? `Running: ${fullCycleSummary.currentStep}` : 'Starting...'}
+              </span>
+            </div>
+            <div className="flex gap-3 text-xs">
+              <span className="text-green-700">{fullCycleSummary.completed} done</span>
+              {fullCycleSummary.failed > 0 && <span className="text-red-700">{fullCycleSummary.failed} failed</span>}
+              <span className="text-gray-500">{fullCycleSummary.pending + fullCycleSummary.running} remaining</span>
+              <span className="text-gray-400">{fullCycleSummary.total} total</span>
+            </div>
+            <div className="mt-2 w-full bg-indigo-100 rounded-full h-1.5">
+              <div
+                className="bg-indigo-600 h-1.5 rounded-full transition-all duration-500"
+                style={{ width: `${((fullCycleSummary.completed + fullCycleSummary.failed) / fullCycleSummary.total) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
+        {fullCycleError && !fullCycleRunning && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            {fullCycleError}
+          </div>
+        )}
         <div className="space-y-3">
           {INGEST_STEPS.map((step) => {
             const result = results[step.id]
@@ -661,7 +781,7 @@ function IngestPanel() {
                     )}
                     <button
                       onClick={() => runStep(step)}
-                      disabled={running !== null}
+                      disabled={running !== null || fullCycleRunning}
                       className={`px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition ${
                         running === step.id
                           ? 'bg-amber-100 text-amber-700 cursor-wait'

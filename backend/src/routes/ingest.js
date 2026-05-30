@@ -1,12 +1,15 @@
 import express from 'express'
 import { ingestOfstedRegister } from '../services/ofstedIngest.js'
-import { ingestSchoolsFromCsv, geocodeSchoolsBatch } from '../services/schoolIngest.js'
+import { ingestSchoolsFromCsv, geocodeSchoolsBatch as geocodeSchoolsBatchLegacy } from '../services/schoolIngest.js'
+import { ingestSchoolsFromCsvUrl, geocodeSchoolsBatch } from '../services/schoolsIngest.js'
 import { geocodeNurseriesBatch } from '../services/geocoding.js'
 import { ingestLandRegistryYear, refreshPropertyStats } from '../services/landRegistry.js'
 import { refreshCrimeForDistricts } from '../services/policeApi.js'
 import { refreshImdForDistricts } from '../services/imdApi.js'
 import { refreshAllDistricts as refreshPropertyDataDistricts } from '../services/propertyData.js'
 import { syncGooglePlacesData, refreshStaleGoogleData } from '../services/googlePlaces.js'
+import { startJob, updateJobProgress, completeJob, failJob } from '../services/jobTracker.js'
+import { captureReportSnapshot } from '../services/reportSnapshot.js'
 import basicAuth from 'express-basic-auth'
 import { requireRole } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
@@ -224,6 +227,113 @@ router.post('/google-places-refresh', async (req, res, next) => {
     res.json(result)
   } catch (err) {
     logger.error({ err: err.message }, 'ingest: Google Places refresh failed')
+    next(err)
+  }
+})
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/ingest/full-cycle — run all ingest steps in dependency order
+// ---------------------------------------------------------------------------
+const FULL_CYCLE_STEPS = {
+  ofsted:       { fn: () => ingestOfstedRegister(), deps: [] },
+  schools:      { fn: () => ingestSchoolsFromCsvUrl(), deps: [] },
+  crime:        { fn: () => refreshCrimeForDistricts({ limit: 50, staleDays: 30 }), deps: [] },
+  imd:          { fn: () => refreshImdForDistricts({ limit: 200, staleDays: 365 }), deps: [] },
+  google:       { fn: () => syncGooglePlacesData(100, { staleDays: 90, photosEnabled: true }), deps: [] },
+  geocode:      { fn: () => geocodeNurseriesBatch(2000), deps: ['ofsted'] },
+  'schools-geo': { fn: () => geocodeSchoolsBatch(500), deps: ['schools'] },
+  aggregate:    { fn: () => db.rpc('refresh_postcode_area_nursery_stats').then(r => { if (r.error) throw r.error; return { districts_updated: r.data } }), deps: ['geocode', 'schools-geo'] },
+  family:       { fn: () => db.rpc('calculate_all_family_scores').then(r => { if (r.error) throw r.error; return { districts_updated: r.data } }), deps: ['aggregate', 'crime', 'imd'] },
+  snapshot:     { fn: () => captureReportSnapshot(), deps: ['family'] },
+}
+
+async function runFullCycle(jobId) {
+  const stepStatus = {}
+  for (const id of Object.keys(FULL_CYCLE_STEPS)) {
+    stepStatus[id] = { status: 'pending' }
+  }
+
+  function hasFailed(stepId) {
+    return stepStatus[stepId]?.status === 'failed' || stepStatus[stepId]?.status === 'skipped'
+  }
+
+  // Build layers from the DAG via topological sort
+  const layers = []
+  const placed = new Set()
+  while (placed.size < Object.keys(FULL_CYCLE_STEPS).length) {
+    const layer = []
+    for (const [id, step] of Object.entries(FULL_CYCLE_STEPS)) {
+      if (placed.has(id)) continue
+      if (step.deps.every((d) => placed.has(d))) layer.push(id)
+    }
+    if (layer.length === 0) break
+    layers.push(layer)
+    for (const id of layer) placed.add(id)
+  }
+
+  for (const layer of layers) {
+    await updateJobProgress(jobId, { steps: { ...stepStatus }, current_layer: layers.indexOf(layer) })
+
+    const results = await Promise.allSettled(
+      layer.map(async (stepId) => {
+        const step = FULL_CYCLE_STEPS[stepId]
+        // Skip if any dependency failed
+        if (step.deps.some(hasFailed)) {
+          stepStatus[stepId] = { status: 'skipped', reason: 'dependency failed' }
+          return
+        }
+        stepStatus[stepId] = { status: 'running' }
+        await updateJobProgress(jobId, { steps: { ...stepStatus }, current_step: stepId })
+        try {
+          const result = await step.fn()
+          stepStatus[stepId] = { status: 'completed', result }
+        } catch (err) {
+          logger.error({ step: stepId, err: err?.message }, 'full-cycle: step failed')
+          stepStatus[stepId] = { status: 'failed', error: err?.message }
+        }
+      })
+    )
+  }
+
+  const allFailed = Object.values(stepStatus).every((s) => s.status === 'failed' || s.status === 'skipped')
+  const finalResult = { steps: stepStatus }
+
+  if (allFailed) {
+    await failJob(jobId, 'All steps failed')
+  } else {
+    await completeJob(jobId, finalResult)
+  }
+
+  logger.info({ jobId, steps: Object.fromEntries(Object.entries(stepStatus).map(([k, v]) => [k, v.status])) }, 'full-cycle: complete')
+}
+
+router.post('/full-cycle', async (req, res, next) => {
+  try {
+    // Concurrency guard — prevent double-runs
+    if (db) {
+      const { data: running } = await db
+        .from('job_runs')
+        .select('id, started_at')
+        .eq('job_type', 'full_cycle')
+        .eq('status', 'running')
+        .gte('started_at', new Date(Date.now() - 3600000).toISOString())
+        .limit(1)
+      if (running?.length > 0) {
+        return res.status(409).json({
+          error: 'A full cycle is already running',
+          jobId: running[0].id,
+        })
+      }
+    }
+
+    const jobId = await startJob('full_cycle', req.user?.id)
+    res.json({ status: 'started', jobId, message: 'Full data refresh started in background.' })
+
+    runFullCycle(jobId).catch((err) => {
+      logger.error({ err: err?.message, jobId }, 'full-cycle: unexpected error')
+      failJob(jobId, err?.message)
+    })
+  } catch (err) {
     next(err)
   }
 })
