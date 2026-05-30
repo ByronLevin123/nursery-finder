@@ -63,6 +63,8 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const plausibleDomain = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN
   const bingVerification = process.env.NEXT_PUBLIC_BING_VERIFICATION
+  const googleAdsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID
+  const adsenseId = process.env.NEXT_PUBLIC_ADSENSE_ID
   const apiOrigin = (() => {
     try {
       return new URL(API_URL).origin
@@ -88,6 +90,25 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: jsonLdScript(websiteSchema()) }}
         />
+        {googleAdsId && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${googleAdsId}`}
+              strategy="afterInteractive"
+            />
+            <Script id="gtag-init" strategy="afterInteractive">
+              {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${googleAdsId}');`}
+            </Script>
+          </>
+        )}
+        {adsenseId && (
+          <Script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseId}`}
+            crossOrigin="anonymous"
+            strategy="afterInteractive"
+          />
+        )}
         {plausibleDomain && (
           <>
             {/* Stub: queues custom events fired before the deferred Plausible
