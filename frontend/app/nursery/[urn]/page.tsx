@@ -43,6 +43,7 @@ const StickyProfileNav = dynamic(() => import('@/components/StickyProfileNav'), 
 const JoinWaitlistButton = dynamic(() => import('@/components/JoinWaitlistButton'), { ssr: false })
 const ShareButtons = dynamic(() => import('@/components/ShareButtons'), { ssr: false })
 const NewsletterPopup = dynamic(() => import('@/components/NewsletterPopup'), { ssr: false })
+const AdUnit = dynamic(() => import('@/components/AdUnit'), { ssr: false })
 
 export async function generateMetadata({ params }: { params: { urn: string } }): Promise<Metadata> {
   try {
@@ -484,6 +485,8 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
           <NurseryPlaceholder name={nursery.name} lat={nursery.lat} lng={nursery.lng} ofstedGrade={nursery.ofsted_overall_grade} />
         </div>
       )}
+
+      <AdUnit slot="nursery-profile" format="horizontal" className="my-6 rounded-lg overflow-hidden" />
 
       {/* Similar nurseries */}
       <SimilarNurseries urn={nursery.urn} />

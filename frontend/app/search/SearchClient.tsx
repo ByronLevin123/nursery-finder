@@ -23,6 +23,7 @@ import dynamic from 'next/dynamic'
 
 import SortSelect, { SortOption } from '@/components/SortSelect'
 import PromotionCard from '@/components/PromotionCard'
+import AdUnit from '@/components/AdUnit'
 import SaveSearchButton from '@/components/SaveSearchButton'
 import SearchJsonLd from '@/components/SearchJsonLd'
 import RecentlyViewed from '@/components/RecentlyViewed'
@@ -595,6 +596,11 @@ function SearchContent() {
                 {promotions.length > 0 && (idx + 1) % 5 === 0 && promotions[Math.floor(idx / 5)] && (
                   <div className="mt-3">
                     <PromotionCard promotion={promotions[Math.floor(idx / 5)]} />
+                  </div>
+                )}
+                {(idx + 1) % 8 === 0 && (
+                  <div className="mt-3">
+                    <AdUnit slot="search-results" format="horizontal" className="rounded-lg overflow-hidden" />
                   </div>
                 )}
               </div>

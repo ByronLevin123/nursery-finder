@@ -1,15 +1,13 @@
 /**
- * Plausible custom events — type-safe wrappers around `window.plausible()`.
+ * Plausible custom events + Google Ads conversion tracking.
  *
  * Pageviews are auto-tracked by the Plausible script in layout.tsx. Use these
  * helpers for funnel events you want to set up as goals in the Plausible
- * dashboard (Sites → nurserymatch.com → Goals → Add goal → "Custom event").
+ * dashboard (Sites > nurserymatch.com > Goals > Add goal > "Custom event").
  *
- * The matching dashboard goal names are documented in
- * docs/LAUNCH_CHECKLIST.md (Plausible setup section).
- *
- * All helpers are safe to call before Plausible has loaded, and on the
- * server (where window is undefined) — they no-op silently.
+ * Google Ads conversions are fired alongside Plausible events when
+ * NEXT_PUBLIC_GOOGLE_ADS_ID is set. Map conversion labels in
+ * GTAG_CONVERSION_MAP below.
  */
 
 declare global {
@@ -18,6 +16,8 @@ declare global {
       event: string,
       options?: { callback?: () => void; props?: Record<string, string | number | boolean> }
     ) => void
+    gtag?: (...args: any[]) => void
+    dataLayer?: any[]
   }
 }
 
@@ -31,13 +31,23 @@ export type AnalyticsEvent =
   | 'Shortlist Add'
   | 'Compare Add'
   | 'AI Assistant Query'
-  // Conversion (parent → high-intent)
+  // Conversion (parent > high-intent)
   | 'Enquiry Submit'
   // Provider funnel
   | 'Provider Register'
   | 'Claim Submit'
   | 'Provider Checkout Start'
   | 'Provider Checkout Success'
+
+const GTAG_CONVERSION_MAP: Partial<Record<AnalyticsEvent, string>> = {
+  'Signup': 'signup',
+  'Enquiry Submit': 'enquiry',
+  'Claim Submit': 'claim',
+  'Provider Checkout Success': 'purchase',
+  'Provider Register': 'provider_register',
+  'Search': 'search',
+  'Quiz Complete': 'quiz_complete',
+}
 
 export function trackEvent(
   event: AnalyticsEvent,
@@ -48,10 +58,14 @@ export function trackEvent(
     if (typeof window.plausible === 'function') {
       window.plausible(event, props ? { props } : undefined)
     }
-    // If window.plausible is undefined, the early-init stub installed in
-    // layout.tsx (see <Script id="plausible-stub">) buffers calls until
-    // the real script loads. Without that stub, calls before the deferred
-    // script arrives would be dropped silently.
+
+    const conversionLabel = GTAG_CONVERSION_MAP[event]
+    if (conversionLabel && typeof window.gtag === 'function') {
+      window.gtag('event', 'conversion', {
+        send_to: `${process.env.NEXT_PUBLIC_GOOGLE_ADS_ID}/${conversionLabel}`,
+        ...(props || {}),
+      })
+    }
   } catch {
     // Never let analytics break user flows.
   }
