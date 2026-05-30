@@ -80,6 +80,9 @@ import providerReportsRouter from './routes/providerReports.js'
 // Blog / guides content
 import blogRouter from './routes/blog.js'
 
+// Marketing hub — social posts, ads, AI content
+import marketingRouter from './routes/marketing.js'
+
 // Schools (nearby primary schools overlay)
 import schoolsRouter from './routes/schools.js'
 
@@ -309,6 +312,7 @@ app.use('/api/v1/admin', adminRouter)
 app.use('/api/v1/admin/status', adminStatusRouter)
 app.use('/api/v1/admin/provider-invites', providerInvitesRouter)
 app.use('/api/v1/admin/promotions', adminPromotionsRouter)
+app.use('/api/v1/admin/marketing', marketingRouter)
 app.use('/api/v1/provider-auth', providerAuthRouter)
 app.use('/api/v1/promotions', promotionsRouter)
 app.use('/api/v1/provider', providerReportsRouter)
