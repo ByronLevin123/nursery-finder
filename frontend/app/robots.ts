@@ -12,6 +12,8 @@ export default function robots(): MetadataRoute.Robots {
     'Google-Extended',
     'Applebot',
     'anthropic-ai',
+    'Bytespider',
+    'cohere-ai',
   ]
 
   return {

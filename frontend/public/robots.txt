@@ -4,5 +4,69 @@ Disallow: /api/
 Disallow: /account
 Disallow: /login
 Disallow: /shortlist
+Disallow: /admin
+Disallow: /provider/*/edit
+
+# AI search crawlers — allow broader access for AI indexing
+User-agent: GPTBot
+Allow: /
+Disallow: /admin
+Disallow: /provider/*/edit
+Disallow: /account
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /admin
+Disallow: /provider/*/edit
+Disallow: /account
+
+User-agent: Claude-Web
+Allow: /
+Disallow: /admin
+Disallow: /provider/*/edit
+Disallow: /account
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /admin
+Disallow: /provider/*/edit
+Disallow: /account
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /admin
+Disallow: /provider/*/edit
+Disallow: /account
+
+User-agent: CCBot
+Allow: /
+Disallow: /admin
+Disallow: /provider/*/edit
+Disallow: /account
+
+User-agent: anthropic-ai
+Allow: /
+Disallow: /admin
+Disallow: /provider/*/edit
+Disallow: /account
+
+User-agent: Applebot
+Allow: /
+Disallow: /admin
+Disallow: /provider/*/edit
+Disallow: /account
+
+User-agent: Bytespider
+Allow: /
+Disallow: /admin
+Disallow: /provider/*/edit
+Disallow: /account
+
+User-agent: cohere-ai
+Allow: /
+Disallow: /admin
+Disallow: /provider/*/edit
+Disallow: /account
 
 Sitemap: https://nurserymatch.com/sitemap.xml
+Host: https://nurserymatch.com
