@@ -27,7 +27,7 @@ const openapiGpt = {
     title: 'NurseryMatch API',
     version: '1.0.0',
     description:
-      'Search and compare 27,000+ Ofsted-rated UK nurseries, browse family-friendly areas, check travel times, and read parenting guides. Public, free, no auth required. Data source: Ofsted Early Years register (OGL v3.0).',
+      'Search and compare 27,000+ Ofsted-rated UK nurseries, browse family-friendly areas, check travel times, and read parenting guides. Public, free, no auth required. Data source: Ofsted Early Years register (OGL v3.0). For LLM-friendly markdown output, use the /public/nursery/{urn}.md and /public/area/{district}.md endpoints. Full docs at https://nurserymatch.com/api',
   },
   servers: [{ url: server, description: 'Production' }],
   paths: {
