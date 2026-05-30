@@ -510,6 +510,8 @@ const INGEST_STEPS = [
   { id: 'imd', label: 'IMD Data', desc: 'Import deprivation index data', path: '/api/v1/ingest/imd' },
   { id: 'schools', label: 'Schools Import', desc: 'Import UK schools from GIAS CSV (run Geocode Schools after)', path: '/api/v1/overlays/schools/ingest' },
   { id: 'schools-geo', label: 'Geocode Schools', desc: 'Geocode schools missing lat/lng (500 per batch)', path: '/api/v1/overlays/schools/geocode' },
+  { id: 'scotland', label: 'Scotland (Care Inspectorate)', desc: 'Import Scottish childcare data (requires CSV URL)', path: '/api/v1/ingest/care-inspectorate' },
+  { id: 'wales', label: 'Wales (CIW)', desc: 'Import Welsh childcare data (requires CSV URL)', path: '/api/v1/ingest/ciw' },
   { id: 'google', label: 'Google Places Sync', desc: 'Fetch Google ratings + photos for 100 nurseries', path: '/api/v1/ingest/google-places' },
   { id: 'snapshot', label: 'Snapshot Reports', desc: 'Capture today\'s metrics for the reports timeseries', path: '/api/v1/admin/reports/snapshot' },
 ]
@@ -694,6 +696,8 @@ function IngestPanel() {
     family: 'family_scores',
     crime: 'crime_ingest',
     imd: 'imd_ingest',
+    scotland: 'care_inspectorate_ingest',
+    wales: 'ciw_ingest',
     google: 'google_places',
     snapshot: 'snapshot_reports',
   }
