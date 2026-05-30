@@ -55,6 +55,19 @@ router.post('/', requireAuth, enquiryLimiter, verifyTurnstile, async (req, res, 
 
     const created = []
     const queued = []
+
+    // Pre-fetch admin list once (not per-nursery) for unclaimed nursery notifications
+    let adminIds = []
+    const hasUnclaimed = nurseries.some((n) => !n.claimed_by_user_id)
+    if (hasUnclaimed) {
+      try {
+        const { data: admins } = await db.from('user_profiles').select('id').eq('role', 'admin')
+        adminIds = (admins || []).map((a) => a.id)
+      } catch {
+        logger.warn('enquiries: failed to fetch admin list for notifications')
+      }
+    }
+
     for (const nursery of nurseries) {
       const isClaimed = !!nursery.claimed_by_user_id
       const row = {
@@ -84,23 +97,16 @@ router.post('/', requireAuth, enquiryLimiter, verifyTurnstile, async (req, res, 
 
       if (!isClaimed) {
         queued.push(enriched)
-        // Notify admin — fire and forget, must not block enquiry creation
-        try {
-          const { data: admins } = await db.from('user_profiles').select('id').eq('role', 'admin')
-          if (admins && admins.length > 0) {
-            const notifs = admins.map((a) => ({
-              user_id: a.id,
-              type: 'admin_enquiry_queued',
-              title: 'Enquiry for unclaimed nursery',
-              body: `A parent enquired about ${nursery.name} (URN ${nursery.urn}).`,
-            }))
-            await db
-              .from('notifications')
-              .insert(notifs)
-              .catch(() => {})
-          }
-        } catch {
-          // Non-fatal
+        if (adminIds.length > 0) {
+          const notifs = adminIds.map((id) => ({
+            user_id: id,
+            type: 'admin_enquiry_queued',
+            title: 'Enquiry for unclaimed nursery',
+            body: `A parent enquired about ${nursery.name} (URN ${nursery.urn}).`,
+          }))
+          db.from('notifications').insert(notifs).then(() => {}).catch((err) => {
+            logger.warn({ err: err?.message }, 'enquiry admin notification insert failed')
+          })
         }
         logger.info({ nurseryId: nursery.id }, 'enquiry queued for admin — nursery unclaimed')
         continue
