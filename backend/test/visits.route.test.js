@@ -31,6 +31,7 @@ function makeQueryBuilder(table) {
       state.filters.every(([c, op, v]) => {
         if (op === 'eq') return r[c] === v
         if (op === 'gte') return r[c] >= v
+        if (op === 'lt') return r[c] < v
         if (op === 'in') return v.includes(r[c])
         return true
       })
@@ -72,6 +73,10 @@ function makeQueryBuilder(table) {
     },
     in(c, v) {
       state.filters.push([c, 'in', v])
+      return builder
+    },
+    lt(c, v) {
+      state.filters.push([c, 'lt', v])
       return builder
     },
     order() {

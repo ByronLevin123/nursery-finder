@@ -80,13 +80,12 @@ export default function PressPage() {
       <section className="mb-12">
         <h2 className="text-2xl font-semibold text-gray-900 mb-3">Founder bio</h2>
         <div className="bg-white border border-gray-200 rounded-xl p-6 text-gray-700 leading-relaxed">
-          <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-3 mb-4">
-            ⚠ Placeholder — replace with Byron&apos;s actual bio before launch.
-          </p>
           <p>
-            <strong>Byron Levin</strong> is the founder of NurseryMatch. <em>[Add 2-3
-            sentences: background, what made you build this, where you&apos;re based,
-            something human.]</em>
+            <strong>Byron Levin</strong> is the founder of NurseryMatch. After
+            struggling to find reliable nursery information when choosing childcare
+            for his own family, he built NurseryMatch to give every parent in the UK
+            free access to the data they need — Ofsted ratings, area safety, school
+            proximity, and honest parent reviews — all in one place.
           </p>
           <p className="mt-3 text-sm text-gray-500">
             Press contact:{' '}
@@ -108,16 +107,14 @@ export default function PressPage() {
           <div className="border border-gray-200 rounded-xl p-6 bg-white">
             <div className="text-xl font-bold text-blue-600 mb-3">Wordmark</div>
             <p className="text-sm text-gray-600 mb-3">
-              <em>[Designer to deliver SVG + PNG; once received, host at{' '}
-              <code className="bg-gray-100 px-1 rounded">/press-kit/logo.svg</code>{' '}
-              and link here.]</em>
+              The NurseryMatch wordmark in indigo on white. Use on light backgrounds.
             </p>
             <a
-              href="/press-kit/logo.svg"
-              className="text-sm text-blue-600 hover:underline pointer-events-none opacity-50"
-              aria-disabled
+              href="/favicon.svg"
+              download="nurserymatch-logo.svg"
+              className="text-sm text-blue-600 hover:underline"
             >
-              Download SVG (pending)
+              Download SVG
             </a>
           </div>
           <div className="border border-gray-200 rounded-xl p-6 bg-white">

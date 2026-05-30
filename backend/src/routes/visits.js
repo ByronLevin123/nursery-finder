@@ -54,24 +54,30 @@ router.post('/book', requireAuth, async (req, res, next) => {
     if (!slot_id) return res.status(400).json({ error: 'slot_id is required' })
     if (!nursery_id) return res.status(400).json({ error: 'nursery_id is required' })
 
-    // Check slot exists and has capacity
-    const { data: slot, error: slotErr } = await db
+    // Fetch slot and check capacity
+    const { data: slotCheck, error: slotErr } = await db
       .from('visit_slots')
       .select('*')
       .eq('id', slot_id)
       .maybeSingle()
     if (slotErr) throw slotErr
-    if (!slot) return res.status(404).json({ error: 'Slot not found' })
-    if (slot.booked >= slot.capacity) {
+    if (!slotCheck) return res.status(404).json({ error: 'Slot not found' })
+    if (slotCheck.booked >= slotCheck.capacity) {
       return res.status(409).json({ error: 'Slot is fully booked' })
     }
 
-    // Increment booked count
-    const { error: updateErr } = await db
+    // Optimistic locking: only increment if booked count hasn't changed
+    const { data: slot, error: updateErr } = await db
       .from('visit_slots')
-      .update({ booked: slot.booked + 1 })
+      .update({ booked: slotCheck.booked + 1 })
       .eq('id', slot_id)
+      .lt('booked', slotCheck.capacity)
+      .select('*')
+      .maybeSingle()
     if (updateErr) throw updateErr
+    if (!slot) {
+      return res.status(409).json({ error: 'Slot was just booked by someone else — please try again' })
+    }
 
     // Create booking
     const { data: booking, error: bookErr } = await db
