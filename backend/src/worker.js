@@ -15,6 +15,10 @@ import { sendReengagementEmails } from './services/reengagement.js'
 import { processSavedSearchAlerts } from './services/savedSearchAlerts.js'
 import { processOfstedChangeNotifications } from './services/ofstedChangeNotifier.js'
 import { syncGooglePlacesData, refreshStaleGoogleData } from './services/googlePlaces.js'
+import { callClaude, isClaudeAvailable } from './services/claudeApi.js'
+import { isAvailable as isBufferAvailable, getProfiles, createPost } from './services/bufferService.js'
+import { sendEmail, isEmailAvailable } from './services/emailService.js'
+import { renderProviderInviteEmail } from './services/emailTemplates.js'
 import db from './db.js'
 import { logger } from './logger.js'
 
@@ -341,5 +345,168 @@ cron.schedule('0 6 * * *', async () => {
     logger.info({ date: today }, 'cron: admin reports cache snapshotted')
   } catch (err) {
     logger.error({ err: err.message }, 'cron: admin reports cache failed')
+  }
+})
+
+// ==========================================================================
+// MARKETING AUTOMATION CRONS
+// ==========================================================================
+
+// Daily 10am: auto-send provider outreach emails (50 unclaimed nurseries/day)
+cron.schedule('0 10 * * *', async () => {
+  if (!db || !isEmailAvailable()) return
+  logger.info('cron: starting provider outreach batch')
+  try {
+    const { data: unclaimed } = await db
+      .from('nurseries')
+      .select('urn, name, town, local_authority, email')
+      .eq('registration_status', 'Active')
+      .is('claimed_by_user_id', null)
+      .not('email', 'is', null)
+      .limit(50)
+
+    if (!unclaimed?.length) {
+      logger.info('cron: no unclaimed nurseries with emails to contact')
+      return
+    }
+
+    // Check which have already been invited
+    const urns = unclaimed.map((n) => n.urn)
+    const { data: existing } = await db
+      .from('provider_invites')
+      .select('urn')
+      .in('urn', urns)
+    const alreadySent = new Set((existing || []).map((e) => e.urn))
+
+    let sent = 0
+    for (const nursery of unclaimed) {
+      if (alreadySent.has(nursery.urn)) continue
+      try {
+        const email = renderProviderInviteEmail({
+          nurseryName: nursery.name,
+          town: nursery.town,
+          urn: nursery.urn,
+        })
+        await sendEmail({ to: nursery.email, ...email })
+        await db.from('provider_invites').insert({
+          urn: nursery.urn,
+          email: nursery.email,
+          status: 'sent',
+          campaign_type: 'invite',
+          sent_at: new Date().toISOString(),
+        })
+        sent++
+      } catch (err) {
+        logger.warn({ urn: nursery.urn, err: err?.message }, 'provider outreach: send failed')
+      }
+    }
+    logger.info({ sent, total: unclaimed.length }, 'cron: provider outreach complete')
+  } catch (err) {
+    logger.error({ err: err.message }, 'cron: provider outreach failed')
+  }
+})
+
+// Tue/Thu/Sat 9am: auto-generate + post to Buffer
+cron.schedule('0 9 * * 2,4,6', async () => {
+  if (!isClaudeAvailable() || !isBufferAvailable()) {
+    logger.info('cron: auto-social skipped — Claude or Buffer not configured')
+    return
+  }
+  logger.info('cron: starting auto social post')
+  try {
+    const topics = [
+      'Tips for choosing the right nursery for your child',
+      'Understanding UK funded childcare hours — what parents need to know',
+      'How to check an Ofsted rating before choosing a nursery',
+      'Moving to a new area? How to find family-friendly neighbourhoods',
+      'Nursery vs childminder — how to decide what is best for your family',
+      'What to look for on a nursery visit — a parent checklist',
+      'How NurseryMatch helps parents compare nurseries for free',
+      'The true cost of nursery care in the UK and how to save',
+      'Why checking nearby schools matters when choosing a nursery',
+      'Signs of a great nursery — what Ofsted Outstanding really means',
+    ]
+    const topic = topics[Math.floor(Math.random() * topics.length)]
+
+    const content = await callClaude({
+      prompt: `Write a short, engaging social media post (max 250 characters) about: ${topic}. Include a call-to-action pointing to nurserymatch.com. Use a friendly, helpful tone. Do not use emojis. Return only the post text, nothing else.`,
+      system: 'You write social media posts for NurseryMatch, a free UK nursery comparison website.',
+      maxTokens: 200,
+    })
+
+    if (!content?.trim()) {
+      logger.warn('cron: auto-social — empty Claude response')
+      return
+    }
+
+    const { data: profiles } = await getProfiles()
+    if (!profiles?.length) {
+      logger.warn('cron: auto-social — no Buffer profiles connected')
+      return
+    }
+
+    const profileIds = profiles.map((p) => p.id)
+    const { data: post, error } = await createPost({ text: content.trim(), profileIds })
+
+    if (error) {
+      logger.error({ error }, 'cron: auto-social Buffer post failed')
+    } else {
+      logger.info({ postId: post?.id, profiles: profileIds.length }, 'cron: auto-social posted')
+      // Save to DB for tracking
+      if (db) {
+        for (const p of profiles) {
+          await db.from('marketing_posts').insert({
+            content: content.trim(),
+            platform: p.service || 'unknown',
+            status: 'posted',
+            buffer_post_id: post?.id || null,
+            posted_at: new Date().toISOString(),
+          }).catch(() => {})
+        }
+      }
+    }
+  } catch (err) {
+    logger.error({ err: err.message }, 'cron: auto-social failed')
+  }
+})
+
+// Weekly Monday 7am: auto-generate SEO blog post
+cron.schedule('0 7 * * 1', async () => {
+  if (!isClaudeAvailable() || !db) {
+    logger.info('cron: auto-blog skipped — Claude or DB not configured')
+    return
+  }
+  logger.info('cron: starting auto blog generation')
+  try {
+    const cities = [
+      'London', 'Birmingham', 'Manchester', 'Leeds', 'Glasgow',
+      'Liverpool', 'Bristol', 'Sheffield', 'Edinburgh', 'Cardiff',
+      'Nottingham', 'Newcastle', 'Leicester', 'Southampton', 'Brighton',
+    ]
+    const city = cities[Math.floor(Math.random() * cities.length)]
+    const year = new Date().getFullYear()
+
+    const content = await callClaude({
+      prompt: `Write a 1200-word SEO blog post titled "Best Nurseries in ${city} ${year} — A Parent's Guide". Include: introduction about choosing a nursery in ${city}, what to look for (Ofsted ratings, funded places, location), tips for visiting, and a call-to-action to search on nurserymatch.com. Write in British English. Format with markdown headings (##). Be informative and practical.`,
+      system: 'You write SEO-optimised blog content for NurseryMatch, a free UK nursery comparison website at nurserymatch.com.',
+      maxTokens: 2000,
+      model: 'claude-sonnet-4-6',
+    })
+
+    if (!content?.trim()) {
+      logger.warn('cron: auto-blog — empty Claude response')
+      return
+    }
+
+    await db.from('marketing_content').insert({
+      type: 'blog',
+      prompt_used: `Best Nurseries in ${city} ${year}`,
+      content: content.trim(),
+      status: 'draft',
+    })
+
+    logger.info({ city }, 'cron: auto-blog draft created — review in Admin > Marketing')
+  } catch (err) {
+    logger.error({ err: err.message }, 'cron: auto-blog failed')
   }
 })
