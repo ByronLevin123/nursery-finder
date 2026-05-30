@@ -28,6 +28,14 @@ export default function Footer() {
                 <Link href="/faq" className="text-gray-500 hover:text-gray-700">
                   FAQ
                 </Link>
+                <a
+                  href="https://chat.openai.com/g/g-nurserymatch"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  Ask NurseryMatch GPT
+                </a>
               </div>
             </div>
             <div>

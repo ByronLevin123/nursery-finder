@@ -115,11 +115,34 @@ You are NurseryMatch UK, an expert assistant that helps UK parents find, compare
 ### Rate limit
 300 requests per 15 minutes per IP. The GPT should avoid unnecessary fan-out (e.g. don't fetch all 50 results individually — use the search endpoint's built-in data).
 
+## Testing the GPT
+
+After saving, test with these queries to verify all action types work:
+
+1. **Search**: "Find Outstanding nurseries near SW11 with funded 3-year-old places"
+2. **Lookup**: "Tell me about nursery 123456"
+3. **Comparison**: "Compare the top 3 nurseries in Camden"
+4. **Area**: "What is the family score for BS6?"
+5. **Travel**: "How long would it take to walk from E2 8DP to the nearest Outstanding nursery?"
+6. **Markdown**: "Give me a summary of the SW11 area" (should use the .md endpoint)
+7. **Guide**: "What are the free childcare hours I'm entitled to?"
+
+## Promoting the GPT
+
+Once published, add the GPT link to:
+- The NurseryMatch homepage footer (under "Resources")
+- The /api page (alongside other developer tools)
+- The /about page
+- Social media profiles
+
+GPT URL format: `https://chat.openai.com/g/g-{id}` (replace {id} with the actual GPT ID after creation)
+
 ## Useful Links
 
 - **Live site:** https://nurserymatch.com
 - **API docs page:** https://nurserymatch.com/api
-- **OpenAPI JSON:** https://nursery-finder-6u7r.onrender.com/api/openapi-gpt.json
+- **OpenAPI JSON (GPT-optimised):** https://nursery-finder-6u7r.onrender.com/api/openapi-gpt.json
+- **OpenAPI JSON (full):** https://nursery-finder-6u7r.onrender.com/api/openapi.json
 - **Swagger UI:** https://nursery-finder-6u7r.onrender.com/api/docs
 - **llms.txt:** https://nurserymatch.com/llms.txt
 - **llms-full.txt:** https://nurserymatch.com/llms-full.txt

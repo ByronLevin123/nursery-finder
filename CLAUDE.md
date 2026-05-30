@@ -7,8 +7,9 @@
 
 ## What we are building
 
-**NurseryMatch** — a UK nursery comparison website that lets parents find and evaluate
-Ofsted-rated nurseries near them. Phase 1 is a nursery search and profile product.
+**NurseryMatch** — a UK-wide nursery comparison website that lets parents find and evaluate
+nurseries near them. Covers England (Ofsted), Scotland (Care Inspectorate), and Wales (CIW).
+Phase 1 is a nursery search and profile product.
 Phase 8 adds a family relocation layer (area intelligence + property prices).
 
 **Live URL targets:**

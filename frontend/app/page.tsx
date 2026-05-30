@@ -30,6 +30,29 @@ const POPULAR_DISTRICTS = [
   'BS6', 'M20', 'LS6', 'EH9', 'CF11', 'G12',
 ]
 
+const TOP_CITIES = [
+  { name: 'London',      slug: 'london' },
+  { name: 'Birmingham',  slug: 'birmingham' },
+  { name: 'Manchester',  slug: 'manchester' },
+  { name: 'Leeds',       slug: 'leeds' },
+  { name: 'Glasgow',     slug: 'glasgow' },
+  { name: 'Liverpool',   slug: 'liverpool' },
+  { name: 'Bristol',     slug: 'bristol' },
+  { name: 'Sheffield',   slug: 'sheffield' },
+  { name: 'Edinburgh',   slug: 'edinburgh' },
+  { name: 'Cardiff',     slug: 'cardiff' },
+  { name: 'Nottingham',  slug: 'nottingham' },
+  { name: 'Newcastle',   slug: 'newcastle' },
+  { name: 'Leicester',   slug: 'leicester' },
+  { name: 'Southampton', slug: 'southampton' },
+  { name: 'Brighton',    slug: 'brighton' },
+  { name: 'Cambridge',   slug: 'cambridge' },
+  { name: 'Oxford',      slug: 'oxford' },
+  { name: 'York',        slug: 'york' },
+  { name: 'Bath',        slug: 'bath' },
+  { name: 'Reading',     slug: 'reading' },
+]
+
 const FEATURES = [
   {
     icon: '🏫',
@@ -201,6 +224,29 @@ export default function HomePage() {
             <a href="/assistant" className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white border-2 border-indigo-300 text-indigo-800 rounded-xl font-semibold shadow-sm hover:bg-indigo-50 transition">
               AI Move Assistant
             </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Browse by city */}
+      <section className="px-4 py-14 bg-white border-t border-gray-100">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 text-center mb-3">
+            Browse by city
+          </h2>
+          <p className="text-center text-gray-600 mb-8">
+            Find and compare nurseries in the UK&apos;s largest cities
+          </p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {TOP_CITIES.map((c) => (
+              <a
+                key={c.slug}
+                href={`/nurseries-in-city/${c.slug}`}
+                className="px-4 py-2 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-800 text-sm font-medium hover:bg-indigo-100 hover:border-indigo-300 transition"
+              >
+                {c.name}
+              </a>
+            ))}
           </div>
         </div>
       </section>

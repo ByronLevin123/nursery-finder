@@ -2,6 +2,8 @@ import express from 'express'
 import { ingestOfstedRegister } from '../services/ofstedIngest.js'
 import { ingestSchoolsFromCsv, geocodeSchoolsBatch as geocodeSchoolsBatchLegacy } from '../services/schoolIngest.js'
 import { ingestSchoolsFromCsvUrl, geocodeSchoolsBatch } from '../services/schoolsIngest.js'
+import { ingestCareInspectorateData } from '../services/careInspectorateIngest.js'
+import { ingestCiwData } from '../services/ciwIngest.js'
 import { geocodeNurseriesBatch } from '../services/geocoding.js'
 import { ingestLandRegistryYear, refreshPropertyStats } from '../services/landRegistry.js'
 import { refreshCrimeForDistricts } from '../services/policeApi.js'
@@ -231,6 +233,45 @@ router.post('/google-places-refresh', async (req, res, next) => {
   }
 })
 
+<<<<<<< HEAD
+// POST /api/v1/ingest/care-inspectorate — import Scottish childcare data
+router.post('/care-inspectorate', async (req, res, next) => {
+  try {
+    const csvUrl = req.body?.csv_url || req.query.csv_url
+    if (!csvUrl) {
+      return res.status(400).json({
+        error: 'csv_url is required. Download from https://www.careinspectorate.com/index.php/statistics-and-analysis/data-and-analysis',
+      })
+    }
+    logger.info({ csvUrl }, 'ingest: starting Care Inspectorate import')
+    const result = await ingestCareInspectorateData(csvUrl)
+    res.json(result)
+  } catch (err) {
+    logger.error({ err: err.message }, 'ingest: Care Inspectorate import failed')
+    next(err)
+  }
+})
+
+// POST /api/v1/ingest/ciw — import Welsh childcare data
+router.post('/ciw', async (req, res, next) => {
+  try {
+    const csvUrl = req.body?.csv_url || req.query.csv_url
+    if (!csvUrl) {
+      return res.status(400).json({
+        error: 'csv_url is required. Download from https://careinspectorate.wales/service-directory',
+      })
+    }
+    logger.info({ csvUrl }, 'ingest: starting CIW import')
+    const result = await ingestCiwData(csvUrl)
+    res.json(result)
+  } catch (err) {
+    logger.error({ err: err.message }, 'ingest: CIW import failed')
+    next(err)
+  }
+})
+
+=======
+>>>>>>> origin/main
 // ---------------------------------------------------------------------------
 // POST /api/v1/ingest/full-cycle — run all ingest steps in dependency order
 // ---------------------------------------------------------------------------

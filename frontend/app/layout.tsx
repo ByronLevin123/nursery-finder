@@ -58,6 +58,16 @@ export const metadata: Metadata = {
     images: ['/og-default.png'],
   },
   robots: { index: true, follow: true },
+  other: {
+    // AI search visibility: help AI crawlers and citation engines find
+    // structured data about this site.
+    'ai:description':
+      'NurseryMatch is a free UK nursery comparison platform covering 27,000+ Ofsted-rated nurseries. Search by postcode, compare nurseries, view area family scores, property prices, school data, and parent reviews. Public API available.',
+    'ai:llms.txt': 'https://nurserymatch.com/llms.txt',
+    'citation_title': 'NurseryMatch — Compare UK Nurseries by Ofsted Grade',
+    'citation_public_url': 'https://nurserymatch.com',
+    'citation_language': 'en',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -77,6 +87,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="manifest" href="/manifest.json" />
+        {/* AI search discovery: llms.txt and ai-plugin.json for LLM crawlers,
+            ChatGPT, Perplexity, Claude, and Google AI Overviews */}
+        <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM context file" />
+        <link rel="alternate" type="application/json" href="/.well-known/ai-plugin.json" title="AI plugin manifest" />
         {/* Bing Webmaster Tools verification — set NEXT_PUBLIC_BING_VERIFICATION
             in Vercel to the content value Bing gives you when you add the site. */}
         {bingVerification && <meta name="msvalidate.01" content={bingVerification} />}
