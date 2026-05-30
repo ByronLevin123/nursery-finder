@@ -21,6 +21,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/press`,        changeFrequency: 'monthly', priority: 0.3 },
   ]
 
+  // City landing pages — static list, no API call needed
+  const CITY_SLUGS = [
+    'london', 'birmingham', 'manchester', 'leeds', 'glasgow',
+    'liverpool', 'bristol', 'sheffield', 'edinburgh', 'cardiff',
+    'nottingham', 'newcastle', 'leicester', 'southampton', 'brighton',
+    'cambridge', 'oxford', 'york', 'bath', 'reading',
+  ]
+  const cityEntries: MetadataRoute.Sitemap = CITY_SLUGS.map((slug) => ({
+    url: `${SITE_URL}/nurseries-in-city/${slug}`,
+    changeFrequency: 'weekly' as const,
+    priority: 0.9,
+  }))
+
   let nurseryEntries: MetadataRoute.Sitemap = []
   let districtEntries: MetadataRoute.Sitemap = []
   let townEntries: MetadataRoute.Sitemap = []
@@ -75,6 +88,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     ...staticEntries,
+    { url: `${SITE_URL}/nurseries-in-city`, changeFrequency: 'weekly' as const, priority: 0.9 },
+    ...cityEntries,
     { url: `${SITE_URL}/nurseries-in-town`, changeFrequency: 'weekly' as const, priority: 0.8 },
     { url: `${SITE_URL}/guides`, changeFrequency: 'weekly' as const, priority: 0.7 },
     ...districtEntries,
