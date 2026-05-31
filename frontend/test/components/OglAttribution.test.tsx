@@ -25,12 +25,20 @@ describe('OglAttribution', () => {
 
   it('contains link to the Ofsted register', () => {
     render(<OglAttribution />)
-    const ofstedLink = screen.getByText('Ofsted Early Years Register')
+    const ofstedLink = screen.getByRole('link', { name: 'Ofsted' })
     expect(ofstedLink).toBeInTheDocument()
-    expect(ofstedLink.closest('a')).toHaveAttribute(
+    expect(ofstedLink).toHaveAttribute(
       'href',
       'https://www.gov.uk/government/statistical-data-sets/monthly-management-information-ofsteds-early-years-register'
     )
+  })
+
+  it('contains links to the Scotland and Wales regulators', () => {
+    render(<OglAttribution />)
+    const careInspectorate = screen.getByRole('link', { name: 'Care Inspectorate' })
+    expect(careInspectorate).toHaveAttribute('href', 'https://www.careinspectorate.com/')
+    const ciw = screen.getByRole('link', { name: 'CIW' })
+    expect(ciw).toHaveAttribute('href', 'https://careinspectorate.wales/')
   })
 
   it('opens links in new tab', () => {
