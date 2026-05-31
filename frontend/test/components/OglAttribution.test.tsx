@@ -25,7 +25,7 @@ describe('OglAttribution', () => {
 
   it('contains link to the Ofsted register', () => {
     render(<OglAttribution />)
-    const ofstedLink = screen.getByText('Ofsted Early Years Register')
+    const ofstedLink = screen.getByText('Ofsted')
     expect(ofstedLink).toBeInTheDocument()
     expect(ofstedLink.closest('a')).toHaveAttribute(
       'href',
