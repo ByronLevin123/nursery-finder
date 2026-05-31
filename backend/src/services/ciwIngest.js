@@ -23,7 +23,7 @@ const CIW_GRADE_MAP = {
 
 function parseDate(str) {
   if (!str?.trim()) return null
-  const dmy = str.trim().match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})$/)
+  const dmy = str.trim().match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/)
   if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`
   if (/^\d{4}-\d{2}-\d{2}/.test(str.trim())) return str.trim().slice(0, 10)
   return null
