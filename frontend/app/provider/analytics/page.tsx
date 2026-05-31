@@ -5,6 +5,13 @@ import { useRouter } from 'next/navigation'
 import { useSession } from '@/components/SessionProvider'
 import { API_URL } from '@/lib/api'
 
+interface SearchConsoleStats {
+  clicks: number
+  impressions: number
+  ctr: number
+  position: number
+}
+
 interface NurseryStat {
   urn: string
   name: string
@@ -13,6 +20,13 @@ interface NurseryStat {
   enquiries: { total: number; this_month: number; conversion: number }
   visits: { total: number; upcoming: number; completed: number }
   survey_avg: { overall: number | null; staff: number | null; facilities: number | null; count: number }
+  search_console: SearchConsoleStats | null
+}
+
+interface SearchConsoleMeta {
+  configured: boolean
+  window_days: number
+  site: (SearchConsoleStats & { days: number }) | null
 }
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
@@ -29,6 +43,7 @@ export default function ProviderAnalyticsPage() {
   const router = useRouter()
   const { session, loading: sessionLoading } = useSession()
   const [stats, setStats] = useState<NurseryStat[]>([])
+  const [gsc, setGsc] = useState<SearchConsoleMeta | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -44,6 +59,7 @@ export default function ProviderAnalyticsPage() {
         if (!res.ok) throw new Error('Failed to load analytics')
         const data = await res.json()
         setStats(data.data || [])
+        setGsc(data.search_console || null)
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Something went wrong')
       } finally {
@@ -61,6 +77,34 @@ export default function ProviderAnalyticsPage() {
     <div className="max-w-4xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Provider Analytics</h1>
       {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 mb-4">{error}</div>}
+
+      {gsc && gsc.configured && gsc.site && (
+        <div className="mb-6 border border-gray-200 rounded-xl p-5 bg-blue-50/40">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-gray-900">Google Search performance</h2>
+            <span className="text-xs text-gray-500">Last {gsc.window_days} days</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <StatCard label="Google clicks" value={gsc.site.clicks} sub="from search results" />
+            <StatCard label="Impressions" value={gsc.site.impressions} sub="times shown in search" />
+            <StatCard label="CTR" value={`${gsc.site.ctr}%`} sub="clicks / impressions" />
+            <StatCard label="Avg position" value={gsc.site.position || '-'} sub="lower is better" />
+          </div>
+          <p className="text-xs text-gray-500 mt-3 leading-relaxed">
+            <strong>Google clicks</strong> count visits that arrived from Google search results, measured by
+            Google Search Console. They won&apos;t match <strong>Profile views</strong> below: one Google click
+            can lead to several profile views, and direct, social or referral traffic isn&apos;t counted here at
+            all. Search Console data also lags 2–3 days.
+          </p>
+        </div>
+      )}
+
+      {gsc && !gsc.configured && (
+        <div className="mb-6 p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-500">
+          Connect Google Search Console (set the <code>GSC_*</code> environment variables) to compare your
+          Google search clicks and impressions against the on-site stats below.
+        </div>
+      )}
 
       {stats.length === 0 ? (
         <div className="text-center py-12">
@@ -89,6 +133,29 @@ export default function ProviderAnalyticsPage() {
                   sub={n.survey_avg.count > 0 ? `${n.survey_avg.count} responses` : 'No surveys yet'}
                 />
               </div>
+
+              {gsc?.configured && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                  <StatCard
+                    label="Google clicks"
+                    value={n.search_console ? n.search_console.clicks : 0}
+                    sub="from Google search"
+                  />
+                  <StatCard
+                    label="Google impressions"
+                    value={n.search_console ? n.search_console.impressions : 0}
+                    sub="shown in search"
+                  />
+                  <StatCard
+                    label="Google CTR"
+                    value={n.search_console ? `${n.search_console.ctr}%` : '0%'}
+                  />
+                  <StatCard
+                    label="Avg position"
+                    value={n.search_console && n.search_console.position ? n.search_console.position : '-'}
+                  />
+                </div>
+              )}
 
               {n.survey_avg.count > 0 && (
                 <div className="bg-gray-50 rounded-lg p-3">

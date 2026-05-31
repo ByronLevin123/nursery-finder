@@ -64,6 +64,7 @@ import billingRouter, { billingWebhookHandler } from './routes/billing.js'
 // Admin dashboard
 import adminRouter from './routes/admin.js'
 import adminStatusRouter from './routes/adminStatus.js'
+import searchConsoleRouter from './routes/searchConsole.js'
 
 // Provider acquisition — invite outreach
 import providerInvitesRouter from './routes/providerInvites.js'
@@ -310,6 +311,7 @@ app.use('/api/v1/notifications', notificationsRouter)
 app.use('/api/v1/billing', billingRouter)
 app.use('/api/v1/admin', adminRouter)
 app.use('/api/v1/admin/status', adminStatusRouter)
+app.use('/api/v1/admin/search-console', searchConsoleRouter)
 app.use('/api/v1/admin/provider-invites', providerInvitesRouter)
 app.use('/api/v1/admin/promotions', adminPromotionsRouter)
 app.use('/api/v1/admin/marketing', marketingRouter)

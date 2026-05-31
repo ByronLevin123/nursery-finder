@@ -27,6 +27,12 @@ interface AdminStats {
   enquiries_this_month: number
 }
 
+interface SearchConsoleSite {
+  configured: boolean
+  window_days: number
+  site: { clicks: number; impressions: number; ctr: number; position: number } | null
+}
+
 function StatCard({
   label,
   value,
@@ -197,6 +203,7 @@ function ActivityFeed({ items }: { items: AdminActivityItem[] }) {
 export default function AdminOverview() {
   const { role } = useSession()
   const [stats, setStats] = useState<AdminStats | null>(null)
+  const [gsc, setGsc] = useState<SearchConsoleSite | null>(null)
   const [growth, setGrowth] = useState<AdminGrowthStats | null>(null)
   const [quality, setQuality] = useState<AdminDataQuality | null>(null)
   const [activity, setActivity] = useState<AdminActivityItem[]>([])
@@ -211,12 +218,13 @@ export default function AdminOverview() {
       try {
         const token = await getAuthToken()
         if (!token) throw new Error('No auth token')
-        const [statsData, growthData, qualityData, activityData, funnelData] = await Promise.all([
+        const [statsData, growthData, qualityData, activityData, funnelData, gscData] = await Promise.all([
           adminFetch('/stats', token).catch((e) => { console.error('admin /stats failed:', e.message); return null }),
           getAdminGrowthStats(token).catch(() => null),
           getAdminDataQuality(token).catch(() => null),
           getAdminActivity(token, 50).catch(() => []),
           adminFetch('/funnel?days=30', token).catch(() => null),
+          adminFetch('/search-console/site', token).catch(() => null),
         ])
         if (!cancelled) {
           if (!statsData) {
@@ -229,6 +237,7 @@ export default function AdminOverview() {
             enquiries_this_month: statsData?.enquiries?.this_month ?? statsData?.enquiries_this_month ?? 0,
           } : null
           setStats(mapped)
+          setGsc(gscData)
           setGrowth(growthData)
           setQuality(qualityData)
           setActivity(activityData)
@@ -412,6 +421,42 @@ export default function AdminOverview() {
               <p className="text-2xl font-bold text-gray-900">{(stats.visitors.total ?? 0).toLocaleString()}</p>
             </div>
           </div>
+        </>
+      )}
+
+      {/* Google Search Console */}
+      {gsc?.configured && gsc.site && (
+        <>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-gray-700">Google Search Console</h3>
+            <span className="text-xs text-gray-400">Last {gsc.window_days} days</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-2">
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+              <p className="text-sm font-medium text-gray-500 mb-1">Google clicks</p>
+              <p className="text-2xl font-bold text-gray-900">{(gsc.site.clicks ?? 0).toLocaleString()}</p>
+              <p className="text-xs text-gray-400 mt-1">from search results</p>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+              <p className="text-sm font-medium text-gray-500 mb-1">Impressions</p>
+              <p className="text-2xl font-bold text-gray-900">{(gsc.site.impressions ?? 0).toLocaleString()}</p>
+              <p className="text-xs text-gray-400 mt-1">shown in search</p>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+              <p className="text-sm font-medium text-gray-500 mb-1">CTR</p>
+              <p className="text-2xl font-bold text-gray-900">{gsc.site.ctr}%</p>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+              <p className="text-sm font-medium text-gray-500 mb-1">Avg position</p>
+              <p className="text-2xl font-bold text-gray-900">{gsc.site.position || '-'}</p>
+              <p className="text-xs text-gray-400 mt-1">lower is better</p>
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mb-8">
+            Google clicks count entries from Google search and won&apos;t equal site visitors or profile
+            views — one click can become several on-site pageviews, and direct/referral traffic isn&apos;t
+            included. Search Console data lags 2–3 days.
+          </p>
         </>
       )}
 
