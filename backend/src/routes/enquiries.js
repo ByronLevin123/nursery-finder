@@ -104,9 +104,12 @@ router.post('/', requireAuth, enquiryLimiter, verifyTurnstile, async (req, res, 
             title: 'Enquiry for unclaimed nursery',
             body: `A parent enquired about ${nursery.name} (URN ${nursery.urn}).`,
           }))
-          db.from('notifications').insert(notifs).then(() => {}).catch((err) => {
-            logger.warn({ err: err?.message }, 'enquiry admin notification insert failed')
-          })
+          db.from('notifications')
+            .insert(notifs)
+            .then(() => {})
+            .catch((err) => {
+              logger.warn({ err: err?.message }, 'enquiry admin notification insert failed')
+            })
         }
         logger.info({ nurseryId: nursery.id }, 'enquiry queued for admin — nursery unclaimed')
         continue

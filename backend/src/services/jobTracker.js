@@ -23,10 +23,7 @@ export async function startJob(jobType, triggeredBy) {
 export async function updateJobProgress(jobId, result) {
   if (!db || !jobId) return
   try {
-    await db
-      .from('job_runs')
-      .update({ result })
-      .eq('id', jobId)
+    await db.from('job_runs').update({ result }).eq('id', jobId)
   } catch (err) {
     logger.warn({ err: err.message }, 'jobTracker: failed to update job progress')
   }

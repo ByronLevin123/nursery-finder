@@ -48,9 +48,11 @@ async function getDailyUsage(keyId) {
 
 function incrementUsage(keyId) {
   const today = new Date().toISOString().split('T')[0]
-  Promise.resolve(db.rpc('increment_developer_usage', { p_key_id: keyId, p_date: today })).catch((err) => {
-    logger.warn({ err: err?.message, keyId }, 'apiKeyAuth: usage increment failed')
-  })
+  Promise.resolve(db.rpc('increment_developer_usage', { p_key_id: keyId, p_date: today })).catch(
+    (err) => {
+      logger.warn({ err: err?.message, keyId }, 'apiKeyAuth: usage increment failed')
+    }
+  )
   db.from('developer_api_keys')
     .update({ last_used_at: new Date().toISOString() })
     .eq('id', keyId)

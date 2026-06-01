@@ -39,17 +39,20 @@ async function checkSupabase() {
 }
 
 async function checkResend() {
-  if (!process.env.RESEND_API_KEY) return { status: 'unconfigured', message: 'RESEND_API_KEY not set' }
+  if (!process.env.RESEND_API_KEY)
+    return { status: 'unconfigured', message: 'RESEND_API_KEY not set' }
   const res = await fetch('https://api.resend.com/domains', {
     headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}` },
   })
-  if (res.status === 401 || res.status === 403) return { status: 'error', error: `Auth failed (${res.status})` }
+  if (res.status === 401 || res.status === 403)
+    return { status: 'error', error: `Auth failed (${res.status})` }
   if (!res.ok) return { status: 'error', error: `HTTP ${res.status}` }
   return { status: 'ok' }
 }
 
 async function checkStripe() {
-  if (!process.env.STRIPE_SECRET_KEY) return { status: 'unconfigured', message: 'STRIPE_SECRET_KEY not set' }
+  if (!process.env.STRIPE_SECRET_KEY)
+    return { status: 'unconfigured', message: 'STRIPE_SECRET_KEY not set' }
   const res = await fetch('https://api.stripe.com/v1/balance', {
     headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` },
   })
@@ -76,7 +79,8 @@ async function checkOsrm() {
 }
 
 async function checkGooglePlaces() {
-  if (!process.env.GOOGLE_PLACES_API_KEY) return { status: 'unconfigured', message: 'GOOGLE_PLACES_API_KEY not set' }
+  if (!process.env.GOOGLE_PLACES_API_KEY)
+    return { status: 'unconfigured', message: 'GOOGLE_PLACES_API_KEY not set' }
   const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
     method: 'POST',
     headers: {
@@ -86,7 +90,8 @@ async function checkGooglePlaces() {
     },
     body: JSON.stringify({ textQuery: 'nursery London', maxResultCount: 1 }),
   })
-  if (res.status === 403 || res.status === 401) return { status: 'error', error: `Auth failed (${res.status})` }
+  if (res.status === 403 || res.status === 401)
+    return { status: 'error', error: `Auth failed (${res.status})` }
   if (!res.ok) return { status: 'error', error: `HTTP ${res.status}` }
   return { status: 'ok' }
 }
@@ -98,15 +103,21 @@ async function checkPoliceApi() {
 }
 
 async function checkEnvironmentAgency() {
-  const res = await fetch('https://environment.data.gov.uk/flood-monitoring/id/floodAreas?lat=51.5&long=-0.12&dist=2')
+  const res = await fetch(
+    'https://environment.data.gov.uk/flood-monitoring/id/floodAreas?lat=51.5&long=-0.12&dist=2'
+  )
   if (!res.ok) return { status: 'error', error: `HTTP ${res.status}` }
   return { status: 'ok' }
 }
 
 async function checkPropertyData() {
-  if (!process.env.PROPERTYDATA_API_KEY) return { status: 'unconfigured', message: 'PROPERTYDATA_API_KEY not set' }
-  const res = await fetch(`https://api.propertydata.co.uk/prices?key=${process.env.PROPERTYDATA_API_KEY}&postcode=SW1A1AA`)
-  if (res.status === 401 || res.status === 403) return { status: 'error', error: `Auth failed (${res.status})` }
+  if (!process.env.PROPERTYDATA_API_KEY)
+    return { status: 'unconfigured', message: 'PROPERTYDATA_API_KEY not set' }
+  const res = await fetch(
+    `https://api.propertydata.co.uk/prices?key=${process.env.PROPERTYDATA_API_KEY}&postcode=SW1A1AA`
+  )
+  if (res.status === 401 || res.status === 403)
+    return { status: 'error', error: `Auth failed (${res.status})` }
   if (!res.ok) return { status: 'error', error: `HTTP ${res.status}` }
   return { status: 'ok' }
 }
@@ -120,15 +131,19 @@ async function checkLandRegistry() {
 }
 
 async function checkOfsted() {
-  const res = await fetch('https://www.gov.uk/government/statistical-data-sets/childcare-providers-and-inspections-management-information', {
-    headers: { 'User-Agent': 'NurseryMatch/1.0 (status check)' },
-  })
+  const res = await fetch(
+    'https://www.gov.uk/government/statistical-data-sets/childcare-providers-and-inspections-management-information',
+    {
+      headers: { 'User-Agent': 'NurseryMatch/1.0 (status check)' },
+    }
+  )
   if (!res.ok) return { status: 'error', error: `HTTP ${res.status}` }
   return { status: 'ok' }
 }
 
 async function checkAnthropic() {
-  if (!process.env.ANTHROPIC_API_KEY) return { status: 'unconfigured', message: 'ANTHROPIC_API_KEY not set' }
+  if (!process.env.ANTHROPIC_API_KEY)
+    return { status: 'unconfigured', message: 'ANTHROPIC_API_KEY not set' }
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -148,7 +163,8 @@ async function checkAnthropic() {
 }
 
 async function checkTurnstile() {
-  if (!process.env.TURNSTILE_SECRET_KEY) return { status: 'unconfigured', message: 'TURNSTILE_SECRET_KEY not set' }
+  if (!process.env.TURNSTILE_SECRET_KEY)
+    return { status: 'unconfigured', message: 'TURNSTILE_SECRET_KEY not set' }
   return { status: 'ok', detail: 'Key configured' }
 }
 

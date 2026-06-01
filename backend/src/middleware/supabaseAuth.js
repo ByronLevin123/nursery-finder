@@ -79,7 +79,11 @@ export async function requireVerifiedEmail(req, res, next) {
   if (req.user.email_confirmed_at) return next()
   // Admins (created via dashboard) may not have email_confirmed_at set
   if (db) {
-    const { data } = await db.from('user_profiles').select('role').eq('id', req.user.id).maybeSingle()
+    const { data } = await db
+      .from('user_profiles')
+      .select('role')
+      .eq('id', req.user.id)
+      .maybeSingle()
     if (data?.role === 'admin') return next()
   }
   return res.status(403).json({

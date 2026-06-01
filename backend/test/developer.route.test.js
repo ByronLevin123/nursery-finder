@@ -24,22 +24,60 @@ function makeQueryBuilder(table) {
   }
 
   const builder = {
-    select() { return builder },
-    insert(row) { state.op = 'insert'; state.insertRow = row; return builder },
-    update(row) { state.op = 'update'; return builder },
-    upsert(row) { state.op = 'upsert'; return builder },
-    eq(col, val) { state.filters.push([col, 'eq', val]); return builder },
-    in(col, vals) { state.filters.push([col, 'in', vals]); return builder },
-    neq() { return builder },
-    not() { return builder },
-    is() { return builder },
-    ilike() { return builder },
-    gte() { return builder },
-    lte() { return builder },
-    order() { return builder },
-    limit() { return builder },
-    single() { return builder._resolve(true, false) },
-    maybeSingle() { return builder._resolve(true, true) },
+    select() {
+      return builder
+    },
+    insert(row) {
+      state.op = 'insert'
+      state.insertRow = row
+      return builder
+    },
+    update(row) {
+      state.op = 'update'
+      return builder
+    },
+    upsert(row) {
+      state.op = 'upsert'
+      return builder
+    },
+    eq(col, val) {
+      state.filters.push([col, 'eq', val])
+      return builder
+    },
+    in(col, vals) {
+      state.filters.push([col, 'in', vals])
+      return builder
+    },
+    neq() {
+      return builder
+    },
+    not() {
+      return builder
+    },
+    is() {
+      return builder
+    },
+    ilike() {
+      return builder
+    },
+    gte() {
+      return builder
+    },
+    lte() {
+      return builder
+    },
+    order() {
+      return builder
+    },
+    limit() {
+      return builder
+    },
+    single() {
+      return builder._resolve(true, false)
+    },
+    maybeSingle() {
+      return builder._resolve(true, true)
+    },
     then(onFulfilled, onRejected) {
       return builder._resolve(false, false).then(onFulfilled, onRejected)
     },
@@ -61,7 +99,8 @@ function makeQueryBuilder(table) {
 
       let result = applyFilters(rows)
       if (single || maybe) {
-        if (result.length === 0 && !maybe) return { data: null, error: { message: 'Row not found' } }
+        if (result.length === 0 && !maybe)
+          return { data: null, error: { message: 'Row not found' } }
         return { data: result[0] ?? null, error: null }
       }
       return { data: result, error: null }
@@ -156,7 +195,11 @@ describe('POST /api/v1/developer/register', () => {
     const res = await request(app)
       .post('/api/v1/developer/register')
       .set('Authorization', `Bearer ${validToken}`)
-      .send({ company_name: 'TestCo Ltd', website_url: 'https://testco.com', use_case: 'Property portal' })
+      .send({
+        company_name: 'TestCo Ltd',
+        website_url: 'https://testco.com',
+        use_case: 'Property portal',
+      })
     expect(res.status).toBe(201)
     expect(res.body.account).toBeDefined()
     expect(res.body.account.company_name).toBe('TestCo Ltd')

@@ -210,7 +210,10 @@ router.post('/ads/campaigns', async (req, res, next) => {
       return res.status(400).json({ error: 'dailyBudget must be between 0.01 and 10000' })
     }
 
-    logger.info({ name, dailyBudget, keywordCount: keywords?.length }, 'ads campaign creation requested')
+    logger.info(
+      { name, dailyBudget, keywordCount: keywords?.length },
+      'ads campaign creation requested'
+    )
 
     const { data, error } = await googleAdsService.createCampaign({
       name,
@@ -342,9 +345,10 @@ router.patch('/ads/campaigns/:id', async (req, res, next) => {
 
     // Update via Google Ads API if available and campaign has a Google ID
     if (googleAdsService.isAvailable() && campaign.google_campaign_id) {
-      const result = status === 'paused'
-        ? await googleAdsService.pauseCampaign(campaign.google_campaign_id)
-        : await googleAdsService.resumeCampaign(campaign.google_campaign_id)
+      const result =
+        status === 'paused'
+          ? await googleAdsService.pauseCampaign(campaign.google_campaign_id)
+          : await googleAdsService.resumeCampaign(campaign.google_campaign_id)
 
       if (result.error) {
         return res.status(502).json({ error: result.error })

@@ -74,7 +74,7 @@ function customerId() {
 
 function defaultHeaders(token) {
   const headers = {
-    'Authorization': `Bearer ${token}`,
+    Authorization: `Bearer ${token}`,
     'developer-token': process.env.GOOGLE_ADS_DEVELOPER_TOKEN,
     'Content-Type': 'application/json',
   }

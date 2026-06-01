@@ -115,11 +115,14 @@ export async function getPostAnalytics(postId) {
   }
 
   try {
-    const res = await fetch(`${BUFFER_BASE}/updates/${encodeURIComponent(postId)}.json?${authParams()}`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      signal: AbortSignal.timeout(15_000),
-    })
+    const res = await fetch(
+      `${BUFFER_BASE}/updates/${encodeURIComponent(postId)}.json?${authParams()}`,
+      {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(15_000),
+      }
+    )
 
     if (!res.ok) {
       const body = await res.text()
