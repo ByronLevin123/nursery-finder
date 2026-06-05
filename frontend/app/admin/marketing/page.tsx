@@ -566,25 +566,25 @@ function SocialMediaTab() {
               Buffer is not configured
             </h3>
             <p className="text-sm text-amber-700 mb-3">
-              To connect your social media accounts, set up Buffer with the following
-              environment variables in your backend:
+              To connect your social media accounts, add your Buffer personal API key to the
+              backend environment:
             </p>
             <div className="bg-white border border-amber-200 rounded-lg p-3 font-mono text-xs text-gray-800 space-y-1">
-              <p>BUFFER_ACCESS_TOKEN=your_buffer_access_token</p>
-              <p>BUFFER_CLIENT_ID=your_buffer_client_id</p>
-              <p>BUFFER_CLIENT_SECRET=your_buffer_client_secret</p>
+              <p>BUFFER_API_TOKEN=your_buffer_api_key</p>
+              <p># optional — defaults to your first organization</p>
+              <p>BUFFER_ORGANIZATION_ID=your_organization_id</p>
             </div>
             <p className="text-xs text-amber-600 mt-3">
               Visit{' '}
               <a
-                href="https://buffer.com/developers/api"
+                href="https://developers.buffer.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline"
               >
-                buffer.com/developers/api
+                developers.buffer.com
               </a>{' '}
-              to create an application and obtain credentials.
+              to generate a personal API key for the Buffer API.
             </p>
           </div>
         ) : (
