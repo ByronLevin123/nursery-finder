@@ -193,8 +193,6 @@ export async function createCampaign({ name, dailyBudget, keywords, headlines, d
   }
 
   try {
-    const cid = customerId()
-
     // 1. Create campaign budget
     const budgetRes = await mutate('campaignBudgets', [
       {

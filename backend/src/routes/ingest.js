@@ -1,9 +1,6 @@
 import express from 'express'
 import { ingestOfstedRegister } from '../services/ofstedIngest.js'
-import {
-  ingestSchoolsFromCsv,
-  geocodeSchoolsBatch as geocodeSchoolsBatchLegacy,
-} from '../services/schoolIngest.js'
+import { ingestSchoolsFromCsv } from '../services/schoolIngest.js'
 import { ingestSchoolsFromCsvUrl, geocodeSchoolsBatch } from '../services/schoolsIngest.js'
 import { ingestCareInspectorateData } from '../services/careInspectorateIngest.js'
 import { ingestCiwData } from '../services/ciwIngest.js'
@@ -334,7 +331,7 @@ async function runFullCycle(jobId) {
       current_layer: layers.indexOf(layer),
     })
 
-    const results = await Promise.allSettled(
+    await Promise.allSettled(
       layer.map(async (stepId) => {
         const step = FULL_CYCLE_STEPS[stepId]
         // Skip if any dependency failed

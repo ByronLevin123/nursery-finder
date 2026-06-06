@@ -1,7 +1,7 @@
 import express from 'express'
 import db from '../db.js'
 import { geocodePostcode } from '../services/geocoding.js'
-import { searchCache, searchCacheKey } from '../services/cache.js'
+import { searchCache } from '../services/cache.js'
 import { logger } from '../logger.js'
 
 const router = express.Router()
