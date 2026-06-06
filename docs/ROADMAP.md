@@ -33,24 +33,26 @@ Audit query (paste in SQL editor) reports what's still missing — see `DEPLOYME
 ### 2.1 Marketing / Buffer
 - ✅ Buffer GraphQL service (channels + createPost), text posts
 - ✅ FE ↔ BE contract aligned (migration 060)
-- 🟡 **Image posts (Instagram)** — `imageUrl` on createPost + UI field + storage
-- ⬜ Social analytics sync (impressions/engagement stay 0 — no Buffer analytics pull)
-- ⬜ AI Content tab "Post to Buffer" sends empty channel list — add picker or remove
+- ✅ **Image posts (Instagram)** — `imageUrl` on createPost + UI field + storage (061)
+- ✅ AI Content tab "Post to Buffer" — channel picker + optional image + success state
+- ⬜ Social analytics sync (impressions/engagement stay 0) — **blocked: needs the
+  verified Buffer analytics GraphQL query, only discoverable with a live token**
 - 👤 Verify Buffer GraphQL field names against live API once token is set
 - 👤 Buffer account: connect Instagram/Facebook/X channels; note IG needs an image + may use reminders vs direct publish
 
 ### 2.2 Jobs / scheduling (Render)
 - ✅ `runTrackedJob` wraps crons → visible in admin Jobs panel
 - ✅ Crime cron implemented; sitemap cron removed; weekly digests deduped
-- 🟡 **Render worker service** so worker-only jobs (digests, drip, reminders, etc.) actually run
-- 🟡 Consolidate scheduling on the worker (add `aggregate-areas`; retire overlapping Render crons → no double-runs)
-- ⬜ `job_runs` retention/prune job (unbounded growth)
-- ⬜ Admin job-health summary endpoint/widget
+- ✅ **Render worker service** (render.yaml) so worker-only jobs actually run
+- ✅ Scheduling consolidated on the worker (added `aggregate_areas`; retired overlapping Render crons → no double-runs)
+- ✅ `job_runs` retention/prune job (daily, keepDays=30)
+- ✅ Admin job-health summary endpoint (`GET /api/v1/admin/jobs/summary`)
 
 ### 2.3 Platform / housekeeping
-- ⬜ Migration tracking table + runner
-- ⬜ Pre-existing lint warnings (unused vars in ingest.js, schools.js, googleAdsService.js)
-- ⬜ `FRESH_INSTALL_MIGRATION.sql` regenerate vs 060/061
+- ✅ Pre-existing lint warnings cleared (eslint reports 0 problems)
+- ⬜ Migration tracking table + runner — **needs a decision** (changes the manual
+  Supabase SQL-editor workflow); not started to avoid an unrequested mechanism
+- ⬜ `FRESH_INSTALL_MIGRATION.sql` regenerate vs 060/061 (low priority; only affects brand-new installs)
 
 ## 3. Integrations — wired in code ✅, need secrets set 👤
 
