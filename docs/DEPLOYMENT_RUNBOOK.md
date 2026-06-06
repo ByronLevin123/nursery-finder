@@ -65,12 +65,32 @@ Set every value once; both the API and the worker read from this group.
 
 ---
 
-## C. Supabase migrations (SQL editor, in order)
+## C. Supabase migrations
 
+### Option 1 — migration runner (recommended)
+From `backend/`, with `DATABASE_URL` set to the Supabase Postgres URI
+(Supabase → Settings → Database → Connection string → URI):
+
+```bash
+# First time on the EXISTING prod DB: apply the new ones manually (Option 2),
+# then adopt the tracker so old migrations are never re-run:
+npm run migrate:baseline      # records all current files as applied (runs no SQL)
+
+# From then on:
+npm run migrate:status        # list applied / pending
+npm run migrate               # apply pending migrations in order (transactional)
+```
+
+> ⚠️ Run `migrate:baseline` **once**, only after your DB already matches the
+> latest migration — it marks files applied without executing them, so it must
+> not be used to skip migrations you actually still need.
+
+### Option 2 — SQL editor (manual), in order
 Apply any not yet applied:
 - `059_marketing_hub.sql` (shipped in #57)
 - `060_marketing_hub_fe_alignment.sql`
 - `061_marketing_post_image.sql`
+- `062_schema_migrations.sql` (the tracking table)
 
 **Audit — what's still missing?** Paste this and apply anything that reports MISSING:
 

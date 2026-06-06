@@ -35,8 +35,9 @@ Audit query (paste in SQL editor) reports what's still missing — see `DEPLOYME
 - ✅ FE ↔ BE contract aligned (migration 060)
 - ✅ **Image posts (Instagram)** — `imageUrl` on createPost + UI field + storage (061)
 - ✅ AI Content tab "Post to Buffer" — channel picker + optional image + success state
-- ⬜ Social analytics sync (impressions/engagement stay 0) — **blocked: needs the
-  verified Buffer analytics GraphQL query, only discoverable with a live token**
+- ⛔ Social analytics sync — **not possible: Buffer's GraphQL API does not expose
+  per-post analytics (impressions/engagement/reach) at all; it's dashboard-only,
+  on their roadmap.** UI now links to the Buffer Analyze dashboard instead.
 - 👤 Verify Buffer GraphQL field names against live API once token is set
 - 👤 Buffer account: connect Instagram/Facebook/X channels; note IG needs an image + may use reminders vs direct publish
 
@@ -50,8 +51,8 @@ Audit query (paste in SQL editor) reports what's still missing — see `DEPLOYME
 
 ### 2.3 Platform / housekeeping
 - ✅ Pre-existing lint warnings cleared (eslint reports 0 problems)
-- ⬜ Migration tracking table + runner — **needs a decision** (changes the manual
-  Supabase SQL-editor workflow); not started to avoid an unrequested mechanism
+- ✅ Migration tracking table (`062`) + runner (`backend/scripts/migrate.js`,
+  `npm run migrate:status|migrate|migrate:baseline`)
 - ⬜ `FRESH_INSTALL_MIGRATION.sql` regenerate vs 060/061 (low priority; only affects brand-new installs)
 
 ## 3. Integrations — wired in code ✅, need secrets set 👤

@@ -830,7 +830,19 @@ function SocialMediaTab() {
 
       {/* Recent posts */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Posts</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Recent Posts</h2>
+        <p className="text-xs text-gray-400 mb-4">
+          Engagement metrics (impressions, reach) live in your{' '}
+          <a
+            href="https://buffer.com/analyze"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-gray-600"
+          >
+            Buffer Analyze dashboard
+          </a>{' '}
+          — Buffer&apos;s API does not expose per-post analytics yet.
+        </p>
 
         {loadingPosts ? (
           <div className="text-center text-gray-500 py-6">Loading...</div>
