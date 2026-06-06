@@ -1506,6 +1506,45 @@ router.get('/jobs/recent', async (req, res, next) => {
 })
 
 // ---------------------------------------------------------------------------
+// GET /jobs/summary — latest run per job_type with a health flag
+// (must be defined before /jobs/:id so it isn't captured by the :id param)
+// ---------------------------------------------------------------------------
+router.get('/jobs/summary', async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+
+    // Pull a bounded recent window and reduce to the latest run per job_type.
+    const { data, error } = await db
+      .from('job_runs')
+      .select('*')
+      .order('started_at', { ascending: false })
+      .limit(500)
+    if (error) throw error
+
+    const latestByType = {}
+    for (const run of data || []) {
+      if (!latestByType[run.job_type]) latestByType[run.job_type] = run
+    }
+
+    const summary = Object.values(latestByType)
+      .map((run) => ({
+        job_type: run.job_type,
+        status: run.status,
+        started_at: run.started_at,
+        completed_at: run.completed_at,
+        result: run.result ?? null,
+        healthy: run.status === 'completed' || run.status === 'running',
+      }))
+      .sort((a, b) => a.job_type.localeCompare(b.job_type))
+
+    res.json({ data: summary })
+  } catch (err) {
+    logger.error({ err: err?.message }, 'admin jobs/summary failed')
+    next(err)
+  }
+})
+
+// ---------------------------------------------------------------------------
 // GET /jobs/:id — single job run status
 // ---------------------------------------------------------------------------
 router.get('/jobs/:id', async (req, res, next) => {

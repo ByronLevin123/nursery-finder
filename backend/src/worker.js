@@ -16,6 +16,7 @@ import { processOfstedChangeNotifications } from './services/ofstedChangeNotifie
 import { syncGooglePlacesData, refreshStaleGoogleData } from './services/googlePlaces.js'
 import { refreshCrimeForDistricts } from './services/policeApi.js'
 import { runTrackedJob } from './services/jobRunner.js'
+import { pruneJobRuns } from './services/jobTracker.js'
 import db from './db.js'
 import { logger } from './logger.js'
 
@@ -198,6 +199,11 @@ if (process.env.SELF_PING_URL) {
     }
   })
 }
+
+// Daily 2:15am: prune job_runs older than 30 days (keeps the table bounded)
+cron.schedule('15 2 * * *', () =>
+  runTrackedJob('job_runs_prune', () => pruneJobRuns({ keepDays: 30 }))
+)
 
 // Daily 6am: snapshot admin reports cache
 cron.schedule('0 6 * * *', () =>
