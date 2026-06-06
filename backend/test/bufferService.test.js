@@ -134,6 +134,33 @@ describe('createPost', () => {
     expect(sent.variables.text).toBe('Hello parents')
   })
 
+  it('attaches an image via the imageUrl argument and variable', async () => {
+    const fetchMock = vi
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(jsonResponse({ data: { createPost: { post: { id: 'p3' } } } }))
+
+    await createPost({
+      text: 'Look',
+      channelId: 'ch-1',
+      imageUrl: 'https://example.com/a.png',
+    })
+    const sent = bodyOf(fetchMock.mock.calls[0])
+    expect(sent.query).toContain('$imageUrl: String!')
+    expect(sent.query).toContain('imageUrl: $imageUrl')
+    expect(sent.variables.imageUrl).toBe('https://example.com/a.png')
+  })
+
+  it('omits the imageUrl argument entirely when no image is given', async () => {
+    const fetchMock = vi
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(jsonResponse({ data: { createPost: { post: { id: 'p4' } } } }))
+
+    await createPost({ text: 'No image', channelId: 'ch-1' })
+    const sent = bodyOf(fetchMock.mock.calls[0])
+    expect(sent.query).not.toContain('imageUrl')
+    expect(sent.variables.imageUrl).toBeUndefined()
+  })
+
   it('custom-schedules when scheduledAt is provided', async () => {
     const fetchMock = vi
       .spyOn(global, 'fetch')

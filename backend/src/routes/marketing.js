@@ -252,7 +252,12 @@ router.post('/social/post', async (req, res, next) => {
       return res.status(503).json({ error: 'Buffer is not configured' })
     }
 
-    const { text, profile_ids: profileIds, scheduled_at: scheduledAt } = req.body
+    const {
+      text,
+      profile_ids: profileIds,
+      scheduled_at: scheduledAt,
+      image_url: imageUrl,
+    } = req.body
 
     if (!text || !profileIds?.length) {
       return res.status(400).json({ error: 'text and profile_ids are required' })
@@ -265,14 +270,29 @@ router.post('/social/post', async (req, res, next) => {
       platformById[c.id] = c.service
     }
 
+    // Instagram (and other image-first networks) cannot post text only.
+    if (!imageUrl) {
+      const imageRequired = profileIds.filter((id) => platformById[id] === 'instagram')
+      if (imageRequired.length > 0) {
+        return res.status(400).json({
+          error: 'Instagram posts require an image. Add an image URL and try again.',
+        })
+      }
+    }
+
     logger.info(
-      { channelCount: profileIds.length, scheduled: !!scheduledAt },
+      { channelCount: profileIds.length, scheduled: !!scheduledAt, hasImage: !!imageUrl },
       'social post requested'
     )
 
     const results = []
     for (const channelId of profileIds) {
-      const { data, error } = await bufferService.createPost({ text, channelId, scheduledAt })
+      const { data, error } = await bufferService.createPost({
+        text,
+        channelId,
+        scheduledAt,
+        imageUrl,
+      })
       results.push({ channelId, postId: data?.id || null, error })
     }
 
@@ -293,6 +313,7 @@ router.post('/social/post', async (req, res, next) => {
         platform: platforms[0] || 'twitter',
         platforms,
         profile_ids: succeeded.map((r) => r.channelId),
+        image_url: imageUrl || null,
         status,
         buffer_post_id: succeeded[0]?.postId || null,
         scheduled_at: scheduledAt || null,

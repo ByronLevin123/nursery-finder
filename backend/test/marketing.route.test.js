@@ -164,6 +164,54 @@ describe('social', () => {
     expect(rows[0].platforms).toEqual(['twitter'])
     expect(rows[0].status).toBe('posted')
   })
+
+  it('POST /social/post stores the image_url when provided', async () => {
+    const res = await asAdmin(request(app).post('/api/v1/admin/marketing/social/post')).send({
+      text: 'Look at our new nursery',
+      profile_ids: ['ch-1'],
+      image_url: 'https://nurserymatch.com/instagram/promo.png',
+    })
+    expect(res.status).toBe(200)
+    const rows = getTable('marketing_posts')
+    expect(rows[0].image_url).toBe('https://nurserymatch.com/instagram/promo.png')
+  })
+
+  it('POST /social/post rejects an Instagram post with no image (400)', async () => {
+    h.profiles = [
+      {
+        id: 'ig-1',
+        service: 'instagram',
+        service_username: 'nm',
+        avatar_url: null,
+        connected: true,
+      },
+    ]
+    const res = await asAdmin(request(app).post('/api/v1/admin/marketing/social/post')).send({
+      text: 'No image here',
+      profile_ids: ['ig-1'],
+    })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/instagram/i)
+  })
+
+  it('POST /social/post allows an Instagram post when an image is attached', async () => {
+    h.profiles = [
+      {
+        id: 'ig-1',
+        service: 'instagram',
+        service_username: 'nm',
+        avatar_url: null,
+        connected: true,
+      },
+    ]
+    const res = await asAdmin(request(app).post('/api/v1/admin/marketing/social/post')).send({
+      text: 'With an image',
+      profile_ids: ['ig-1'],
+      image_url: 'https://nurserymatch.com/instagram/promo.png',
+    })
+    expect(res.status).toBe(200)
+    expect(res.body.posted).toBe(1)
+  })
 })
 
 describe('ads', () => {

@@ -78,6 +78,16 @@ cron.schedule('0 1 * * *', () =>
   runTrackedJob('crime_refresh', () => refreshCrimeForDistricts({ limit: 50, staleDays: 30 }))
 )
 
+// Nightly 3:30am: refresh per-district nursery counts (after geocoding at 3am)
+cron.schedule('30 3 * * *', () =>
+  runTrackedJob('aggregate_areas', async () => {
+    if (!db) return { skipped: 'db not configured' }
+    const { data, error } = await db.rpc('refresh_postcode_area_nursery_stats')
+    if (error) throw error
+    return { districts_updated: data }
+  })
+)
+
 // Nightly: recompute nursery dimension scores (4:30am)
 cron.schedule('30 4 * * *', () =>
   runTrackedJob('dimension_scores', () => recomputeAllDimensionScores())

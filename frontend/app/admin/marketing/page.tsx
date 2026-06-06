@@ -448,6 +448,7 @@ function SocialMediaTab() {
 
   // New post form
   const [postText, setPostText] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
   const [selectedProfiles, setSelectedProfiles] = useState<string[]>([])
   const [scheduleDate, setScheduleDate] = useState('')
   const [scheduleTime, setScheduleTime] = useState('')
@@ -528,6 +529,9 @@ function SocialMediaTab() {
         profile_ids: selectedProfiles,
         schedule,
       }
+      if (imageUrl.trim()) {
+        body.image_url = imageUrl.trim()
+      }
       if (schedule && scheduleDate && scheduleTime) {
         body.scheduled_at = `${scheduleDate}T${scheduleTime}:00.000Z`
       }
@@ -541,6 +545,7 @@ function SocialMediaTab() {
         throw new Error(errData.error || 'Failed to post')
       }
       setPostText('')
+      setImageUrl('')
       setSelectedProfiles([])
       setScheduleDate('')
       setScheduleTime('')
@@ -644,6 +649,25 @@ function SocialMediaTab() {
                 placeholder="What would you like to share?"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-y"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Image URL{' '}
+                <span className="text-gray-400 font-normal">
+                  (optional — required for Instagram)
+                </span>
+              </label>
+              <input
+                type="url"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://nurserymatch.com/instagram/your-image.png"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              />
+              <p className="mt-1 text-xs text-gray-400">
+                Must be a publicly reachable image (Buffer fetches it). JPG/PNG for Instagram.
+              </p>
             </div>
 
             <div>

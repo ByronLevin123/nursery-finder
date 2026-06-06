@@ -142,8 +142,11 @@ export async function getProfiles() {
  * @param {string} opts.text       - Post content
  * @param {string} opts.channelId  - Buffer channel id
  * @param {string} [opts.scheduledAt] - ISO 8601 timestamp (UTC) for scheduling
+ * @param {string} [opts.imageUrl]  - Public image URL to attach. Required by
+ *   image-only networks like Instagram; optional elsewhere. Buffer fetches the
+ *   image from this URL, so it must be publicly reachable.
  */
-export async function createPost({ text, channelId, scheduledAt }) {
+export async function createPost({ text, channelId, scheduledAt, imageUrl }) {
   if (!isAvailable()) {
     return { data: null, error: 'Buffer is not configured (BUFFER_API_TOKEN missing)' }
   }
@@ -152,18 +155,30 @@ export async function createPost({ text, channelId, scheduledAt }) {
   }
 
   // channelId and dueAt are trusted (Buffer-issued / server-generated) values;
-  // JSON.stringify yields a safe GraphQL string literal. The user-supplied text
-  // is passed as a variable so it can never alter the query.
+  // JSON.stringify yields a safe GraphQL string literal. User-supplied text and
+  // imageUrl are passed as variables so they can never alter the query.
   const channelLiteral = JSON.stringify(channelId)
   const scheduling = scheduledAt
     ? `mode: customScheduled, dueAt: ${JSON.stringify(scheduledAt)}`
     : 'mode: addToQueue'
 
+  // Optional image — adds an `imageUrl` argument to the input (and its variable
+  // declaration) only when supplied, matching Buffer's "Create Image Post" form.
+  const varDecls = ['$text: String!']
+  const inputExtra = []
+  const variables = { text }
+  if (imageUrl) {
+    varDecls.push('$imageUrl: String!')
+    inputExtra.push('imageUrl: $imageUrl')
+    variables.imageUrl = imageUrl
+  }
+  const extra = inputExtra.length ? `, ${inputExtra.join(', ')}` : ''
+
   const { data, error } = await graphql(
     `
-      mutation CreatePost($text: String!) {
+      mutation CreatePost(${varDecls.join(', ')}) {
         createPost(
-          input: { text: $text, channelId: ${channelLiteral}, schedulingType: automatic, ${scheduling} }
+          input: { text: $text, channelId: ${channelLiteral}, schedulingType: automatic, ${scheduling}${extra} }
         ) {
           ... on PostActionSuccess {
             post {
@@ -177,7 +192,7 @@ export async function createPost({ text, channelId, scheduledAt }) {
         }
       }
     `,
-    { text }
+    variables
   )
   if (error) return { data: null, error }
 
@@ -188,7 +203,7 @@ export async function createPost({ text, channelId, scheduledAt }) {
   }
 
   const post = result?.post || null
-  logger.info({ postId: post?.id, channelId }, 'buffer post created')
+  logger.info({ postId: post?.id, channelId, hasImage: !!imageUrl }, 'buffer post created')
   return { data: post, error: null }
 }
 
