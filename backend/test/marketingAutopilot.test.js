@@ -127,3 +127,31 @@ describe('runAutopilot', () => {
     expect(r.skipped).toMatch(/claude/i)
   })
 })
+
+describe('runContentSyndication', () => {
+  it('shares a real guide with a tracked /guides link', async () => {
+    const r = await mod.runContentSyndication({ force: true })
+    expect(r.posted).toBe(1)
+    expect(r.slug).toBeTruthy()
+    expect(h.createdPosts[0].text).toContain('/guides/')
+    expect(h.createdPosts[0].text).toContain('utm_campaign=content')
+  })
+
+  it('works without Claude by falling back to the guide excerpt', async () => {
+    h.claude = false
+    const r = await mod.runContentSyndication({ force: true })
+    expect(r.posted).toBe(1)
+  })
+
+  it('skips when disabled and not forced', async () => {
+    process.env.MARKETING_AUTOPILOT_ENABLED = 'false'
+    const r = await mod.runContentSyndication()
+    expect(r.skipped).toBeTruthy()
+  })
+
+  it('skips when Buffer has no channels', async () => {
+    h.profiles = []
+    const r = await mod.runContentSyndication({ force: true })
+    expect(r.skipped).toMatch(/channels/i)
+  })
+})

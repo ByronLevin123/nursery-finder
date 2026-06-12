@@ -17,7 +17,7 @@ import { syncGooglePlacesData, refreshStaleGoogleData } from './services/googleP
 import { refreshCrimeForDistricts } from './services/policeApi.js'
 import { runTrackedJob } from './services/jobRunner.js'
 import { pruneJobRuns } from './services/jobTracker.js'
-import { runAutopilot } from './services/marketingAutopilot.js'
+import { runAutopilot, runContentSyndication } from './services/marketingAutopilot.js'
 import db from './db.js'
 import { logger } from './logger.js'
 
@@ -210,6 +210,11 @@ cron.schedule('15 2 * * *', () =>
 // to drive acquisition. No-ops unless MARKETING_AUTOPILOT_ENABLED=true and
 // Claude + Buffer are configured.
 cron.schedule('0 9 * * 1,3,5', () => runTrackedJob('marketing_autopilot', () => runAutopilot()))
+
+// Tue 10am: content syndication — auto-share a site guide to social (same flag).
+cron.schedule('0 10 * * 2', () =>
+  runTrackedJob('content_syndication', () => runContentSyndication())
+)
 
 // Daily 6am: snapshot admin reports cache
 cron.schedule('0 6 * * *', () =>

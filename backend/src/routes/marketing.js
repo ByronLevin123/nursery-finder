@@ -13,7 +13,11 @@ import { logger } from '../logger.js'
 import { callClaude, isClaudeAvailable } from '../services/claudeApi.js'
 import * as bufferService from '../services/bufferService.js'
 import * as googleAdsService from '../services/googleAdsService.js'
-import { runAutopilot, isEnabled as autopilotEnabled } from '../services/marketingAutopilot.js'
+import {
+  runAutopilot,
+  runContentSyndication,
+  isEnabled as autopilotEnabled,
+} from '../services/marketingAutopilot.js'
 
 const router = express.Router()
 
@@ -615,6 +619,20 @@ router.post('/autopilot/run', async (req, res, next) => {
     return res.json({ data: summary })
   } catch (err) {
     logger.error({ err: err.message }, 'autopilot manual run failed')
+    next(err)
+  }
+})
+
+// ---------------------------------------------------------------------------
+// POST /autopilot/syndicate — share a guide to social now (manual trigger/test)
+// ---------------------------------------------------------------------------
+router.post('/autopilot/syndicate', async (req, res, next) => {
+  try {
+    const summary = await runContentSyndication({ force: true })
+    logger.info({ summary }, 'content syndication manual run')
+    return res.json({ data: summary })
+  } catch (err) {
+    logger.error({ err: err.message }, 'content syndication manual run failed')
     next(err)
   }
 })

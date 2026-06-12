@@ -41,9 +41,11 @@ Audit query (paste in SQL editor) reports what's still missing — see `DEPLOYME
   avg, peak, a 30-day sparkline, and % progress toward the 500 target.
 - 👤 Enable it: set `MARKETING_AUTOPILOT_ENABLED=true`, connect Buffer channels,
   optionally `MARKETING_DEFAULT_IMAGE_URL` for Instagram.
-- ⬜ Next acquisition levers (high-impact, not yet built): programmatic-SEO audit of
-  the nursery/area/city page coverage; auto-share new blog posts; weekly "new
-  nurseries in your area" social roundups; referral share incentives.
+- ✅ **Content syndication** — weekly job (Tue 10:00 UTC) auto-shares a site guide
+  to social with a tracked `/guides/{slug}` link (rotates weekly; AI hook with
+  excerpt fallback). Admin "Share a guide" button + `POST /autopilot/syndicate`.
+- ⬜ Next acquisition levers (not yet built): weekly "new nurseries in your area"
+  social roundups; referral share incentives; CSP hardening.
 
 ### 2.1 Marketing / Buffer
 - ✅ Buffer GraphQL service (channels + createPost), text posts

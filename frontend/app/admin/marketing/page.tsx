@@ -175,20 +175,22 @@ function AutopilotCard() {
     }
   }
 
-  async function runNow() {
+  async function trigger(endpoint: string, label: 'theme' | 'slug') {
     setRunning(true)
     setMessage(null)
     try {
       const headers = await authHeaders()
-      const res = await fetch(`${API_URL}/api/v1/admin/marketing/autopilot/run`, {
+      const res = await fetch(`${API_URL}/api/v1/admin/marketing/${endpoint}`, {
         method: 'POST',
         headers,
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to run autopilot')
+      if (!res.ok) throw new Error(data.error || 'Failed to run')
       const d = data.data || {}
       setMessage(
-        d.skipped ? `Skipped: ${d.skipped}` : `Posted to ${d.posted ?? 0} channel(s) (${d.theme})`
+        d.skipped
+          ? `Skipped: ${d.skipped}`
+          : `Posted to ${d.posted ?? 0} channel(s) (${d[label] ?? ''})`
       )
     } catch (err: unknown) {
       setMessage(err instanceof Error ? err.message : 'Unknown error')
@@ -196,6 +198,9 @@ function AutopilotCard() {
       setRunning(false)
     }
   }
+
+  const runNow = () => trigger('autopilot/run', 'theme')
+  const shareGuide = () => trigger('autopilot/syndicate', 'slug')
 
   const ready = status?.claude && status?.buffer
 
@@ -226,13 +231,23 @@ function AutopilotCard() {
           </p>
           {message && <p className="text-xs text-gray-700 mt-1 font-medium">{message}</p>}
         </div>
-        <button
-          onClick={runNow}
-          disabled={running || !ready}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {running ? 'Running…' : 'Run once now'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={shareGuide}
+            disabled={running || !status?.buffer}
+            title="Share a site guide to social now"
+            className="px-4 py-2 bg-white border border-indigo-200 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Share a guide
+          </button>
+          <button
+            onClick={runNow}
+            disabled={running || !ready}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {running ? 'Running…' : 'Run once now'}
+          </button>
+        </div>
       </div>
     </div>
   )

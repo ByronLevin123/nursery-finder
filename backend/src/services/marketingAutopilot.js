@@ -12,6 +12,7 @@ import db from '../db.js'
 import { logger } from '../logger.js'
 import { callClaude, isClaudeAvailable } from './claudeApi.js'
 import * as bufferService from './bufferService.js'
+import { loadGuides, weeklyIndex } from './contentLibrary.js'
 
 const SYSTEM_PROMPT =
   'You are a social media copywriter for NurseryMatch, a UK nursery comparison website ' +
@@ -144,10 +145,21 @@ export async function runAutopilot({ now = new Date(), force = false } = {}) {
   const text = `${copy.trim()}\n\n${withUtm(landing, { content: theme })}`
 
   const imageUrl = process.env.MARKETING_DEFAULT_IMAGE_URL || null
+  const { results, posted } = await postToChannels(channels, { text, imageUrl })
+  await recordPost({ text, imageUrl, theme, brief, channels, posted })
 
+  logger.info(
+    { theme, district, channels: channels.length, posted: posted.length },
+    'autopilot: cycle complete'
+  )
+  return { theme, district, channels: channels.length, posted: posted.length, results }
+}
+
+// Shared posting helper — queues `text` to every channel, skipping Instagram
+// when no image is available. Returns { results, posted }.
+async function postToChannels(channels, { text, imageUrl }) {
   const results = []
   for (const ch of channels) {
-    // Instagram needs an image; skip it when no default image is configured.
     if (ch.service === 'instagram' && !imageUrl) {
       results.push({ channelId: ch.id, skipped: 'instagram requires an image' })
       continue
@@ -159,15 +171,63 @@ export async function runAutopilot({ now = new Date(), force = false } = {}) {
     })
     results.push({ channelId: ch.id, service: ch.service, postId: data?.id || null, error })
   }
+  return { results, posted: results.filter((r) => r.postId) }
+}
 
-  const posted = results.filter((r) => r.postId)
-  await recordPost({ text, imageUrl, theme, brief, channels, posted })
+/**
+ * Content syndication — auto-share a site guide to social each week, with a
+ * tracked link. Drives referral traffic and fresh crawls of the guide pages.
+ * Same gating as the autopilot.
+ */
+export async function runContentSyndication({ now = new Date(), force = false } = {}) {
+  if (!force && !isEnabled()) return { skipped: 'MARKETING_AUTOPILOT_ENABLED is not true' }
+  if (!bufferService.isAvailable()) return { skipped: 'Buffer not configured' }
 
-  logger.info(
-    { theme, district, channels: channels.length, posted: posted.length },
-    'autopilot: cycle complete'
-  )
-  return { theme, district, channels: channels.length, posted: posted.length, results }
+  const guides = loadGuides()
+  if (!guides.length) return { skipped: 'no guides found' }
+
+  const { data: channels, error: chErr } = await bufferService.getProfiles()
+  if (chErr) throw new Error(`syndication: could not load channels: ${chErr}`)
+  if (!channels?.length) return { skipped: 'no connected Buffer channels' }
+
+  const guide = guides[weeklyIndex(now, guides.length)]
+  const link = withUtm(`${siteUrl()}/guides/${guide.slug}`, {
+    campaign: 'content',
+    content: guide.slug,
+  })
+
+  // Use Claude for a fresh hook when available; otherwise fall back to the
+  // guide's own excerpt so syndication still works without AI configured.
+  let hook = guide.excerpt
+  if (isClaudeAvailable()) {
+    try {
+      hook = (
+        await callClaude({
+          prompt: `Write a one-sentence social hook (British English, under 180 chars, no hashtags, no URL) to get parents to read this NurseryMatch guide titled "${guide.title}". Context: ${guide.excerpt}`,
+          system: SYSTEM_PROMPT,
+          maxTokens: 120,
+        })
+      ).trim()
+    } catch (err) {
+      logger.warn({ err: err?.message }, 'syndication: claude hook failed, using excerpt')
+    }
+  }
+
+  const text = `${hook}\n\n${link}`
+  const imageUrl = process.env.MARKETING_DEFAULT_IMAGE_URL || null
+  const { results, posted } = await postToChannels(channels, { text, imageUrl })
+
+  await recordPost({
+    text,
+    imageUrl,
+    theme: `guide:${guide.slug}`,
+    brief: guide.title,
+    channels,
+    posted,
+  })
+
+  logger.info({ slug: guide.slug, posted: posted.length }, 'syndication: cycle complete')
+  return { slug: guide.slug, title: guide.title, posted: posted.length, results }
 }
 
 function siteUrl() {
@@ -205,4 +265,13 @@ async function recordPost({ text, imageUrl, theme, brief, channels, posted }) {
   }
 }
 
-export default { isEnabled, runAutopilot, pickTheme, withUtm, buildBrief, THEMES }
+export default {
+  isEnabled,
+  runAutopilot,
+  runContentSyndication,
+  pickTheme,
+  withUtm,
+  buildBrief,
+  landingPath,
+  THEMES,
+}
