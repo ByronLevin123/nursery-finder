@@ -55,6 +55,18 @@ Audit query (paste in SQL editor) reports what's still missing — see `DEPLOYME
   `npm run migrate:status|migrate|migrate:baseline`)
 - ⬜ `FRESH_INSTALL_MIGRATION.sql` regenerate vs 060/061 (low priority; only affects brand-new installs)
 
+### 2.4 Security (review 2026-06 — fixed in PR #58)
+- ✅ JSON-LD XSS guard: `jsonLdScript` escapes `<` (stored-XSS via nursery/provider names)
+- ✅ Ingest basic auth fails closed when `ADMIN_USER`/`ADMIN_PASS` unset
+- ✅ `api_key`/token query values scrubbed from request logs
+- ✅ Buffer GraphQL inputs strictly typed (channelId string, scheduledAt ISO-8601)
+- ✅ `image_url` validated (http/https, ≤2048 chars)
+- ✅ Frontend security headers (nosniff, frame DENY, referrer policy, permissions policy)
+- ⬜ Content-Security-Policy — needs an allowlist for Plausible/gtag/AdSense/Turnstile/
+  map tiles/Street View; start with `Content-Security-Policy-Report-Only`
+- 👤 Rotate any API keys ever pasted into chats/logs; enable Supabase RLS review before
+  exposing further tables
+
 ## 3. Integrations — wired in code ✅, need secrets set 👤
 
 | Integration | Code status | Action for Byron |

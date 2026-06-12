@@ -29,6 +29,11 @@ const cronBasicAuth = basicAuth({
 router.use((req, res, next) => {
   const authHeader = req.headers.authorization || ''
   if (authHeader.startsWith('Basic ')) {
+    // Fail closed: with ADMIN_USER/ADMIN_PASS unset the users map above is
+    // {'': ''} and empty Basic credentials would authenticate.
+    if (!process.env.ADMIN_USER || !process.env.ADMIN_PASS) {
+      return res.status(401).json({ error: 'Basic auth is not configured' })
+    }
     return cronBasicAuth(req, res, next)
   }
   return requireRole('admin')(req, res, next)

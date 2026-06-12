@@ -90,6 +90,7 @@ import schoolsRouter from './routes/schools.js'
 // Developer platform — API key management
 import developerRouter from './routes/developer.js'
 import { apiKeyAuth } from './middleware/apiKeyAuth.js'
+import { scrubUrlSecrets } from './utils.js'
 
 // AI feature routes (Claude-powered) — separate block, do not merge with mounts above
 import aiRouter from './routes/ai.js'
@@ -202,7 +203,7 @@ app.use(
       req: (req) => ({
         id: req.id,
         method: req.method,
-        url: req.url,
+        url: scrubUrlSecrets(req.url),
         ip: req.ip,
         userAgent: req.headers['user-agent'],
       }),

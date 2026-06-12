@@ -117,6 +117,20 @@ describe('createPost', () => {
     expect(error).toMatch(/required/i)
   })
 
+  it('rejects a non-string channelId (GraphQL injection guard)', async () => {
+    const { error } = await createPost({ text: 'hi', channelId: { evil: true } })
+    expect(error).toMatch(/string/i)
+  })
+
+  it('rejects a malformed scheduledAt', async () => {
+    const { error } = await createPost({
+      text: 'hi',
+      channelId: 'ch-1',
+      scheduledAt: '") { __typename } mutation Evil {',
+    })
+    expect(error).toMatch(/ISO-8601/i)
+  })
+
   it('queues a post (addToQueue) and returns the created post', async () => {
     const fetchMock = vi
       .spyOn(global, 'fetch')

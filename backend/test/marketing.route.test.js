@@ -152,6 +152,25 @@ describe('social', () => {
     expect(res.status).toBe(400)
   })
 
+  it('POST /social/post rejects non-string profile_ids (400)', async () => {
+    const res = await asAdmin(request(app).post('/api/v1/admin/marketing/social/post')).send({
+      text: 'hi',
+      profile_ids: [{ injected: true }],
+    })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/strings/i)
+  })
+
+  it('POST /social/post rejects a non-http image_url (400)', async () => {
+    const res = await asAdmin(request(app).post('/api/v1/admin/marketing/social/post')).send({
+      text: 'hi',
+      profile_ids: ['ch-1'],
+      image_url: 'javascript:alert(1)',
+    })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/http/i)
+  })
+
   it('POST /social/post posts to channels and records the post', async () => {
     const res = await asAdmin(request(app).post('/api/v1/admin/marketing/social/post')).send({
       text: 'Find your nursery',

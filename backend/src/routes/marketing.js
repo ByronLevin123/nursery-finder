@@ -262,6 +262,18 @@ router.post('/social/post', async (req, res, next) => {
     if (!text || !profileIds?.length) {
       return res.status(400).json({ error: 'text and profile_ids are required' })
     }
+    if (!profileIds.every((id) => typeof id === 'string')) {
+      return res.status(400).json({ error: 'profile_ids must be strings' })
+    }
+    if (imageUrl !== undefined && imageUrl !== null) {
+      if (
+        typeof imageUrl !== 'string' ||
+        imageUrl.length > 2048 ||
+        !/^https?:\/\//i.test(imageUrl)
+      ) {
+        return res.status(400).json({ error: 'image_url must be an http(s) URL (max 2048 chars)' })
+      }
+    }
 
     // Resolve channel → platform so we can store which platforms were targeted.
     const platformById = {}

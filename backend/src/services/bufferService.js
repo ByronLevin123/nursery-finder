@@ -153,10 +153,21 @@ export async function createPost({ text, channelId, scheduledAt, imageUrl }) {
   if (!text || !channelId) {
     return { data: null, error: 'text and channelId are required' }
   }
+  // channelId/scheduledAt are interpolated into the GraphQL document below, so
+  // they must be plain strings (a non-string would stringify to GraphQL syntax)
+  // and scheduledAt must look like an ISO-8601 timestamp.
+  if (typeof channelId !== 'string') {
+    return { data: null, error: 'channelId must be a string' }
+  }
+  if (scheduledAt !== undefined && scheduledAt !== null) {
+    if (typeof scheduledAt !== 'string' || !/^\d{4}-\d{2}-\d{2}T[\d:.]+Z?$/.test(scheduledAt)) {
+      return { data: null, error: 'scheduledAt must be an ISO-8601 timestamp string' }
+    }
+  }
 
-  // channelId and dueAt are trusted (Buffer-issued / server-generated) values;
-  // JSON.stringify yields a safe GraphQL string literal. User-supplied text and
-  // imageUrl are passed as variables so they can never alter the query.
+  // JSON.stringify yields a safe GraphQL string literal for the validated
+  // strings above. User-supplied text and imageUrl are passed as variables so
+  // they can never alter the query.
   const channelLiteral = JSON.stringify(channelId)
   const scheduling = scheduledAt
     ? `mode: customScheduled, dueAt: ${JSON.stringify(scheduledAt)}`

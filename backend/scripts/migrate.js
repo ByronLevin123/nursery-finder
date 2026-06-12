@@ -62,10 +62,16 @@ async function getClient() {
   if (!connectionString) {
     throw new Error('DATABASE_URL is not set (Supabase → Settings → Database → Connection string)')
   }
-  const client = new pg.Client({
-    connectionString,
-    ssl: process.env.PGSSL_DISABLE ? false : { rejectUnauthorized: false },
-  })
+  // TLS: encrypted but unverified by default — Supabase's pooler presents a
+  // cert from Supabase's own CA, which node-postgres can't verify without the
+  // CA bundle. This is an ops CLI run from a trusted machine, so encryption
+  // without verification is the accepted trade-off. Set PGSSL_STRICT=1 (with
+  // the CA in NODE_EXTRA_CA_CERTS) for full verification, or PGSSL_DISABLE=1
+  // for local Postgres without TLS.
+  const ssl = process.env.PGSSL_DISABLE
+    ? false
+    : { rejectUnauthorized: Boolean(process.env.PGSSL_STRICT) }
+  const client = new pg.Client({ connectionString, ssl })
   await client.connect()
   return client
 }
@@ -90,7 +96,9 @@ async function cmdStatus() {
   try {
     const applied = await appliedVersions(client)
     const { all, pending } = planMigrations(listMigrationFiles(), applied)
-    console.log(`Total migrations: ${all.length} | applied: ${applied.length} | pending: ${pending.length}`)
+    console.log(
+      `Total migrations: ${all.length} | applied: ${applied.length} | pending: ${pending.length}`
+    )
     for (const f of pending) console.log('  pending →', f)
     if (pending.length === 0) console.log('  (up to date)')
   } finally {
