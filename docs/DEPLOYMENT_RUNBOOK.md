@@ -91,6 +91,7 @@ Apply any not yet applied:
 - `060_marketing_hub_fe_alignment.sql`
 - `061_marketing_post_image.sql`
 - `062_schema_migrations.sql` (the tracking table)
+- `063_daily_active_visitors.sql` (DAU growth tracker RPC)
 
 **Audit — what's still missing?** Paste this and apply anything that reports MISSING:
 

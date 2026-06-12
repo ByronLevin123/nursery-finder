@@ -7,7 +7,7 @@ process.env.SUPABASE_ANON_KEY = 'anon-test-key'
 import { createMockDb } from './helpers/mockDb.js'
 import { createAuthMock } from './helpers/testApp.js'
 
-const { db, setTable, resetAll } = createMockDb({
+const { db, setTable, resetAll, rpcHandlers } = createMockDb({
   user_profiles: [
     { id: 'admin-1', role: 'admin' },
     { id: 'user-1', role: 'customer' },
@@ -74,5 +74,33 @@ describe('GET /api/v1/admin/jobs/summary', () => {
     const res = await asAdmin(request(app).get('/api/v1/admin/jobs/summary'))
     expect(res.status).toBe(200)
     expect(res.body.data).toEqual([])
+  })
+})
+
+describe('GET /api/v1/admin/stats/dau', () => {
+  it('returns the DAU series and progress toward the target', async () => {
+    rpcHandlers.daily_active_visitors = async ({ days }) => ({
+      data: [
+        { day: '2026-06-10', visitors: 120 },
+        { day: '2026-06-11', visitors: 200 },
+        { day: '2026-06-12', visitors: 250 },
+      ].slice(-days),
+      error: null,
+    })
+
+    const res = await asAdmin(request(app).get('/api/v1/admin/stats/dau?target=500'))
+    expect(res.status).toBe(200)
+    expect(res.body.target).toBe(500)
+    expect(res.body.today).toBe(250)
+    expect(res.body.peak).toBe(250)
+    expect(res.body.pct_to_target).toBe(50)
+    expect(res.body.series).toHaveLength(3)
+  })
+
+  it('rejects non-admins', async () => {
+    const res = await request(app)
+      .get('/api/v1/admin/stats/dau')
+      .set('Authorization', 'Bearer user-token')
+    expect(res.status).toBe(403)
   })
 })

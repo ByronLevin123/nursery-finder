@@ -883,6 +883,45 @@ router.get('/ofsted-changes', async (req, res, next) => {
 })
 
 // ---------------------------------------------------------------------------
+// GET /stats/dau — daily active visitors series + progress toward the target
+// ---------------------------------------------------------------------------
+router.get('/stats/dau', async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+
+    const days = Math.min(90, Math.max(1, parseInt(req.query.days, 10) || 30))
+    const target = Math.min(1_000_000, Math.max(1, parseInt(req.query.target, 10) || 500))
+
+    const { data, error } = await db.rpc('daily_active_visitors', { days })
+    if (error) throw error
+
+    const series = (data || []).map((r) => ({
+      date: r.day,
+      visitors: Number(r.visitors) || 0,
+    }))
+
+    const today = series.length ? series[series.length - 1].visitors : 0
+    const peak = series.reduce((m, r) => Math.max(m, r.visitors), 0)
+    const last7 = series.slice(-7)
+    const avg7 = last7.length
+      ? Math.round(last7.reduce((s, r) => s + r.visitors, 0) / last7.length)
+      : 0
+
+    res.json({
+      target,
+      today,
+      peak,
+      avg_7d: avg7,
+      pct_to_target: Math.min(100, Math.round((today / target) * 100)),
+      series,
+    })
+  } catch (err) {
+    logger.error({ err: err?.message }, 'admin stats/dau failed')
+    next(err)
+  }
+})
+
+// ---------------------------------------------------------------------------
 // GET /stats/growth — growth metrics (week + month)
 // ---------------------------------------------------------------------------
 router.get('/stats/growth', async (req, res, next) => {

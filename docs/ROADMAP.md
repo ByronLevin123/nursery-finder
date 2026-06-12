@@ -36,6 +36,9 @@ Audit query (paste in SQL editor) reports what's still missing — see `DEPLOYME
   and queues it to every connected Buffer channel with a **UTM-tagged link** so
   traffic shows in Plausible. Off by default (`MARKETING_AUTOPILOT_ENABLED`).
 - ✅ Admin card: status + "Run once now"; endpoints `GET/POST /autopilot`.
+- ✅ **DAU growth tracker** — `daily_active_visitors` RPC (migration 063) +
+  `GET /api/v1/admin/stats/dau` + admin dashboard card showing today's DAU, 7-day
+  avg, peak, a 30-day sparkline, and % progress toward the 500 target.
 - 👤 Enable it: set `MARKETING_AUTOPILOT_ENABLED=true`, connect Buffer channels,
   optionally `MARKETING_DEFAULT_IMAGE_URL` for Instagram.
 - ⬜ Next acquisition levers (high-impact, not yet built): programmatic-SEO audit of
