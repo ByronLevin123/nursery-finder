@@ -57,6 +57,11 @@ envVarGroups:
         sync: false
       - key: BUFFER_ORGANIZATION_ID
         sync: false
+      # Marketing autopilot (worker)
+      - key: MARKETING_AUTOPILOT_ENABLED
+        sync: false
+      - key: MARKETING_DEFAULT_IMAGE_URL
+        sync: false
       # Marketing Hub — Google Ads
       - key: GOOGLE_ADS_DEVELOPER_TOKEN
         sync: false

@@ -30,6 +30,18 @@ Audit query (paste in SQL editor) reports what's still missing — see `DEPLOYME
 
 ## 2. Engineering backlog
 
+### 2.0 Automated acquisition (toward 500 DAU)
+- ✅ **Marketing autopilot** — worker job (Mon/Wed/Fri 09:00 UTC) auto-generates an
+  on-brand, locally-relevant social post (rotating themes incl. real top districts)
+  and queues it to every connected Buffer channel with a **UTM-tagged link** so
+  traffic shows in Plausible. Off by default (`MARKETING_AUTOPILOT_ENABLED`).
+- ✅ Admin card: status + "Run once now"; endpoints `GET/POST /autopilot`.
+- 👤 Enable it: set `MARKETING_AUTOPILOT_ENABLED=true`, connect Buffer channels,
+  optionally `MARKETING_DEFAULT_IMAGE_URL` for Instagram.
+- ⬜ Next acquisition levers (high-impact, not yet built): programmatic-SEO audit of
+  the nursery/area/city page coverage; auto-share new blog posts; weekly "new
+  nurseries in your area" social roundups; referral share incentives.
+
 ### 2.1 Marketing / Buffer
 - ✅ Buffer GraphQL service (channels + createPost), text posts
 - ✅ FE ↔ BE contract aligned (migration 060)

@@ -111,6 +111,8 @@ export default function AdminMarketingPage() {
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Marketing Hub</h1>
 
+      <AutopilotCard />
+
       {/* Tabs */}
       <div className="flex gap-1 mb-6 border-b border-gray-200 overflow-x-auto">
         {TABS.map((tab) => (
@@ -131,6 +133,107 @@ export default function AdminMarketingPage() {
       {activeTab === 'content' && <ContentGeneratorTab />}
       {activeTab === 'social' && <SocialMediaTab />}
       {activeTab === 'ads' && <GoogleAdsTab />}
+    </div>
+  )
+}
+
+// ========================
+// Marketing Autopilot status card
+// ========================
+
+interface AutopilotStatus {
+  enabled: boolean
+  claude: boolean
+  buffer: boolean
+  schedule: string
+}
+
+function AutopilotCard() {
+  const [status, setStatus] = useState<AutopilotStatus | null>(null)
+  const [running, setRunning] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchStatus()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function authHeaders(): Promise<HeadersInit> {
+    const token = await getAuthToken()
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    }
+  }
+
+  async function fetchStatus() {
+    try {
+      const headers = await authHeaders()
+      const res = await fetch(`${API_URL}/api/v1/admin/marketing/autopilot`, { headers })
+      if (res.ok) setStatus(await res.json())
+    } catch {
+      // ignore
+    }
+  }
+
+  async function runNow() {
+    setRunning(true)
+    setMessage(null)
+    try {
+      const headers = await authHeaders()
+      const res = await fetch(`${API_URL}/api/v1/admin/marketing/autopilot/run`, {
+        method: 'POST',
+        headers,
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to run autopilot')
+      const d = data.data || {}
+      setMessage(
+        d.skipped ? `Skipped: ${d.skipped}` : `Posted to ${d.posted ?? 0} channel(s) (${d.theme})`
+      )
+    } catch (err: unknown) {
+      setMessage(err instanceof Error ? err.message : 'Unknown error')
+    } finally {
+      setRunning(false)
+    }
+  }
+
+  const ready = status?.claude && status?.buffer
+
+  return (
+    <div className="mb-6 bg-gradient-to-r from-indigo-50 to-white border border-indigo-100 rounded-xl p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-semibold text-gray-900">Marketing Autopilot</h2>
+            <span
+              className={`px-2 py-0.5 text-xs rounded-full font-medium ${
+                status?.enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+              }`}
+            >
+              {status?.enabled ? 'Scheduled ON' : 'Scheduled OFF'}
+            </span>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            Auto-generates &amp; queues a social post {status?.schedule || 'Mon/Wed/Fri 09:00 UTC'},
+            with a tracked link back to the site.{' '}
+            {!ready && (
+              <span className="text-amber-600">
+                Needs {!status?.claude && 'Anthropic'}
+                {!status?.claude && !status?.buffer && ' + '}
+                {!status?.buffer && 'Buffer'} configured.
+              </span>
+            )}
+          </p>
+          {message && <p className="text-xs text-gray-700 mt-1 font-medium">{message}</p>}
+        </div>
+        <button
+          onClick={runNow}
+          disabled={running || !ready}
+          className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {running ? 'Running…' : 'Run once now'}
+        </button>
+      </div>
     </div>
   )
 }

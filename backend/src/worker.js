@@ -17,6 +17,7 @@ import { syncGooglePlacesData, refreshStaleGoogleData } from './services/googleP
 import { refreshCrimeForDistricts } from './services/policeApi.js'
 import { runTrackedJob } from './services/jobRunner.js'
 import { pruneJobRuns } from './services/jobTracker.js'
+import { runAutopilot } from './services/marketingAutopilot.js'
 import db from './db.js'
 import { logger } from './logger.js'
 
@@ -204,6 +205,11 @@ if (process.env.SELF_PING_URL) {
 cron.schedule('15 2 * * *', () =>
   runTrackedJob('job_runs_prune', () => pruneJobRuns({ keepDays: 30 }))
 )
+
+// Mon/Wed/Fri 9am: marketing autopilot — auto-generate + queue a social post
+// to drive acquisition. No-ops unless MARKETING_AUTOPILOT_ENABLED=true and
+// Claude + Buffer are configured.
+cron.schedule('0 9 * * 1,3,5', () => runTrackedJob('marketing_autopilot', () => runAutopilot()))
 
 // Daily 6am: snapshot admin reports cache
 cron.schedule('0 6 * * *', () =>

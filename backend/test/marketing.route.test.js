@@ -278,3 +278,26 @@ describe('ads', () => {
     expect(res.status).toBe(400)
   })
 })
+
+describe('autopilot', () => {
+  it('GET /autopilot reports automation status', async () => {
+    const res = await asAdmin(request(app).get('/api/v1/admin/marketing/autopilot'))
+    expect(res.status).toBe(200)
+    expect(res.body).toHaveProperty('enabled')
+    expect(res.body.claude).toBe(true)
+    expect(res.body.buffer).toBe(true)
+  })
+
+  it('POST /autopilot/run forces a cycle and returns a summary', async () => {
+    const res = await asAdmin(request(app).post('/api/v1/admin/marketing/autopilot/run'))
+    expect(res.status).toBe(200)
+    expect(res.body.data.posted).toBe(1)
+  })
+
+  it('rejects non-admins', async () => {
+    const res = await request(app)
+      .get('/api/v1/admin/marketing/autopilot')
+      .set('Authorization', 'Bearer user-token')
+    expect(res.status).toBe(403)
+  })
+})

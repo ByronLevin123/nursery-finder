@@ -13,6 +13,7 @@ import { logger } from '../logger.js'
 import { callClaude, isClaudeAvailable } from '../services/claudeApi.js'
 import * as bufferService from '../services/bufferService.js'
 import * as googleAdsService from '../services/googleAdsService.js'
+import { runAutopilot, isEnabled as autopilotEnabled } from '../services/marketingAutopilot.js'
 
 const router = express.Router()
 
@@ -583,6 +584,37 @@ router.patch('/ads/campaigns/:id', async (req, res, next) => {
     return res.json({ data: adToUi(updated) })
   } catch (err) {
     logger.error({ err: err.message }, 'ads/campaigns patch failed')
+    next(err)
+  }
+})
+
+// ---------------------------------------------------------------------------
+// GET /autopilot — automation status
+// ---------------------------------------------------------------------------
+router.get('/autopilot', async (req, res, next) => {
+  try {
+    return res.json({
+      enabled: autopilotEnabled(),
+      claude: isClaudeAvailable(),
+      buffer: bufferService.isAvailable(),
+      schedule: 'Mon/Wed/Fri 09:00 UTC',
+    })
+  } catch (err) {
+    logger.error({ err: err.message }, 'autopilot status failed')
+    next(err)
+  }
+})
+
+// ---------------------------------------------------------------------------
+// POST /autopilot/run — run one autopilot cycle now (manual trigger/test)
+// ---------------------------------------------------------------------------
+router.post('/autopilot/run', async (req, res, next) => {
+  try {
+    const summary = await runAutopilot({ force: true })
+    logger.info({ summary }, 'autopilot manual run')
+    return res.json({ data: summary })
+  } catch (err) {
+    logger.error({ err: err.message }, 'autopilot manual run failed')
     next(err)
   }
 })
