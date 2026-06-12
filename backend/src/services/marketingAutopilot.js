@@ -53,6 +53,26 @@ export function withUtm(baseUrl, { campaign = 'autopilot', content } = {}) {
   return `${baseUrl}${sep}${params.toString()}`
 }
 
+// Map a theme to the highest-intent landing page on the site, so social
+// traffic lands where it is most likely to convert (and reinforces that page's
+// SEO). Returns a path to append to FRONTEND_URL.
+export function landingPath(theme, { district } = {}) {
+  switch (theme) {
+    case 'local':
+      return district ? `/nurseries-in/${district.toLowerCase()}` : '/search'
+    case 'visit-checklist':
+      return '/guides/questions-to-ask-nursery-visit'
+    case 'nursery-vs-childminder':
+      return '/guides/nursery-vs-childminder'
+    case 'funded-hours':
+    case 'compare-fees':
+    case 'ofsted-ratings':
+      return '/search'
+    default:
+      return '/'
+  }
+}
+
 // Build the generation brief for a theme. `district` is an optional real
 // postcode district used to localise the 'local' theme.
 export function buildBrief(theme, { district } = {}) {
@@ -120,7 +140,8 @@ export async function runAutopilot({ now = new Date(), force = false } = {}) {
     system: SYSTEM_PROMPT,
     maxTokens: 300,
   })
-  const text = `${copy.trim()}\n\n${withUtm(siteUrl(), { content: theme })}`
+  const landing = `${siteUrl()}${landingPath(theme, { district })}`
+  const text = `${copy.trim()}\n\n${withUtm(landing, { content: theme })}`
 
   const imageUrl = process.env.MARKETING_DEFAULT_IMAGE_URL || null
 

@@ -68,6 +68,13 @@ describe('pure helpers', () => {
     expect(mod.buildBrief('local', { district: 'SW1A' })).toContain('SW1A')
     expect(mod.buildBrief('funded-hours')).toMatch(/funded/i)
   })
+
+  it('landingPath deep-links each theme to its highest-intent page', () => {
+    expect(mod.landingPath('local', { district: 'SW1A' })).toBe('/nurseries-in/sw1a')
+    expect(mod.landingPath('local')).toBe('/search')
+    expect(mod.landingPath('visit-checklist')).toBe('/guides/questions-to-ask-nursery-visit')
+    expect(mod.landingPath('ofsted-ratings')).toBe('/search')
+  })
 })
 
 describe('runAutopilot', () => {
