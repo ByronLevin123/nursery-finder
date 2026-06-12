@@ -5,6 +5,10 @@ import rateLimit from 'express-rate-limit'
 import db from '../db.js'
 import { requireRole } from '../middleware/supabaseAuth.js'
 import { trackActivity } from '../services/activityTracker.js'
+import * as searchConsole from '../services/searchConsole.js'
+
+// Trailing window (days) used for Search Console comparison figures.
+const GSC_WINDOW_DAYS = 28
 
 const router = express.Router()
 
@@ -96,6 +100,11 @@ router.get('/analytics', requireRole('provider', 'admin'), async (req, res, next
       .select('nursery_id, overall_impression, staff_friendliness, facilities_quality')
       .in('nursery_id', nurseryIds)
 
+    // Google Search Console — organic clicks/impressions per nursery profile.
+    // Degrades to an empty map when GSC isn't configured, so first-party stats
+    // always render regardless.
+    const gscByUrn = await searchConsole.getStatsByUrn({ days: GSC_WINDOW_DAYS })
+
     const now = new Date()
     const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 
@@ -148,10 +157,22 @@ router.get('/analytics', requireRole('provider', 'admin'), async (req, res, next
           facilities: avgFacilities ? Math.round(avgFacilities * 10) / 10 : null,
           count: nSurveys.length,
         },
+        // Organic Google search performance for this profile (null when GSC
+        // isn't configured, or zeros when Google has no data for it yet).
+        search_console: gscByUrn.get(n.urn) || null,
       }
     })
 
-    return res.json({ data: stats })
+    const siteTotals = await searchConsole.getSiteTotals({ days: GSC_WINDOW_DAYS })
+
+    return res.json({
+      data: stats,
+      search_console: {
+        configured: searchConsole.isConfigured(),
+        window_days: GSC_WINDOW_DAYS,
+        site: siteTotals,
+      },
+    })
   } catch (err) {
     next(err)
   }

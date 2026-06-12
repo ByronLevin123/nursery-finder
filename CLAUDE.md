@@ -14,7 +14,7 @@ Phase 8 adds a family relocation layer (area intelligence + property prices).
 
 **Live URL targets:**
 - Frontend: Vercel (nurserymatch.com)
-- Backend API: Railway (nursery-finder-api.railway.app)
+- Backend API + worker: Render (Docker; see render.yaml + docs/DEPLOYMENT_RUNBOOK.md)
 - Database: Supabase (PostgreSQL + PostGIS)
 
 ---
@@ -27,7 +27,7 @@ Phase 8 adds a family relocation layer (area intelligence + property prices).
 | Backend | Node.js 20 + Express | Familiar, fast, good PostGIS client support |
 | Frontend | Next.js 14 (App Router) | SSR/SSG for SEO — critical for nursery pages |
 | Maps | Leaflet + react-leaflet | Free, no API key needed |
-| Logging | pino + pino-http | Structured JSON logs for Railway |
+| Logging | pino + pino-http | Structured JSON logs for Render |
 | Error tracking | Sentry (free tier) | Error alerts without building custom tooling |
 | Analytics | Plausible | GDPR-compliant, cookieless, no custom build needed |
 | Auth (Phase 6) | Supabase Auth | Already in our stack, magic link login |

@@ -1,7 +1,7 @@
 import express from 'express'
 import db from '../db.js'
 import { geocodePostcode } from '../services/geocoding.js'
-import { searchCache, searchCacheKey } from '../services/cache.js'
+import { searchCache } from '../services/cache.js'
 import { logger } from '../logger.js'
 
 const router = express.Router()
@@ -58,7 +58,13 @@ router.post('/search', async (req, res, next) => {
     searchCache.set(cacheKey, result)
 
     logger.info(
-      { postcode, radius_km: radiusKm, phase: phaseFilter, ofsted_rating, results: filtered.length },
+      {
+        postcode,
+        radius_km: radiusKm,
+        phase: phaseFilter,
+        ofsted_rating,
+        results: filtered.length,
+      },
       'school search completed'
     )
 

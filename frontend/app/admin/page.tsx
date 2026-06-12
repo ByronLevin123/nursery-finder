@@ -27,6 +27,92 @@ interface AdminStats {
   enquiries_this_month: number
 }
 
+interface SearchConsoleSite {
+  configured: boolean
+  window_days: number
+  site: { clicks: number; impressions: number; ctr: number; position: number } | null
+}
+
+interface DauStats {
+  target: number
+  today: number
+  peak: number
+  avg_7d: number
+  pct_to_target: number
+  series: { date: string; visitors: number }[]
+}
+
+// Daily-active-users tracker vs the growth target. Self-contained: fetches
+// /stats/dau directly so it has no dependency on the page's stats plumbing.
+function DauTargetCard() {
+  const [dau, setDau] = useState<DauStats | null>(null)
+
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const token = await getAuthToken()
+        const res = await fetch(`${API_URL}/api/v1/admin/stats/dau?days=30&target=500`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
+        if (res.ok) setDau(await res.json())
+      } catch {
+        // ignore — card simply hides
+      }
+    })()
+  }, [])
+
+  if (!dau) return null
+
+  const max = Math.max(dau.peak, dau.target, 1)
+  return (
+    <div className="mb-8 bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+      <div className="flex flex-wrap items-end justify-between gap-3 mb-3">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-700">Daily Active Users</h3>
+          <p className="text-3xl font-bold text-gray-900 mt-1">
+            {dau.today.toLocaleString()}
+            <span className="text-base font-medium text-gray-400">
+              {' '}
+              / {dau.target.toLocaleString()} target
+            </span>
+          </p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            7-day avg {dau.avg_7d.toLocaleString()} · peak {dau.peak.toLocaleString()}
+          </p>
+        </div>
+        <span
+          className={`px-2.5 py-1 text-xs rounded-full font-semibold ${
+            dau.pct_to_target >= 100
+              ? 'bg-green-100 text-green-800'
+              : dau.pct_to_target >= 50
+                ? 'bg-amber-100 text-amber-800'
+                : 'bg-gray-100 text-gray-600'
+          }`}
+        >
+          {dau.pct_to_target}% to target
+        </span>
+      </div>
+      {/* Sparkline */}
+      <div className="flex items-end gap-0.5 h-16" aria-hidden>
+        {dau.series.map((d) => (
+          <div
+            key={d.date}
+            title={`${d.date}: ${d.visitors}`}
+            className="flex-1 bg-indigo-200 hover:bg-indigo-400 rounded-sm transition"
+            style={{ height: `${Math.max(2, (d.visitors / max) * 100)}%` }}
+          />
+        ))}
+      </div>
+      <div className="mt-2 w-full bg-gray-100 rounded-full h-1.5">
+        <div
+          className="bg-indigo-600 h-1.5 rounded-full transition-all"
+          style={{ width: `${dau.pct_to_target}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
 function StatCard({
   label,
   value,
@@ -197,6 +283,7 @@ function ActivityFeed({ items }: { items: AdminActivityItem[] }) {
 export default function AdminOverview() {
   const { role } = useSession()
   const [stats, setStats] = useState<AdminStats | null>(null)
+  const [gsc, setGsc] = useState<SearchConsoleSite | null>(null)
   const [growth, setGrowth] = useState<AdminGrowthStats | null>(null)
   const [quality, setQuality] = useState<AdminDataQuality | null>(null)
   const [activity, setActivity] = useState<AdminActivityItem[]>([])
@@ -211,12 +298,13 @@ export default function AdminOverview() {
       try {
         const token = await getAuthToken()
         if (!token) throw new Error('No auth token')
-        const [statsData, growthData, qualityData, activityData, funnelData] = await Promise.all([
+        const [statsData, growthData, qualityData, activityData, funnelData, gscData] = await Promise.all([
           adminFetch('/stats', token).catch((e) => { console.error('admin /stats failed:', e.message); return null }),
           getAdminGrowthStats(token).catch(() => null),
           getAdminDataQuality(token).catch(() => null),
           getAdminActivity(token, 50).catch(() => []),
           adminFetch('/funnel?days=30', token).catch(() => null),
+          adminFetch('/search-console/site', token).catch(() => null),
         ])
         if (!cancelled) {
           if (!statsData) {
@@ -229,6 +317,7 @@ export default function AdminOverview() {
             enquiries_this_month: statsData?.enquiries?.this_month ?? statsData?.enquiries_this_month ?? 0,
           } : null
           setStats(mapped)
+          setGsc(gscData)
           setGrowth(growthData)
           setQuality(qualityData)
           setActivity(activityData)
@@ -254,6 +343,8 @@ export default function AdminOverview() {
           {error}
         </div>
       )}
+
+      <DauTargetCard />
 
       {/* Growth stat cards */}
       <h3 className="text-sm font-semibold text-gray-700 mb-3">Growth This Week</h3>
@@ -412,6 +503,42 @@ export default function AdminOverview() {
               <p className="text-2xl font-bold text-gray-900">{(stats.visitors.total ?? 0).toLocaleString()}</p>
             </div>
           </div>
+        </>
+      )}
+
+      {/* Google Search Console */}
+      {gsc?.configured && gsc.site && (
+        <>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-gray-700">Google Search Console</h3>
+            <span className="text-xs text-gray-400">Last {gsc.window_days} days</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-2">
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+              <p className="text-sm font-medium text-gray-500 mb-1">Google clicks</p>
+              <p className="text-2xl font-bold text-gray-900">{(gsc.site.clicks ?? 0).toLocaleString()}</p>
+              <p className="text-xs text-gray-400 mt-1">from search results</p>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+              <p className="text-sm font-medium text-gray-500 mb-1">Impressions</p>
+              <p className="text-2xl font-bold text-gray-900">{(gsc.site.impressions ?? 0).toLocaleString()}</p>
+              <p className="text-xs text-gray-400 mt-1">shown in search</p>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+              <p className="text-sm font-medium text-gray-500 mb-1">CTR</p>
+              <p className="text-2xl font-bold text-gray-900">{gsc.site.ctr}%</p>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+              <p className="text-sm font-medium text-gray-500 mb-1">Avg position</p>
+              <p className="text-2xl font-bold text-gray-900">{gsc.site.position || '-'}</p>
+              <p className="text-xs text-gray-400 mt-1">lower is better</p>
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mb-8">
+            Google clicks count entries from Google search and won&apos;t equal site visitors or profile
+            views — one click can become several on-site pageviews, and direct/referral traffic isn&apos;t
+            included. Search Console data lags 2–3 days.
+          </p>
         </>
       )}
 

@@ -1,6 +1,6 @@
 import express from 'express'
 import { ingestOfstedRegister } from '../services/ofstedIngest.js'
-import { ingestSchoolsFromCsv, geocodeSchoolsBatch as geocodeSchoolsBatchLegacy } from '../services/schoolIngest.js'
+import { ingestSchoolsFromCsv } from '../services/schoolIngest.js'
 import { ingestSchoolsFromCsvUrl, geocodeSchoolsBatch } from '../services/schoolsIngest.js'
 import { ingestCareInspectorateData } from '../services/careInspectorateIngest.js'
 import { ingestCiwData } from '../services/ciwIngest.js'
@@ -29,6 +29,11 @@ const cronBasicAuth = basicAuth({
 router.use((req, res, next) => {
   const authHeader = req.headers.authorization || ''
   if (authHeader.startsWith('Basic ')) {
+    // Fail closed: with ADMIN_USER/ADMIN_PASS unset the users map above is
+    // {'': ''} and empty Basic credentials would authenticate.
+    if (!process.env.ADMIN_USER || !process.env.ADMIN_PASS) {
+      return res.status(401).json({ error: 'Basic auth is not configured' })
+    }
     return cronBasicAuth(req, res, next)
   }
   return requireRole('admin')(req, res, next)
@@ -239,7 +244,8 @@ router.post('/care-inspectorate', async (req, res, next) => {
     const csvUrl = req.body?.csv_url || req.query.csv_url
     if (!csvUrl) {
       return res.status(400).json({
-        error: 'csv_url is required. Download from https://www.careinspectorate.com/index.php/statistics-and-analysis/data-and-analysis',
+        error:
+          'csv_url is required. Download from https://www.careinspectorate.com/index.php/statistics-and-analysis/data-and-analysis',
       })
     }
     logger.info({ csvUrl }, 'ingest: starting Care Inspectorate import')
@@ -257,7 +263,8 @@ router.post('/ciw', async (req, res, next) => {
     const csvUrl = req.body?.csv_url || req.query.csv_url
     if (!csvUrl) {
       return res.status(400).json({
-        error: 'csv_url is required. Download from https://careinspectorate.wales/service-directory',
+        error:
+          'csv_url is required. Download from https://careinspectorate.wales/service-directory',
       })
     }
     logger.info({ csvUrl }, 'ingest: starting CIW import')
@@ -273,16 +280,30 @@ router.post('/ciw', async (req, res, next) => {
 // POST /api/v1/ingest/full-cycle — run all ingest steps in dependency order
 // ---------------------------------------------------------------------------
 const FULL_CYCLE_STEPS = {
-  ofsted:       { fn: () => ingestOfstedRegister(), deps: [] },
-  schools:      { fn: () => ingestSchoolsFromCsvUrl(), deps: [] },
-  crime:        { fn: () => refreshCrimeForDistricts({ limit: 50, staleDays: 30 }), deps: [] },
-  imd:          { fn: () => refreshImdForDistricts({ limit: 200, staleDays: 365 }), deps: [] },
-  google:       { fn: () => syncGooglePlacesData(100, { staleDays: 90, photosEnabled: true }), deps: [] },
-  geocode:      { fn: () => geocodeNurseriesBatch(2000), deps: ['ofsted'] },
+  ofsted: { fn: () => ingestOfstedRegister(), deps: [] },
+  schools: { fn: () => ingestSchoolsFromCsvUrl(), deps: [] },
+  crime: { fn: () => refreshCrimeForDistricts({ limit: 50, staleDays: 30 }), deps: [] },
+  imd: { fn: () => refreshImdForDistricts({ limit: 200, staleDays: 365 }), deps: [] },
+  google: { fn: () => syncGooglePlacesData(100, { staleDays: 90, photosEnabled: true }), deps: [] },
+  geocode: { fn: () => geocodeNurseriesBatch(2000), deps: ['ofsted'] },
   'schools-geo': { fn: () => geocodeSchoolsBatch(500), deps: ['schools'] },
-  aggregate:    { fn: () => db.rpc('refresh_postcode_area_nursery_stats').then(r => { if (r.error) throw r.error; return { districts_updated: r.data } }), deps: ['geocode', 'schools-geo'] },
-  family:       { fn: () => db.rpc('calculate_all_family_scores').then(r => { if (r.error) throw r.error; return { districts_updated: r.data } }), deps: ['aggregate', 'crime', 'imd'] },
-  snapshot:     { fn: () => captureReportSnapshot(), deps: ['family'] },
+  aggregate: {
+    fn: () =>
+      db.rpc('refresh_postcode_area_nursery_stats').then((r) => {
+        if (r.error) throw r.error
+        return { districts_updated: r.data }
+      }),
+    deps: ['geocode', 'schools-geo'],
+  },
+  family: {
+    fn: () =>
+      db.rpc('calculate_all_family_scores').then((r) => {
+        if (r.error) throw r.error
+        return { districts_updated: r.data }
+      }),
+    deps: ['aggregate', 'crime', 'imd'],
+  },
+  snapshot: { fn: () => captureReportSnapshot(), deps: ['family'] },
 }
 
 async function runFullCycle(jobId) {
@@ -310,9 +331,12 @@ async function runFullCycle(jobId) {
   }
 
   for (const layer of layers) {
-    await updateJobProgress(jobId, { steps: { ...stepStatus }, current_layer: layers.indexOf(layer) })
+    await updateJobProgress(jobId, {
+      steps: { ...stepStatus },
+      current_layer: layers.indexOf(layer),
+    })
 
-    const results = await Promise.allSettled(
+    await Promise.allSettled(
       layer.map(async (stepId) => {
         const step = FULL_CYCLE_STEPS[stepId]
         // Skip if any dependency failed
@@ -333,7 +357,9 @@ async function runFullCycle(jobId) {
     )
   }
 
-  const allFailed = Object.values(stepStatus).every((s) => s.status === 'failed' || s.status === 'skipped')
+  const allFailed = Object.values(stepStatus).every(
+    (s) => s.status === 'failed' || s.status === 'skipped'
+  )
   const finalResult = { steps: stepStatus }
 
   if (allFailed) {
@@ -342,7 +368,10 @@ async function runFullCycle(jobId) {
     await completeJob(jobId, finalResult)
   }
 
-  logger.info({ jobId, steps: Object.fromEntries(Object.entries(stepStatus).map(([k, v]) => [k, v.status])) }, 'full-cycle: complete')
+  logger.info(
+    { jobId, steps: Object.fromEntries(Object.entries(stepStatus).map(([k, v]) => [k, v.status])) },
+    'full-cycle: complete'
+  )
 }
 
 router.post('/full-cycle', async (req, res, next) => {

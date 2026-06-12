@@ -76,7 +76,9 @@ router.post('/book', requireAuth, async (req, res, next) => {
       .maybeSingle()
     if (updateErr) throw updateErr
     if (!slot) {
-      return res.status(409).json({ error: 'Slot was just booked by someone else — please try again' })
+      return res
+        .status(409)
+        .json({ error: 'Slot was just booked by someone else — please try again' })
     }
 
     // Create booking

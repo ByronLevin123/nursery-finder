@@ -71,7 +71,10 @@ router.post('/schools/ingest', requireRole('admin'), async (req, res, next) => {
           'get-information-schools.service.gov.uk',
           'ea-edubase-api-prod.azurewebsites.net',
         ]
-        if (parsed.protocol !== 'https:' || !allowed.some((d) => parsed.hostname === d || parsed.hostname.endsWith('.' + d))) {
+        if (
+          parsed.protocol !== 'https:' ||
+          !allowed.some((d) => parsed.hostname === d || parsed.hostname.endsWith('.' + d))
+        ) {
           return res
             .status(400)
             .json({ error: 'CSV URL must be HTTPS from an allowed education data domain' })

@@ -64,6 +64,7 @@ import billingRouter, { billingWebhookHandler } from './routes/billing.js'
 // Admin dashboard
 import adminRouter from './routes/admin.js'
 import adminStatusRouter from './routes/adminStatus.js'
+import searchConsoleRouter from './routes/searchConsole.js'
 
 // Provider acquisition — invite outreach
 import providerInvitesRouter from './routes/providerInvites.js'
@@ -89,6 +90,7 @@ import schoolsRouter from './routes/schools.js'
 // Developer platform — API key management
 import developerRouter from './routes/developer.js'
 import { apiKeyAuth } from './middleware/apiKeyAuth.js'
+import { scrubUrlSecrets } from './utils.js'
 
 // AI feature routes (Claude-powered) — separate block, do not merge with mounts above
 import aiRouter from './routes/ai.js'
@@ -201,7 +203,7 @@ app.use(
       req: (req) => ({
         id: req.id,
         method: req.method,
-        url: req.url,
+        url: scrubUrlSecrets(req.url),
         ip: req.ip,
         userAgent: req.headers['user-agent'],
       }),
@@ -310,6 +312,7 @@ app.use('/api/v1/notifications', notificationsRouter)
 app.use('/api/v1/billing', billingRouter)
 app.use('/api/v1/admin', adminRouter)
 app.use('/api/v1/admin/status', adminStatusRouter)
+app.use('/api/v1/admin/search-console', searchConsoleRouter)
 app.use('/api/v1/admin/provider-invites', providerInvitesRouter)
 app.use('/api/v1/admin/promotions', adminPromotionsRouter)
 app.use('/api/v1/admin/marketing', marketingRouter)
