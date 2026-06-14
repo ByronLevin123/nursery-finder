@@ -16,13 +16,15 @@ _Last updated: 2026-06-06 — branch `claude/activity-stats-google-alignment-aY7
 
 ---
 
-## 1. Supabase migrations (run in order, in the SQL editor)
+## 1. Supabase migrations (run in order, in the SQL editor — or `npm run migrate`)
 
 | Migration | What | Status |
 |-----------|------|--------|
 | `059_marketing_hub.sql` | Marketing Hub base tables | 👤 apply if not already (shipped in #57) |
 | `060_marketing_hub_fe_alignment.sql` | UI-shaped columns + backfill | 👤 apply after merge |
 | `061_marketing_post_image.sql` | `image_url` on marketing_posts (Instagram) | 👤 apply after merge |
+| `062_schema_migrations.sql` | migration tracking table | 👤 apply after merge |
+| `063_daily_active_visitors.sql` | DAU dashboard RPC | 👤 apply after merge |
 
 Audit query (paste in SQL editor) reports what's still missing — see `DEPLOYMENT_RUNBOOK.md`.
 
@@ -105,7 +107,7 @@ Audit query (paste in SQL editor) reports what's still missing — see `DEPLOYME
 
 1. 👤 Set all secrets (section 3) in Render + Vercel
 2. 👤 Merge PR #58 → `main`
-3. 👤 Run migrations 059→061 in Supabase
+3. 👤 Run migrations 059→063 in Supabase (or `npm run migrate`)
 4. 👤 Apply updated Render blueprint (creates worker service)
 5. ✅ CI + post-deploy smoke test gate the deploy
 6. 👤 Verify: admin Jobs panel populates; Buffer "test connection"; a test post to Instagram
