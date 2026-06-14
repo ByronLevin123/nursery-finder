@@ -7,7 +7,7 @@ process.env.SUPABASE_ANON_KEY = 'anon-test-key'
 import { createMockDb } from './helpers/mockDb.js'
 import { createAuthMock } from './helpers/testApp.js'
 
-const { db, getTable, resetAll } = createMockDb({
+const { db, getTable, setTable, resetAll } = createMockDb({
   user_profiles: [
     { id: 'admin-1', role: 'admin' },
     { id: 'user-1', role: 'customer' },
@@ -292,6 +292,16 @@ describe('autopilot', () => {
     const res = await asAdmin(request(app).post('/api/v1/admin/marketing/autopilot/run'))
     expect(res.status).toBe(200)
     expect(res.body.data.posted).toBe(1)
+  })
+
+  it('POST /autopilot/roundup runs the new-nurseries roundup', async () => {
+    setTable('nurseries', [
+      { urn: '1', name: 'A', postcode: 'SW1A 1AA', created_at: new Date().toISOString() },
+    ])
+    const res = await asAdmin(request(app).post('/api/v1/admin/marketing/autopilot/roundup'))
+    expect(res.status).toBe(200)
+    // posts to the one connected channel for district SW1A
+    expect(res.body.data.district).toBe('SW1A')
   })
 
   it('rejects non-admins', async () => {

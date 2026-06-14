@@ -17,7 +17,11 @@ import { syncGooglePlacesData, refreshStaleGoogleData } from './services/googleP
 import { refreshCrimeForDistricts } from './services/policeApi.js'
 import { runTrackedJob } from './services/jobRunner.js'
 import { pruneJobRuns } from './services/jobTracker.js'
-import { runAutopilot, runContentSyndication } from './services/marketingAutopilot.js'
+import {
+  runAutopilot,
+  runContentSyndication,
+  runNewNurseriesRoundup,
+} from './services/marketingAutopilot.js'
 import db from './db.js'
 import { logger } from './logger.js'
 
@@ -214,6 +218,11 @@ cron.schedule('0 9 * * 1,3,5', () => runTrackedJob('marketing_autopilot', () => 
 // Tue 10am: content syndication — auto-share a site guide to social (same flag).
 cron.schedule('0 10 * * 2', () =>
   runTrackedJob('content_syndication', () => runContentSyndication())
+)
+
+// Thu 10am: "new nurseries in {area}" roundup — timely, local, shareable (same flag).
+cron.schedule('0 10 * * 4', () =>
+  runTrackedJob('new_nurseries_roundup', () => runNewNurseriesRoundup())
 )
 
 // Daily 6am: snapshot admin reports cache

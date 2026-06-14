@@ -97,6 +97,14 @@ export function buildBrief(theme, { district } = {}) {
   }
 }
 
+// UK postcode district (outward code), e.g. "SW1A 1AA" → "SW1A". Exported for tests.
+export function postcodeDistrict(postcode) {
+  if (!postcode) return null
+  const clean = String(postcode).replace(/\s+/g, '').toUpperCase()
+  if (clean.length < 4) return clean
+  return clean.slice(0, clean.length - 3)
+}
+
 // Pull a popular postcode district to localise the 'local' theme. Best-effort.
 async function topDistrict() {
   if (!db) return null
@@ -230,6 +238,64 @@ export async function runContentSyndication({ now = new Date(), force = false } 
   return { slug: guide.slug, title: guide.title, posted: posted.length, results }
 }
 
+/**
+ * "New nurseries in {area}" roundup — finds the district with the most newly
+ * added nurseries in the last `sinceDays`, posts a timely roundup deep-linked to
+ * that district's landing page. Fresh, local, shareable content that drives both
+ * SEO freshness and social referral traffic. Same gating as the autopilot.
+ */
+export async function runNewNurseriesRoundup({
+  now = new Date(),
+  force = false,
+  sinceDays = 14,
+} = {}) {
+  if (!force && !isEnabled()) return { skipped: 'MARKETING_AUTOPILOT_ENABLED is not true' }
+  if (!isClaudeAvailable()) return { skipped: 'Claude not configured' }
+  if (!bufferService.isAvailable()) return { skipped: 'Buffer not configured' }
+  if (!db) return { skipped: 'db not configured' }
+
+  const since = new Date(now.getTime() - sinceDays * 86400000).toISOString()
+  const { data: recent, error } = await db
+    .from('nurseries')
+    .select('urn, name, postcode, created_at')
+    .gte('created_at', since)
+    .limit(500)
+  if (error) throw new Error(`roundup: could not load new nurseries: ${error.message}`)
+  if (!recent?.length) return { skipped: 'no new nurseries in window' }
+
+  // Pick the district with the most newly added nurseries.
+  const counts = {}
+  for (const n of recent) {
+    const d = postcodeDistrict(n.postcode)
+    if (d) counts[d] = (counts[d] || 0) + 1
+  }
+  const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]
+  if (!top) return { skipped: 'no districts resolved' }
+  const [district, count] = top
+
+  const { data: channels, error: chErr } = await bufferService.getProfiles()
+  if (chErr) throw new Error(`roundup: could not load channels: ${chErr}`)
+  if (!channels?.length) return { skipped: 'no connected Buffer channels' }
+
+  const brief =
+    `${count} new ${count === 1 ? 'nursery has' : 'nurseries have'} recently joined ` +
+    `NurseryMatch in ${district}. Invite parents to compare them by Ofsted rating, fees and availability.`
+  const copy = await callClaude({
+    prompt: `Write the post. Topic: ${brief}`,
+    system: SYSTEM_PROMPT,
+    maxTokens: 300,
+  })
+  const landing = `${siteUrl()}/nurseries-in/${district.toLowerCase()}`
+  const text = `${copy.trim()}\n\n${withUtm(landing, { campaign: 'roundup', content: 'new-nurseries' })}`
+
+  const imageUrl = process.env.MARKETING_DEFAULT_IMAGE_URL || null
+  const { results, posted } = await postToChannels(channels, { text, imageUrl })
+  await recordPost({ text, imageUrl, theme: `roundup:${district}`, brief, channels, posted })
+
+  logger.info({ district, count, posted: posted.length }, 'roundup: cycle complete')
+  return { district, count, channels: channels.length, posted: posted.length, results }
+}
+
 function siteUrl() {
   return process.env.FRONTEND_URL || 'https://nurserymatch.com'
 }
@@ -269,9 +335,11 @@ export default {
   isEnabled,
   runAutopilot,
   runContentSyndication,
+  runNewNurseriesRoundup,
   pickTheme,
   withUtm,
   buildBrief,
   landingPath,
+  postcodeDistrict,
   THEMES,
 }

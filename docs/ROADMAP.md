@@ -46,8 +46,10 @@ Audit query (paste in SQL editor) reports what's still missing — see `DEPLOYME
 - ✅ **Content syndication** — weekly job (Tue 10:00 UTC) auto-shares a site guide
   to social with a tracked `/guides/{slug}` link (rotates weekly; AI hook with
   excerpt fallback). Admin "Share a guide" button + `POST /autopilot/syndicate`.
-- ⬜ Next acquisition levers (not yet built): weekly "new nurseries in your area"
-  social roundups; referral share incentives; CSP hardening.
+- ✅ **"New nurseries in {area}" roundup** — weekly job (Thu 10:00 UTC) finds the
+  district with the most newly added nurseries (last 14 days) and posts a timely
+  roundup deep-linked to `/nurseries-in/{district}`. `POST /autopilot/roundup`.
+- ⬜ Next acquisition levers (not yet built): referral share incentives.
 
 ### 2.1 Marketing / Buffer
 - ✅ Buffer GraphQL service (channels + createPost), text posts

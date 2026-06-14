@@ -16,6 +16,7 @@ import * as googleAdsService from '../services/googleAdsService.js'
 import {
   runAutopilot,
   runContentSyndication,
+  runNewNurseriesRoundup,
   isEnabled as autopilotEnabled,
 } from '../services/marketingAutopilot.js'
 
@@ -633,6 +634,20 @@ router.post('/autopilot/syndicate', async (req, res, next) => {
     return res.json({ data: summary })
   } catch (err) {
     logger.error({ err: err.message }, 'content syndication manual run failed')
+    next(err)
+  }
+})
+
+// ---------------------------------------------------------------------------
+// POST /autopilot/roundup — post a "new nurseries in {area}" roundup now
+// ---------------------------------------------------------------------------
+router.post('/autopilot/roundup', async (req, res, next) => {
+  try {
+    const summary = await runNewNurseriesRoundup({ force: true })
+    logger.info({ summary }, 'new nurseries roundup manual run')
+    return res.json({ data: summary })
+  } catch (err) {
+    logger.error({ err: err.message }, 'new nurseries roundup manual run failed')
     next(err)
   }
 })

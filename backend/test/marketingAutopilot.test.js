@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest'
 import { createMockDb } from './helpers/mockDb.js'
 
-const { db, getTable, resetAll } = createMockDb()
+const { db, getTable, setTable, resetAll } = createMockDb()
 vi.mock('../src/db.js', () => ({ default: db }))
 
 const h = vi.hoisted(() => ({
@@ -74,6 +74,43 @@ describe('pure helpers', () => {
     expect(mod.landingPath('local')).toBe('/search')
     expect(mod.landingPath('visit-checklist')).toBe('/guides/questions-to-ask-nursery-visit')
     expect(mod.landingPath('ofsted-ratings')).toBe('/search')
+  })
+
+  it('postcodeDistrict extracts the outward code', () => {
+    expect(mod.postcodeDistrict('SW1A 1AA')).toBe('SW1A')
+    expect(mod.postcodeDistrict('m11ae')).toBe('M1')
+    expect(mod.postcodeDistrict(null)).toBe(null)
+  })
+})
+
+describe('runNewNurseriesRoundup', () => {
+  it('posts a roundup for the district with the most new nurseries, deep-linked', async () => {
+    const now = new Date()
+    const recent = (d) => new Date(now.getTime() - d * 86400000).toISOString()
+    setTable('nurseries', [
+      { urn: '1', name: 'A', postcode: 'SW1A 1AA', created_at: recent(1) },
+      { urn: '2', name: 'B', postcode: 'SW1A 2BB', created_at: recent(2) },
+      { urn: '3', name: 'C', postcode: 'M1 1AE', created_at: recent(3) },
+    ])
+    const r = await mod.runNewNurseriesRoundup({ force: true })
+    expect(r.district).toBe('SW1A')
+    expect(r.count).toBe(2)
+    expect(r.posted).toBe(1)
+    expect(h.createdPosts[0].text).toContain('/nurseries-in/sw1a')
+    expect(h.createdPosts[0].text).toContain('utm_campaign=roundup')
+  })
+
+  it('skips when there are no new nurseries in the window', async () => {
+    setTable('nurseries', [])
+    const r = await mod.runNewNurseriesRoundup({ force: true })
+    expect(r.skipped).toMatch(/no new nurseries/i)
+    expect(h.createdPosts).toHaveLength(0)
+  })
+
+  it('skips when disabled and not forced', async () => {
+    process.env.MARKETING_AUTOPILOT_ENABLED = 'false'
+    const r = await mod.runNewNurseriesRoundup()
+    expect(r.skipped).toBeTruthy()
   })
 })
 
