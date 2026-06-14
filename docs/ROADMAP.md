@@ -80,11 +80,14 @@ Audit query (paste in SQL editor) reports what's still missing — see `DEPLOYME
 - ✅ `api_key`/token query values scrubbed from request logs
 - ✅ Buffer GraphQL inputs strictly typed (channelId string, scheduledAt ISO-8601)
 - ✅ `image_url` validated (http/https, ≤2048 chars)
-- ✅ Frontend security headers (nosniff, frame DENY, referrer policy, permissions policy)
-- ⬜ Content-Security-Policy — needs an allowlist for Plausible/gtag/AdSense/Turnstile/
-  map tiles/Street View; start with `Content-Security-Policy-Report-Only`
-- 👤 Rotate any API keys ever pasted into chats/logs; enable Supabase RLS review before
-  exposing further tables
+- ✅ Frontend security headers + **enforced CSP** — single source of truth in
+  `frontend/vercel.json` (nosniff, frame DENY, HSTS, referrer + permissions policy,
+  CSP allowlisting Plausible/gtag/AdSense/Turnstile/maps/Street View). Removed the
+  duplicate header block from `next.config.js` and a stale `*.railway.app` CSP entry.
+- ⬜ CSP hardening: drop `'unsafe-inline'`/`'unsafe-eval'` from `script-src` via a
+  nonce/hash strategy (currently required by Next.js inline + gtag).
+- 👤 Rotate any API keys ever pasted into chats/logs; **change `ADMIN_PASS`** if it
+  was ever shared; enable Supabase RLS review before exposing further tables
 
 ## 3. Integrations — wired in code ✅, need secrets set 👤
 

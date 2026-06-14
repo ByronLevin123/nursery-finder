@@ -12,24 +12,10 @@ const nextConfig = {
       },
     ]
   },
-  // Security headers for all pages — Vercel only adds HSTS by itself.
-  // No CSP yet: pages legitimately load Plausible, gtag/AdSense, Turnstile,
-  // map tiles and Street View, so a CSP needs careful allowlisting (tracked
-  // in docs/ROADMAP.md) rather than a blind deny.
-  // geolocation=(self) keeps the "nurseries near me" page working.
-  async headers() {
-    return [
-      {
-        source: '/:path*',
-        headers: [
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'X-Frame-Options', value: 'DENY' },
-          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(self)' },
-        ],
-      },
-    ]
-  },
+  // NOTE: security headers (CSP, HSTS, frame DENY, nosniff, referrer +
+  // permissions policy) live in frontend/vercel.json so there is a single
+  // source of truth on Vercel — do not also set them here or they'd be
+  // emitted twice.
 }
 
 if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
