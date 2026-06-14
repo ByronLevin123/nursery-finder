@@ -190,5 +190,8 @@ export function howToSchema(guide: {
 }
 
 export function jsonLdScript(obj: AnyObj | AnyObj[]): string {
-  return JSON.stringify(obj)
+  // Escape < so a value containing "</script>" (e.g. an externally-sourced
+  // nursery name or provider-edited text) can never break out of the JSON-LD
+  // <script> tag — < is valid JSON and parsed identically.
+  return JSON.stringify(obj).replace(/</g, '\\u003c')
 }

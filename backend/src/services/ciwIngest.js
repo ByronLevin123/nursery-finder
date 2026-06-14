@@ -23,7 +23,7 @@ const CIW_GRADE_MAP = {
 
 function parseDate(str) {
   if (!str?.trim()) return null
-  const dmy = str.trim().match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})$/)
+  const dmy = str.trim().match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/)
   if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`
   if (/^\d{4}-\d{2}-\d{2}/.test(str.trim())) return str.trim().slice(0, 10)
   return null
@@ -31,34 +31,42 @@ function parseDate(str) {
 
 function mapRow(row) {
   const regNumber = (
-    row['Registration Number'] || row['Service Reference'] ||
-    row['CIW Number'] || row['ServiceRef'] || ''
+    row['Registration Number'] ||
+    row['Service Reference'] ||
+    row['CIW Number'] ||
+    row['ServiceRef'] ||
+    ''
   ).trim()
-  const name = (
-    row['Service Name'] || row['ServiceName'] || row['Name'] || ''
-  ).trim()
+  const name = (row['Service Name'] || row['ServiceName'] || row['Name'] || '').trim()
 
   if (!regNumber || !name) return null
 
-  const serviceType = (
-    row['Service Type'] || row['ServiceType'] || row['Type'] || ''
-  ).trim()
+  const serviceType = (row['Service Type'] || row['ServiceType'] || row['Type'] || '').trim()
 
   // Filter for childcare services
   const childcareTypes = [
-    'Day Care', 'Child Minding', 'Childminding', 'Full Day Care',
-    'Sessional Day Care', 'Out of School Care', 'Open Access Play',
-    'Creche', 'Nursery',
+    'Day Care',
+    'Child Minding',
+    'Childminding',
+    'Full Day Care',
+    'Sessional Day Care',
+    'Out of School Care',
+    'Open Access Play',
+    'Creche',
+    'Nursery',
   ]
-  const isChildcare = childcareTypes.some((t) =>
-    serviceType.toLowerCase().includes(t.toLowerCase())
-  ) || serviceType === ''
+  const isChildcare =
+    childcareTypes.some((t) => serviceType.toLowerCase().includes(t.toLowerCase())) ||
+    serviceType === ''
 
   if (!isChildcare) return null
 
   const overallGrade = (
-    row['Overall Grade'] || row['Overall Assessment'] ||
-    row['Rating'] || row['OverallJudgement'] || ''
+    row['Overall Grade'] ||
+    row['Overall Assessment'] ||
+    row['Rating'] ||
+    row['OverallJudgement'] ||
+    ''
   ).trim()
 
   const postcode = (row['Postcode'] || row['Post Code'] || '').trim().toUpperCase() || null
@@ -66,9 +74,8 @@ function mapRow(row) {
 
   const address = (row['Address'] || row['ServiceAddress'] || '').trim() || null
   const town = (row['Town'] || row['City'] || row['Location'] || '').trim() || null
-  const localAuthority = (
-    row['Local Authority'] || row['LA'] || row['Council'] || ''
-  ).trim() || null
+  const localAuthority =
+    (row['Local Authority'] || row['LA'] || row['Council'] || '').trim() || null
 
   const lastInspection = parseDate(
     row['Last Inspection Date'] || row['Date of Last Inspection'] || ''
@@ -76,10 +83,11 @@ function mapRow(row) {
 
   const places = parseInt(row['Places'] || row['Registered Places'] || '', 10)
 
-  const providerType = serviceType.toLowerCase().includes('child minding') ||
+  const providerType =
+    serviceType.toLowerCase().includes('child minding') ||
     serviceType.toLowerCase().includes('childminding')
-    ? 'Childminder'
-    : 'Childcare on non-domestic premises'
+      ? 'Childminder'
+      : 'Childcare on non-domestic premises'
 
   return {
     urn: `CIW${regNumber}`,
@@ -108,7 +116,7 @@ export async function ingestCiwData(csvUrl) {
   if (!csvUrl) {
     throw new Error(
       'CSV URL required. Download the latest childcare services CSV from ' +
-      'https://careinspectorate.wales/service-directory'
+        'https://careinspectorate.wales/service-directory'
     )
   }
 

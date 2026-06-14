@@ -111,6 +111,8 @@ export default function AdminMarketingPage() {
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Marketing Hub</h1>
 
+      <AutopilotCard />
+
       {/* Tabs */}
       <div className="flex gap-1 mb-6 border-b border-gray-200 overflow-x-auto">
         {TABS.map((tab) => (
@@ -136,6 +138,122 @@ export default function AdminMarketingPage() {
 }
 
 // ========================
+// Marketing Autopilot status card
+// ========================
+
+interface AutopilotStatus {
+  enabled: boolean
+  claude: boolean
+  buffer: boolean
+  schedule: string
+}
+
+function AutopilotCard() {
+  const [status, setStatus] = useState<AutopilotStatus | null>(null)
+  const [running, setRunning] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchStatus()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function authHeaders(): Promise<HeadersInit> {
+    const token = await getAuthToken()
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    }
+  }
+
+  async function fetchStatus() {
+    try {
+      const headers = await authHeaders()
+      const res = await fetch(`${API_URL}/api/v1/admin/marketing/autopilot`, { headers })
+      if (res.ok) setStatus(await res.json())
+    } catch {
+      // ignore
+    }
+  }
+
+  async function trigger(endpoint: string, label: 'theme' | 'slug') {
+    setRunning(true)
+    setMessage(null)
+    try {
+      const headers = await authHeaders()
+      const res = await fetch(`${API_URL}/api/v1/admin/marketing/${endpoint}`, {
+        method: 'POST',
+        headers,
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to run')
+      const d = data.data || {}
+      setMessage(
+        d.skipped
+          ? `Skipped: ${d.skipped}`
+          : `Posted to ${d.posted ?? 0} channel(s) (${d[label] ?? ''})`
+      )
+    } catch (err: unknown) {
+      setMessage(err instanceof Error ? err.message : 'Unknown error')
+    } finally {
+      setRunning(false)
+    }
+  }
+
+  const runNow = () => trigger('autopilot/run', 'theme')
+  const shareGuide = () => trigger('autopilot/syndicate', 'slug')
+
+  const ready = status?.claude && status?.buffer
+
+  return (
+    <div className="mb-6 bg-gradient-to-r from-indigo-50 to-white border border-indigo-100 rounded-xl p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-semibold text-gray-900">Marketing Autopilot</h2>
+            <span
+              className={`px-2 py-0.5 text-xs rounded-full font-medium ${
+                status?.enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+              }`}
+            >
+              {status?.enabled ? 'Scheduled ON' : 'Scheduled OFF'}
+            </span>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            Auto-generates &amp; queues a social post {status?.schedule || 'Mon/Wed/Fri 09:00 UTC'},
+            with a tracked link back to the site.{' '}
+            {!ready && (
+              <span className="text-amber-600">
+                Needs {!status?.claude && 'Anthropic'}
+                {!status?.claude && !status?.buffer && ' + '}
+                {!status?.buffer && 'Buffer'} configured.
+              </span>
+            )}
+          </p>
+          {message && <p className="text-xs text-gray-700 mt-1 font-medium">{message}</p>}
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={shareGuide}
+            disabled={running || !status?.buffer}
+            title="Share a site guide to social now"
+            className="px-4 py-2 bg-white border border-indigo-200 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Share a guide
+          </button>
+          <button
+            onClick={runNow}
+            disabled={running || !ready}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {running ? 'Running…' : 'Run once now'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ========================
 // Tab 1: AI Content Generator
 // ========================
 
@@ -149,7 +267,11 @@ function ContentGeneratorTab() {
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [postingToBuffer, setPostingToBuffer] = useState(false)
+  const [postSuccess, setPostSuccess] = useState(false)
   const [bufferConnected, setBufferConnected] = useState(false)
+  const [bufferProfiles, setBufferProfiles] = useState<BufferProfile[]>([])
+  const [selectedProfiles, setSelectedProfiles] = useState<string[]>([])
+  const [postImageUrl, setPostImageUrl] = useState('')
   const [recentContent, setRecentContent] = useState<GeneratedContent[]>([])
   const [loadingRecent, setLoadingRecent] = useState(true)
 
@@ -173,11 +295,18 @@ function ContentGeneratorTab() {
       if (res.ok) {
         const data = await res.json()
         const profiles = Array.isArray(data) ? data : data.data ?? data.profiles ?? []
+        setBufferProfiles(profiles)
         setBufferConnected(profiles.length > 0)
       }
     } catch {
       // Buffer not connected
     }
+  }
+
+  function togglePostProfile(id: string) {
+    setSelectedProfiles((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
+    )
   }
 
   async function fetchRecentContent() {
@@ -246,23 +375,35 @@ function ContentGeneratorTab() {
 
   async function handlePostToBuffer() {
     if (!generatedText.trim()) return
+    if (selectedProfiles.length === 0) {
+      setError('Select at least one channel to post to')
+      return
+    }
     setPostingToBuffer(true)
+    setPostSuccess(false)
     setError(null)
     try {
       const headers = await authHeaders()
+      const body: Record<string, unknown> = {
+        text: generatedText,
+        profile_ids: selectedProfiles,
+        schedule: false,
+      }
+      if (postImageUrl.trim()) {
+        body.image_url = postImageUrl.trim()
+      }
       const res = await fetch(`${API_URL}/api/v1/admin/marketing/social/post`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({
-          text: generatedText,
-          profile_ids: [],
-          schedule: false,
-        }),
+        body: JSON.stringify(body),
       })
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
         throw new Error(errData.error || 'Failed to post to Buffer')
       }
+      setPostSuccess(true)
+      setSelectedProfiles([])
+      setPostImageUrl('')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
@@ -367,7 +508,54 @@ function ContentGeneratorTab() {
             rows={8}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-y"
           />
-          <div className="flex gap-3 mt-3">
+          {/* Post-to-Buffer (social posts only) */}
+          {contentType === 'social_post' && bufferConnected && (
+            <div className="mt-4 border-t border-gray-100 pt-4 space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Post to channels
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {bufferProfiles.map((profile) => (
+                    <label
+                      key={profile.id}
+                      className={`inline-flex items-center gap-2 px-3 py-1.5 border rounded-lg cursor-pointer transition text-sm ${
+                        selectedProfiles.includes(profile.id)
+                          ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                          : 'border-gray-200 hover:bg-gray-50 text-gray-700'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedProfiles.includes(profile.id)}
+                        onChange={() => togglePostProfile(profile.id)}
+                        className="sr-only"
+                      />
+                      {profile.service_username}
+                      <span className="text-xs text-gray-400">({profile.service})</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Image URL{' '}
+                  <span className="text-gray-400 font-normal">
+                    (optional — required for Instagram)
+                  </span>
+                </label>
+                <input
+                  type="url"
+                  value={postImageUrl}
+                  onChange={(e) => setPostImageUrl(e.target.value)}
+                  placeholder="https://nurserymatch.com/instagram/your-image.png"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center gap-3 mt-3">
             <button
               onClick={handleCopy}
               className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
@@ -377,12 +565,21 @@ function ContentGeneratorTab() {
             {contentType === 'social_post' && (
               <button
                 onClick={handlePostToBuffer}
-                disabled={!bufferConnected || postingToBuffer}
-                title={!bufferConnected ? 'Buffer is not connected. Configure it in the Social Media tab.' : ''}
+                disabled={!bufferConnected || postingToBuffer || selectedProfiles.length === 0}
+                title={
+                  !bufferConnected
+                    ? 'Buffer is not connected. Configure it in the Social Media tab.'
+                    : selectedProfiles.length === 0
+                      ? 'Select at least one channel'
+                      : ''
+                }
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {postingToBuffer ? 'Posting...' : 'Post to Buffer'}
               </button>
+            )}
+            {postSuccess && (
+              <span className="text-sm text-green-600 font-medium">Posted to Buffer ✓</span>
             )}
           </div>
         </div>
@@ -448,6 +645,7 @@ function SocialMediaTab() {
 
   // New post form
   const [postText, setPostText] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
   const [selectedProfiles, setSelectedProfiles] = useState<string[]>([])
   const [scheduleDate, setScheduleDate] = useState('')
   const [scheduleTime, setScheduleTime] = useState('')
@@ -528,6 +726,9 @@ function SocialMediaTab() {
         profile_ids: selectedProfiles,
         schedule,
       }
+      if (imageUrl.trim()) {
+        body.image_url = imageUrl.trim()
+      }
       if (schedule && scheduleDate && scheduleTime) {
         body.scheduled_at = `${scheduleDate}T${scheduleTime}:00.000Z`
       }
@@ -541,6 +742,7 @@ function SocialMediaTab() {
         throw new Error(errData.error || 'Failed to post')
       }
       setPostText('')
+      setImageUrl('')
       setSelectedProfiles([])
       setScheduleDate('')
       setScheduleTime('')
@@ -566,25 +768,25 @@ function SocialMediaTab() {
               Buffer is not configured
             </h3>
             <p className="text-sm text-amber-700 mb-3">
-              To connect your social media accounts, set up Buffer with the following
-              environment variables in your backend:
+              To connect your social media accounts, add your Buffer personal API key to the
+              backend environment:
             </p>
             <div className="bg-white border border-amber-200 rounded-lg p-3 font-mono text-xs text-gray-800 space-y-1">
-              <p>BUFFER_ACCESS_TOKEN=your_buffer_access_token</p>
-              <p>BUFFER_CLIENT_ID=your_buffer_client_id</p>
-              <p>BUFFER_CLIENT_SECRET=your_buffer_client_secret</p>
+              <p>BUFFER_API_TOKEN=your_buffer_api_key</p>
+              <p># optional — defaults to your first organization</p>
+              <p>BUFFER_ORGANIZATION_ID=your_organization_id</p>
             </div>
             <p className="text-xs text-amber-600 mt-3">
               Visit{' '}
               <a
-                href="https://buffer.com/developers/api"
+                href="https://developers.buffer.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline"
               >
-                buffer.com/developers/api
+                developers.buffer.com
               </a>{' '}
-              to create an application and obtain credentials.
+              to generate a personal API key for the Buffer API.
             </p>
           </div>
         ) : (
@@ -644,6 +846,25 @@ function SocialMediaTab() {
                 placeholder="What would you like to share?"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-y"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Image URL{' '}
+                <span className="text-gray-400 font-normal">
+                  (optional — required for Instagram)
+                </span>
+              </label>
+              <input
+                type="url"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://nurserymatch.com/instagram/your-image.png"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              />
+              <p className="mt-1 text-xs text-gray-400">
+                Must be a publicly reachable image (Buffer fetches it). JPG/PNG for Instagram.
+              </p>
             </div>
 
             <div>
@@ -727,7 +948,19 @@ function SocialMediaTab() {
 
       {/* Recent posts */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Posts</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Recent Posts</h2>
+        <p className="text-xs text-gray-400 mb-4">
+          Engagement metrics (impressions, reach) live in your{' '}
+          <a
+            href="https://buffer.com/analyze"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-gray-600"
+          >
+            Buffer Analyze dashboard
+          </a>{' '}
+          — Buffer&apos;s API does not expose per-post analytics yet.
+        </p>
 
         {loadingPosts ? (
           <div className="text-center text-gray-500 py-6">Loading...</div>

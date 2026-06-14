@@ -1,6 +1,5 @@
 import 'dotenv/config'
 import cron from 'node-cron'
-import { execFile } from 'child_process'
 import { ingestOfstedRegister } from './services/ofstedIngest.js'
 import { geocodeNurseriesBatch } from './services/geocoding.js'
 import { geocodeSchoolsBatch } from './services/schoolIngest.js'
@@ -15,133 +14,108 @@ import { sendReengagementEmails } from './services/reengagement.js'
 import { processSavedSearchAlerts } from './services/savedSearchAlerts.js'
 import { processOfstedChangeNotifications } from './services/ofstedChangeNotifier.js'
 import { syncGooglePlacesData, refreshStaleGoogleData } from './services/googlePlaces.js'
+import { refreshCrimeForDistricts } from './services/policeApi.js'
+import { runTrackedJob } from './services/jobRunner.js'
+import { pruneJobRuns } from './services/jobTracker.js'
+import {
+  runAutopilot,
+  runContentSyndication,
+  runNewNurseriesRoundup,
+} from './services/marketingAutopilot.js'
 import db from './db.js'
 import { logger } from './logger.js'
 
 logger.info('NurseryMatch worker started')
 
-// Geocode 500 nurseries every night at 3am
-cron.schedule('0 3 * * *', async () => {
-  logger.info('cron: starting nightly geocoding batch')
-  try {
-    const result = await geocodeNurseriesBatch(500)
-    logger.info(result, 'cron: geocoding complete')
-  } catch (err) {
-    logger.error({ err: err.message }, 'cron: geocoding failed')
-  }
+// Every scheduled job below is wrapped in runTrackedJob so it records a row in
+// job_runs (visible in the admin Jobs panel) and never crashes the worker on
+// failure. The two sub-hourly utility crons (drip queue, self-ping) are left
+// untracked on purpose — tracking them would add ~240 job_runs rows/day.
 
-  // Also geocode schools that have postcodes but no lat/lng
-  try {
-    const schoolResult = await geocodeSchoolsBatch(200)
-    logger.info(schoolResult, 'cron: school geocoding complete')
-  } catch (err) {
-    logger.error({ err: err.message }, 'cron: school geocoding failed')
-  }
-})
+// Geocode nurseries (and schools) every night at 3am
+cron.schedule('0 3 * * *', () =>
+  runTrackedJob('geocoding', async () => {
+    const nurseries = await geocodeNurseriesBatch(500)
+    // School geocoding failure must not fail the nightly nursery geocode.
+    let schools
+    try {
+      schools = await geocodeSchoolsBatch(200)
+    } catch (err) {
+      logger.error({ err: err.message }, 'cron: school geocoding failed')
+      schools = { error: err.message }
+    }
+    return { nurseries, schools }
+  })
+)
 
 // Enrich nurseries with Google Places data nightly at 4am (100 per night ≈ 3k/month)
-cron.schedule('0 4 * * *', async () => {
-  logger.info('cron: starting Google Places enrichment')
-  try {
-    const result = await syncGooglePlacesData(100, { photosEnabled: true })
-    logger.info(result, 'cron: Google Places enrichment complete')
-  } catch (err) {
-    logger.error({ err: err.message }, 'cron: Google Places enrichment failed')
-  }
-})
+cron.schedule('0 4 * * *', () =>
+  runTrackedJob('google_places_enrichment', () =>
+    syncGooglePlacesData(100, { photosEnabled: true })
+  )
+)
 
 // Refresh stale Google ratings weekly on Sundays at 5am
-cron.schedule('0 5 * * 0', async () => {
-  logger.info('cron: starting Google Places stale refresh')
-  try {
-    const result = await refreshStaleGoogleData(200, 90)
-    logger.info(result, 'cron: Google Places refresh complete')
-  } catch (err) {
-    logger.error({ err: err.message }, 'cron: Google Places refresh failed')
-  }
-})
+cron.schedule('0 5 * * 0', () =>
+  runTrackedJob('google_places_refresh', () => refreshStaleGoogleData(200, 90))
+)
 
 // Re-sync Ofsted data on 1st of every month at 2am
-cron.schedule('0 2 1 * *', async () => {
-  logger.info('cron: starting monthly Ofsted sync')
-  try {
-    const result = await ingestOfstedRegister()
-    logger.info(result, 'cron: Ofsted sync complete')
-  } catch (err) {
-    logger.error({ err: err.message }, 'cron: Ofsted sync failed')
-  }
-})
+cron.schedule('0 2 1 * *', () => runTrackedJob('ofsted_sync', () => ingestOfstedRegister()))
 
 // Ofsted grade change notifications — 2nd of each month at 3am (after re-sync at 2am on the 1st)
-cron.schedule('0 3 2 * *', async () => {
-  logger.info('cron: starting Ofsted change notifications')
-  try {
-    const result = await processOfstedChangeNotifications()
-    logger.info(result, 'cron: Ofsted change notifications complete')
-  } catch (err) {
-    logger.error({ err: err.message }, 'cron: Ofsted change notifications failed')
-  }
-})
+cron.schedule('0 3 2 * *', () =>
+  runTrackedJob('ofsted_change_notifications', () => processOfstedChangeNotifications())
+)
 
 // Monthly: refresh Land Registry data (1st of month, 1am)
-cron.schedule('0 1 1 * *', async () => {
-  logger.info('cron: refreshing Land Registry data')
-  try {
+cron.schedule('0 1 1 * *', () =>
+  runTrackedJob('land_registry_refresh', async () => {
     const currentYear = new Date().getFullYear()
     await ingestLandRegistryYear(currentYear)
     await refreshPropertyStats()
-  } catch (err) {
-    logger.error({ err: err.message }, 'cron: Land Registry refresh failed')
-  }
-})
+    return { year: currentYear }
+  })
+)
 
-// Nightly: crime data batch (takes ~1 hour for 100 districts)
-cron.schedule('0 1 * * *', async () => {
-  logger.info('cron: refreshing crime data batch')
-})
+// Nightly 1am: refresh crime stats for the stalest districts.
+// Rate-limited (~600ms/request, 3 months each), so we keep the batch modest.
+cron.schedule('0 1 * * *', () =>
+  runTrackedJob('crime_refresh', () => refreshCrimeForDistricts({ limit: 50, staleDays: 30 }))
+)
+
+// Nightly 3:30am: refresh per-district nursery counts (after geocoding at 3am)
+cron.schedule('30 3 * * *', () =>
+  runTrackedJob('aggregate_areas', async () => {
+    if (!db) return { skipped: 'db not configured' }
+    const { data, error } = await db.rpc('refresh_postcode_area_nursery_stats')
+    if (error) throw error
+    return { districts_updated: data }
+  })
+)
 
 // Nightly: recompute nursery dimension scores (4:30am)
-cron.schedule('30 4 * * *', async () => {
-  logger.info('cron: recomputing dimension scores')
-  try {
-    const result = await recomputeAllDimensionScores()
-    logger.info(result, 'cron: dimension scores complete')
-  } catch (err) {
-    logger.error({ err: err.message }, 'cron: dimension scores failed')
-  }
-})
+cron.schedule('30 4 * * *', () =>
+  runTrackedJob('dimension_scores', () => recomputeAllDimensionScores())
+)
 
-// Nightly: recalculate family scores
-cron.schedule('0 5 * * *', async () => {
-  logger.info('cron: recalculating family scores')
-  try {
+// Nightly: recalculate family scores (5am)
+cron.schedule('0 5 * * *', () =>
+  runTrackedJob('family_scores', async () => {
+    if (!db) return { skipped: 'db not configured' }
     const { data, error } = await db.rpc('calculate_all_family_scores')
     if (error) throw error
-    logger.info({ districts: data }, 'cron: family scores complete')
-  } catch (err) {
-    logger.error({ err: err.message }, 'cron: family scores failed')
-  }
-})
+    return { districts: data }
+  })
+)
 
 // Daily: saved-search digest (8am UTC)
-cron.schedule('0 8 * * *', async () => {
-  logger.info('cron: starting daily digest')
-  try {
-    const result = await runDailyDigest()
-    logger.info(result, 'cron: daily digest complete')
-  } catch (err) {
-    logger.error({ err: err.message }, 'cron: daily digest failed')
-  }
-})
+cron.schedule('0 8 * * *', () => runTrackedJob('daily_digest', () => runDailyDigest()))
 
 // Daily: visit reminders at 8am — notify parents about visits tomorrow
-cron.schedule('0 8 * * *', async () => {
-  logger.info('cron: starting visit reminders')
-  try {
-    if (!db) {
-      logger.warn('cron: visit reminders skipped — db not configured')
-      return
-    }
+cron.schedule('0 8 * * *', () =>
+  runTrackedJob('visit_reminders', async () => {
+    if (!db) return { skipped: 'db not configured' }
 
     // Find confirmed bookings where slot_date = tomorrow
     const tomorrow = new Date()
@@ -181,13 +155,11 @@ cron.schedule('0 8 * * *', async () => {
       }
     }
 
-    logger.info({ total: valid.length, sent }, 'cron: visit reminders complete')
-  } catch (err) {
-    logger.error({ err: err.message }, 'cron: visit reminders failed')
-  }
-})
+    return { total: valid.length, sent }
+  })
+)
 
-// Every 15 minutes: process drip email queue
+// Every 15 minutes: process drip email queue (untracked — high frequency)
 cron.schedule('*/15 * * * *', async () => {
   logger.info('cron: processing drip queue')
   try {
@@ -199,55 +171,29 @@ cron.schedule('*/15 * * * *', async () => {
 })
 
 // Daily 9am: saved-search new-nursery alerts
-cron.schedule('0 9 * * *', async () => {
-  logger.info('cron: starting saved-search alerts')
-  try {
-    const result = await processSavedSearchAlerts()
-    logger.info(result, 'cron: saved-search alerts complete')
-  } catch (err) {
-    logger.error({ err: err.message }, 'cron: saved-search alerts failed')
-  }
-})
+cron.schedule('0 9 * * *', () =>
+  runTrackedJob('saved_search_alerts', () => processSavedSearchAlerts())
+)
 
 // Monday 8am: weekly digest (legacy — user_profiles.email_weekly_digest)
-cron.schedule('0 8 * * 1', async () => {
-  logger.info('cron: starting weekly digest')
-  try {
-    const result = await sendWeeklyDigests()
-    logger.info(result, 'cron: weekly digest complete')
-  } catch (err) {
-    logger.error({ err: err.message }, 'cron: weekly digest failed')
-  }
-})
+cron.schedule('0 8 * * 1', () => runTrackedJob('weekly_digest', () => sendWeeklyDigests()))
 
 // Monday 8am: enhanced weekly digest (notification_preferences.email_weekly_digest)
-cron.schedule('0 8 * * 1', async () => {
-  logger.info('cron: starting enhanced weekly digest')
-  try {
-    const result = await sendEnhancedWeeklyDigests()
-    logger.info(result, 'cron: enhanced weekly digest complete')
-  } catch (err) {
-    logger.error({ err: err.message }, 'cron: enhanced weekly digest failed')
-  }
-})
+cron.schedule('0 8 * * 1', () =>
+  runTrackedJob('enhanced_weekly_digest', () => sendEnhancedWeeklyDigests())
+)
 
 // Wednesday 10am: re-engagement emails
-cron.schedule('0 10 * * 3', async () => {
-  logger.info('cron: starting re-engagement emails')
-  try {
-    const result = await sendReengagementEmails()
-    logger.info(result, 'cron: re-engagement complete')
-  } catch (err) {
-    logger.error({ err: err.message }, 'cron: re-engagement failed')
-  }
-})
+cron.schedule('0 10 * * 3', () =>
+  runTrackedJob('reengagement_emails', () => sendReengagementEmails())
+)
 
 // NOTE: the public sitemap is generated by Next.js statically at build time
-// (frontend/app/sitemap.ts), so Vercel rebuilds it on every push — no cron is
-// strictly required. The legacy script-based regeneration is kept below for
-// any backend-hosted sitemap.
+// (frontend/app/sitemap.ts), so Vercel rebuilds it on every push. There is no
+// backend sitemap cron — it was removed as redundant (and its relative path
+// broke under Render's working directory).
 
-// Self-ping every 10 minutes to keep Render free-tier warm (avoids 30s cold-start)
+// Self-ping every 10 minutes to keep Render free-tier warm (untracked — high frequency)
 if (process.env.SELF_PING_URL) {
   cron.schedule('*/10 * * * *', async () => {
     try {
@@ -259,20 +205,30 @@ if (process.env.SELF_PING_URL) {
   })
 }
 
-// Weekly: regenerate sitemap (Sundays at 4am)
-cron.schedule('0 4 * * 0', async () => {
-  logger.info('cron: regenerating sitemap')
-  execFile('node', ['../../scripts/generate-sitemap.js'], (err, stdout) => {
-    if (err) logger.error({ err: err.message }, 'cron: sitemap generation failed')
-    else logger.info(stdout, 'cron: sitemap generated')
-  })
-})
+// Daily 2:15am: prune job_runs older than 30 days (keeps the table bounded)
+cron.schedule('15 2 * * *', () =>
+  runTrackedJob('job_runs_prune', () => pruneJobRuns({ keepDays: 30 }))
+)
+
+// Mon/Wed/Fri 9am: marketing autopilot — auto-generate + queue a social post
+// to drive acquisition. No-ops unless MARKETING_AUTOPILOT_ENABLED=true and
+// Claude + Buffer are configured.
+cron.schedule('0 9 * * 1,3,5', () => runTrackedJob('marketing_autopilot', () => runAutopilot()))
+
+// Tue 10am: content syndication — auto-share a site guide to social (same flag).
+cron.schedule('0 10 * * 2', () =>
+  runTrackedJob('content_syndication', () => runContentSyndication())
+)
+
+// Thu 10am: "new nurseries in {area}" roundup — timely, local, shareable (same flag).
+cron.schedule('0 10 * * 4', () =>
+  runTrackedJob('new_nurseries_roundup', () => runNewNurseriesRoundup())
+)
 
 // Daily 6am: snapshot admin reports cache
-cron.schedule('0 6 * * *', async () => {
-  logger.info('cron: snapshotting admin reports cache')
-  try {
-    if (!db) return
+cron.schedule('0 6 * * *', () =>
+  runTrackedJob('admin_reports_cache', async () => {
+    if (!db) return { skipped: 'db not configured' }
 
     const [users, newUsers, providers, nurseries, claimed, activeSubs, enquiries, newEnquiries] =
       await Promise.all([
@@ -338,8 +294,6 @@ cron.schedule('0 6 * * *', async () => {
     )
 
     if (error) throw error
-    logger.info({ date: today }, 'cron: admin reports cache snapshotted')
-  } catch (err) {
-    logger.error({ err: err.message }, 'cron: admin reports cache failed')
-  }
-})
+    return { date: today, mrr_gbp: mrr }
+  })
+)

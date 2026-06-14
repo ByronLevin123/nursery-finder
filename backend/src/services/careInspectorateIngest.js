@@ -35,7 +35,7 @@ function gradeLabel(grade) {
 function parseDate(str) {
   if (!str?.trim()) return null
   // Try DD/MM/YYYY
-  const dmy = str.trim().match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})$/)
+  const dmy = str.trim().match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/)
   if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`
   // Try YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}/.test(str.trim())) return str.trim().slice(0, 10)
@@ -45,23 +45,32 @@ function parseDate(str) {
 function mapRow(row) {
   // Care Inspectorate CSV column names (may vary — handle common variants)
   const regNumber = (
-    row['CareService'] || row['CS Number'] || row['Registration Number'] ||
-    row['ServiceNumber'] || row['Service Number'] || ''
+    row['CareService'] ||
+    row['CS Number'] ||
+    row['Registration Number'] ||
+    row['ServiceNumber'] ||
+    row['Service Number'] ||
+    ''
   ).trim()
-  const name = (
-    row['ServiceName'] || row['Service Name'] || row['Service_Name'] || ''
-  ).trim()
+  const name = (row['ServiceName'] || row['Service Name'] || row['Service_Name'] || '').trim()
 
   if (!regNumber || !name) return null
 
   const serviceType = (
-    row['ServiceType'] || row['Service Type'] || row['Service_Type'] || ''
+    row['ServiceType'] ||
+    row['Service Type'] ||
+    row['Service_Type'] ||
+    ''
   ).trim()
 
   // Only include childcare-related services
   const childcareTypes = [
-    'Day Care of Children', 'Childminding', 'Child Care Agency',
-    'daycare', 'childminding', 'child care',
+    'Day Care of Children',
+    'Childminding',
+    'Child Care Agency',
+    'daycare',
+    'childminding',
+    'child care',
   ]
   const isChildcare = childcareTypes.some((t) =>
     serviceType.toLowerCase().includes(t.toLowerCase())
@@ -69,8 +78,11 @@ function mapRow(row) {
   if (!isChildcare && serviceType) return null
 
   const overallGrade = (
-    row['Grades'] || row['Overall Grade'] || row['Quality of care and support'] ||
-    row['GradeQualityCareSupport'] || ''
+    row['Grades'] ||
+    row['Overall Grade'] ||
+    row['Quality of care and support'] ||
+    row['GradeQualityCareSupport'] ||
+    ''
   ).trim()
 
   const postcode = (row['Postcode'] || row['ServicePostcode'] || '').trim().toUpperCase() || null
@@ -117,7 +129,7 @@ export async function ingestCareInspectorateData(csvUrl) {
   if (!csvUrl) {
     throw new Error(
       'CSV URL required. Download the latest childcare services CSV from ' +
-      'https://www.careinspectorate.com/index.php/statistics-and-analysis/data-and-analysis'
+        'https://www.careinspectorate.com/index.php/statistics-and-analysis/data-and-analysis'
     )
   }
 
@@ -161,7 +173,10 @@ export async function ingestCareInspectorateData(csvUrl) {
     })
 
     if (error) {
-      logger.error({ error: error.message, batchStart: i }, 'care-inspectorate: batch upsert failed')
+      logger.error(
+        { error: error.message, batchStart: i },
+        'care-inspectorate: batch upsert failed'
+      )
       errors += batch.length
     } else {
       imported += batch.length
@@ -173,6 +188,9 @@ export async function ingestCareInspectorateData(csvUrl) {
   }
 
   const duration = Date.now() - startTime
-  logger.info({ imported, skipped, errors, duration_ms: duration }, 'care-inspectorate: ingest complete')
+  logger.info(
+    { imported, skipped, errors, duration_ms: duration },
+    'care-inspectorate: ingest complete'
+  )
   return { imported, skipped, errors, duration_ms: duration, country: 'Scotland' }
 }

@@ -52,6 +52,25 @@ export async function sendWeeklyDigests() {
     return { sent: 0, skipped: 0, errors: 0 }
   }
 
+  // Dedup: users who also opted into the enhanced weekly digest (via
+  // notification_preferences) must not receive this legacy digest too, or they
+  // would get two weekly emails. Skip them here — the enhanced digest covers
+  // them. If the lookup fails we proceed without dedup rather than risk
+  // dropping anyone's email.
+  let enhancedOptIns = new Set()
+  try {
+    const { data: prefs } = await db
+      .from('notification_preferences')
+      .select('user_id')
+      .eq('email_weekly_digest', true)
+    enhancedOptIns = new Set((prefs || []).map((p) => p.user_id))
+  } catch (err) {
+    logger.warn(
+      { err: err?.message },
+      'weeklyDigest: enhanced opt-in lookup failed; proceeding without dedup'
+    )
+  }
+
   const sevenDaysAgo = new Date()
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
   const since = sevenDaysAgo.toISOString()
@@ -62,6 +81,12 @@ export async function sendWeeklyDigests() {
 
   for (const user of users) {
     try {
+      // Skip users already covered by the enhanced weekly digest.
+      if (enhancedOptIns.has(user.id)) {
+        skipped++
+        continue
+      }
+
       const district = postcodeDistrict(user.home_postcode)
       if (!district) {
         skipped++

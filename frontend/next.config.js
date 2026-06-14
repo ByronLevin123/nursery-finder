@@ -12,6 +12,10 @@ const nextConfig = {
       },
     ]
   },
+  // NOTE: security headers (CSP, HSTS, frame DENY, nosniff, referrer +
+  // permissions policy) live in frontend/vercel.json so there is a single
+  // source of truth on Vercel — do not also set them here or they'd be
+  // emitted twice.
 }
 
 if (process.env.NEXT_PUBLIC_SENTRY_DSN) {

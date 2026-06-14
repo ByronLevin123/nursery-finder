@@ -11,10 +11,7 @@ export async function captureReportSnapshot() {
         .from('user_profiles')
         .select('id', { count: 'exact', head: true })
         .gte('created_at', new Date(Date.now() - 86400000).toISOString()),
-      db
-        .from('user_profiles')
-        .select('id', { count: 'exact', head: true })
-        .eq('role', 'provider'),
+      db.from('user_profiles').select('id', { count: 'exact', head: true }).eq('role', 'provider'),
       db.from('nurseries').select('id', { count: 'exact', head: true }),
       db
         .from('nurseries')

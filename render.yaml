@@ -1,19 +1,25 @@
-services:
-  - type: web
-    name: nursery-finder-api
-    runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+# Render blueprint — NurseryMatch backend (API + background worker).
+#
+# Scheduling model: a single always-on WORKER process (node-cron, src/worker.js)
+# runs every scheduled job and records each run in job_runs (admin Jobs panel).
+# This replaced the previous set of per-endpoint Render cron services so jobs no
+# longer double-run and the email/engagement jobs (digests, reminders, drip,
+# re-engagement, etc.) actually run. The worker requires a paid instance —
+# Render does not offer free background workers.
+#
+# Secrets are shared via an env var group so the API and worker stay in sync;
+# set each value once in the Render dashboard (group "nurserymatch-backend").
+
+envVarGroups:
+  - name: nurserymatch-backend
     envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: "3001"
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_ANON_KEY
         sync: false
       - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: FRONTEND_URL
         sync: false
       - key: ADMIN_USER
         sync: false
@@ -21,100 +27,97 @@ services:
         sync: false
       - key: INGEST_SECRET
         sync: false
-      - key: FRONTEND_URL
+      - key: REVIEW_IP_SECRET
         sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: ALERT_EMAIL
+        sync: false
+      # Email (Resend)
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: RESEND_AUDIENCE_ID
+        sync: false
+      # AI (Anthropic)
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # Spam protection (Cloudflare Turnstile)
+      - key: TURNSTILE_SECRET_KEY
+        sync: false
+      # Google Places enrichment
+      - key: GOOGLE_PLACES_API_KEY
+        sync: false
+      # PropertyData market stats
+      - key: PROPERTYDATA_API_KEY
+        sync: false
+      # Marketing Hub — Buffer
+      - key: BUFFER_API_TOKEN
+        sync: false
+      - key: BUFFER_ORGANIZATION_ID
+        sync: false
+      # Marketing autopilot (worker)
+      - key: MARKETING_AUTOPILOT_ENABLED
+        sync: false
+      - key: MARKETING_DEFAULT_IMAGE_URL
+        sync: false
+      # Marketing Hub — Google Ads
+      - key: GOOGLE_ADS_DEVELOPER_TOKEN
+        sync: false
+      - key: GOOGLE_ADS_CLIENT_ID
+        sync: false
+      - key: GOOGLE_ADS_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_ADS_REFRESH_TOKEN
+        sync: false
+      - key: GOOGLE_ADS_CUSTOMER_ID
+        sync: false
+      - key: GOOGLE_ADS_LOGIN_CUSTOMER_ID
+        sync: false
+      # Stripe billing
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_PROVIDER_PRO
+        sync: false
+      - key: STRIPE_PRICE_PROVIDER_PREMIUM
+        sync: false
+      - key: STRIPE_PRICE_PARENT_PREMIUM
+        sync: false
+
+services:
+  # ─── API (web) ───────────────────────────────────────────────────────
+  - type: web
+    name: nursery-finder-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
     healthCheckPath: /api/v1/health
+    envVars:
+      - fromGroup: nurserymatch-backend
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3001"
 
-  # ─── Cron jobs ───────────────────────────────────────────────────────
-  # All crons hit the existing /api/v1/ingest/* endpoints with basic auth.
-  # Free-tier safe: only run while needed, no extra worker process.
-
-  - type: cron
-    name: cron-geocode-nightly
+  # ─── Worker (background jobs / cron) ─────────────────────────────────
+  # Runs src/worker.js — geocoding, Ofsted/crime/land-registry/family-scores,
+  # aggregate-areas, Google Places, dimension scores, digests, visit reminders,
+  # drip queue, saved-search alerts, re-engagement, admin reports snapshot.
+  - type: worker
+    name: nursery-finder-worker
     runtime: docker
+    plan: starter # workers cannot run on the free plan
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    schedule: "0 2 * * *"  # 02:00 UTC nightly — catches new nurseries
+    dockerCommand: node src/worker.js
     envVars:
-      - key: ADMIN_USER
+      - fromGroup: nurserymatch-backend
+      - key: NODE_ENV
+        value: production
+      # Optional: keep the API warm + let the worker self-report. Set to the
+      # API's public /api/v1/health URL, or leave unset to disable.
+      - key: SELF_PING_URL
         sync: false
-      - key: ADMIN_PASS
-        sync: false
-      - key: API_BASE
-        sync: false
-    dockerCommand: sh -c 'curl -fsS -u "$ADMIN_USER:$ADMIN_PASS" -X POST "$API_BASE/api/v1/ingest/geocode?limit=2000"'
-
-  - type: cron
-    name: cron-aggregate-areas
-    runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
-    schedule: "30 2 * * *"  # 02:30 UTC nightly — after geocoding
-    envVars:
-      - key: ADMIN_USER
-        sync: false
-      - key: ADMIN_PASS
-        sync: false
-      - key: API_BASE
-        sync: false
-    dockerCommand: sh -c 'curl -fsS -u "$ADMIN_USER:$ADMIN_PASS" -X POST "$API_BASE/api/v1/ingest/aggregate-areas"'
-
-  - type: cron
-    name: cron-ofsted-weekly
-    runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
-    schedule: "0 3 * * 1"  # 03:00 UTC every Monday — Ofsted publishes monthly
-    envVars:
-      - key: ADMIN_USER
-        sync: false
-      - key: ADMIN_PASS
-        sync: false
-      - key: API_BASE
-        sync: false
-    dockerCommand: sh -c 'curl -fsS --max-time 1800 -u "$ADMIN_USER:$ADMIN_PASS" -X POST "$API_BASE/api/v1/ingest/ofsted"'
-
-  - type: cron
-    name: cron-crime-monthly
-    runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
-    schedule: "0 4 1 * *"  # 04:00 UTC on the 1st of each month
-    envVars:
-      - key: ADMIN_USER
-        sync: false
-      - key: ADMIN_PASS
-        sync: false
-      - key: API_BASE
-        sync: false
-    dockerCommand: sh -c 'curl -fsS --max-time 1800 -u "$ADMIN_USER:$ADMIN_PASS" -X POST "$API_BASE/api/v1/ingest/crime"'
-
-  - type: cron
-    name: cron-land-registry-monthly
-    runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
-    schedule: "0 5 2 * *"  # 05:00 UTC on the 2nd of each month — LR publishes 1st
-    envVars:
-      - key: ADMIN_USER
-        sync: false
-      - key: ADMIN_PASS
-        sync: false
-      - key: API_BASE
-        sync: false
-    dockerCommand: sh -c 'curl -fsS --max-time 7200 -u "$ADMIN_USER:$ADMIN_PASS" -X POST "$API_BASE/api/v1/ingest/land-registry"'
-
-  - type: cron
-    name: cron-family-scores-weekly
-    runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
-    schedule: "0 6 * * 1"  # 06:00 UTC every Monday
-    envVars:
-      - key: ADMIN_USER
-        sync: false
-      - key: ADMIN_PASS
-        sync: false
-      - key: API_BASE
-        sync: false
-    dockerCommand: sh -c 'curl -fsS --max-time 600 -u "$ADMIN_USER:$ADMIN_PASS" -X POST "$API_BASE/api/v1/ingest/family-scores"'

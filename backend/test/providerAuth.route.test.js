@@ -27,22 +27,61 @@ function makeQueryBuilder(table) {
   }
 
   const builder = {
-    select() { return builder },
-    insert(row) { state.op = 'insert'; state.insertRow = row; return builder },
-    update(row) { state.op = 'update'; return builder },
-    upsert(row) { state.op = 'upsert'; state.upsertRow = row; return builder },
-    eq(col, val) { state.filters.push([col, 'eq', val]); return builder },
-    in(col, vals) { state.filters.push([col, 'in', vals]); return builder },
-    neq() { return builder },
-    not() { return builder },
-    is() { return builder },
-    ilike() { return builder },
-    gte() { return builder },
-    lte() { return builder },
-    order() { return builder },
-    limit() { return builder },
-    single() { return builder._resolve(true, false) },
-    maybeSingle() { return builder._resolve(true, true) },
+    select() {
+      return builder
+    },
+    insert(row) {
+      state.op = 'insert'
+      state.insertRow = row
+      return builder
+    },
+    update(row) {
+      state.op = 'update'
+      return builder
+    },
+    upsert(row) {
+      state.op = 'upsert'
+      state.upsertRow = row
+      return builder
+    },
+    eq(col, val) {
+      state.filters.push([col, 'eq', val])
+      return builder
+    },
+    in(col, vals) {
+      state.filters.push([col, 'in', vals])
+      return builder
+    },
+    neq() {
+      return builder
+    },
+    not() {
+      return builder
+    },
+    is() {
+      return builder
+    },
+    ilike() {
+      return builder
+    },
+    gte() {
+      return builder
+    },
+    lte() {
+      return builder
+    },
+    order() {
+      return builder
+    },
+    limit() {
+      return builder
+    },
+    single() {
+      return builder._resolve(true, false)
+    },
+    maybeSingle() {
+      return builder._resolve(true, true)
+    },
     then(onFulfilled, onRejected) {
       return builder._resolve(false, false).then(onFulfilled, onRejected)
     },
@@ -72,7 +111,8 @@ function makeQueryBuilder(table) {
 
       let result = applyFilters(rows)
       if (single || maybe) {
-        if (result.length === 0 && !maybe) return { data: null, error: { message: 'Row not found' } }
+        if (result.length === 0 && !maybe)
+          return { data: null, error: { message: 'Row not found' } }
         return { data: result[0] ?? null, error: null }
       }
       return { data: result, error: null }
@@ -136,9 +176,7 @@ beforeAll(async () => {
 })
 
 beforeEach(() => {
-  store.nurseries = [
-    { urn: '123456', name: 'Happy Days Nursery', claimed_by_user_id: null },
-  ]
+  store.nurseries = [{ urn: '123456', name: 'Happy Days Nursery', claimed_by_user_id: null }]
   store.nursery_claims = []
   store.user_profiles = []
   claimSeq = 0
@@ -165,9 +203,7 @@ describe('POST /api/v1/provider-auth/register', () => {
   // Success test first — rate limiter allows 5 requests per hour per IP.
   // Tests are ordered to stay within this window.
   it('creates user, profile, and claim on success (201)', async () => {
-    const res = await request(app)
-      .post('/api/v1/provider-auth/register')
-      .send(validPayload)
+    const res = await request(app).post('/api/v1/provider-auth/register').send(validPayload)
     expect(res.status).toBe(201)
     expect(res.body.success).toBe(true)
     expect(res.body.claim_id).toBeDefined()
@@ -211,9 +247,7 @@ describe('POST /api/v1/provider-auth/register', () => {
 
   it('returns 409 when nursery is already claimed', async () => {
     store.nurseries[0].claimed_by_user_id = 'other-user'
-    const res = await request(app)
-      .post('/api/v1/provider-auth/register')
-      .send(validPayload)
+    const res = await request(app).post('/api/v1/provider-auth/register').send(validPayload)
     expect(res.status).toBe(409)
     expect(res.body.error).toMatch(/already been claimed/i)
   })

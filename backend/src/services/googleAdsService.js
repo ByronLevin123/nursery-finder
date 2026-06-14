@@ -74,7 +74,7 @@ function customerId() {
 
 function defaultHeaders(token) {
   const headers = {
-    'Authorization': `Bearer ${token}`,
+    Authorization: `Bearer ${token}`,
     'developer-token': process.env.GOOGLE_ADS_DEVELOPER_TOKEN,
     'Content-Type': 'application/json',
   }
@@ -193,8 +193,6 @@ export async function createCampaign({ name, dailyBudget, keywords, headlines, d
   }
 
   try {
-    const cid = customerId()
-
     // 1. Create campaign budget
     const budgetRes = await mutate('campaignBudgets', [
       {

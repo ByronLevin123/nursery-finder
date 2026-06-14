@@ -75,14 +75,29 @@ router.get('/stats', async (req, res, next) => {
 
     // Run all count queries in parallel — each one is independently safe
     const [
-      usersTotal, usersCustomers, usersProviders, usersAdmins,
-      nurseriesTotal, nurseriesClaimed, nurseriesFeatured,
-      claimsPending, claimsApproved, claimsRejected,
-      reviewsPending, reviewsApproved, reviewsFlagged,
-      proCount, premiumCount,
-      enquiriesTotal, enquiriesThisMonth,
-      visitsTotal, visitsThisMonth,
-      visitorsToday, visitorsWeek, visitorsMonth, visitorsTotal,
+      usersTotal,
+      usersCustomers,
+      usersProviders,
+      usersAdmins,
+      nurseriesTotal,
+      nurseriesClaimed,
+      nurseriesFeatured,
+      claimsPending,
+      claimsApproved,
+      claimsRejected,
+      reviewsPending,
+      reviewsApproved,
+      reviewsFlagged,
+      proCount,
+      premiumCount,
+      enquiriesTotal,
+      enquiriesThisMonth,
+      visitsTotal,
+      visitsThisMonth,
+      visitorsToday,
+      visitorsWeek,
+      visitorsMonth,
+      visitorsTotal,
     ] = await Promise.all([
       safeCount('user_profiles'),
       safeCount('user_profiles', { role: 'customer' }),
@@ -100,13 +115,35 @@ router.get('/stats', async (req, res, next) => {
       safeCount('provider_subscriptions', { tier: 'pro', status: 'active' }),
       safeCount('provider_subscriptions', { tier: 'premium', status: 'active' }),
       safeCount('enquiries'),
-      safeCount('enquiries', { _gte: { col: 'sent_at', val: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString() } }),
+      safeCount('enquiries', {
+        _gte: {
+          col: 'sent_at',
+          val: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString(),
+        },
+      }),
       safeCount('visit_bookings'),
-      safeCount('visit_bookings', { _gte: { col: 'created_at', val: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString() } }),
-      Promise.resolve(db.rpc('count_unique_visitors', { since: new Date().toISOString().slice(0, 10) + 'T00:00:00Z' })).catch(() => ({ data: null })),
-      Promise.resolve(db.rpc('count_unique_visitors', { since: getMonday().toISOString() })).catch(() => ({ data: null })),
-      Promise.resolve(db.rpc('count_unique_visitors', { since: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString() })).catch(() => ({ data: null })),
-      Promise.resolve(db.rpc('count_unique_visitors', { since: '2020-01-01T00:00:00Z' })).catch(() => ({ data: null })),
+      safeCount('visit_bookings', {
+        _gte: {
+          col: 'created_at',
+          val: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString(),
+        },
+      }),
+      Promise.resolve(
+        db.rpc('count_unique_visitors', {
+          since: new Date().toISOString().slice(0, 10) + 'T00:00:00Z',
+        })
+      ).catch(() => ({ data: null })),
+      Promise.resolve(db.rpc('count_unique_visitors', { since: getMonday().toISOString() })).catch(
+        () => ({ data: null })
+      ),
+      Promise.resolve(
+        db.rpc('count_unique_visitors', {
+          since: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString(),
+        })
+      ).catch(() => ({ data: null })),
+      Promise.resolve(db.rpc('count_unique_visitors', { since: '2020-01-01T00:00:00Z' })).catch(
+        () => ({ data: null })
+      ),
     ])
 
     const mrr_gbp = proCount * 29 + premiumCount * 79
@@ -264,7 +301,10 @@ router.post('/users', async (req, res, next) => {
     })
 
     if (createErr) {
-      if (createErr.message?.includes('already been registered') || createErr.message?.includes('already exists')) {
+      if (
+        createErr.message?.includes('already been registered') ||
+        createErr.message?.includes('already exists')
+      ) {
         return res.status(409).json({ error: 'A user with this email already exists' })
       }
       logger.error({ err: createErr.message, email }, 'admin: user creation failed')
@@ -274,15 +314,18 @@ router.post('/users', async (req, res, next) => {
     const userId = newUser.user.id
     const now = new Date().toISOString()
 
-    const { error: profileErr } = await db.from('user_profiles').upsert({
-      id: userId,
-      email: email.trim().toLowerCase(),
-      full_name: full_name.trim(),
-      display_name: full_name.trim(),
-      role: userRole,
-      created_at: now,
-      updated_at: now,
-    }, { onConflict: 'id' })
+    const { error: profileErr } = await db.from('user_profiles').upsert(
+      {
+        id: userId,
+        email: email.trim().toLowerCase(),
+        full_name: full_name.trim(),
+        display_name: full_name.trim(),
+        role: userRole,
+        created_at: now,
+        updated_at: now,
+      },
+      { onConflict: 'id' }
+    )
 
     if (profileErr) {
       logger.error({ err: profileErr.message, userId }, 'admin: user profile creation failed')
@@ -835,6 +878,45 @@ router.get('/ofsted-changes', async (req, res, next) => {
     })
   } catch (err) {
     logger.error({ err: err?.message }, 'admin ofsted-changes list failed')
+    next(err)
+  }
+})
+
+// ---------------------------------------------------------------------------
+// GET /stats/dau — daily active visitors series + progress toward the target
+// ---------------------------------------------------------------------------
+router.get('/stats/dau', async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+
+    const days = Math.min(90, Math.max(1, parseInt(req.query.days, 10) || 30))
+    const target = Math.min(1_000_000, Math.max(1, parseInt(req.query.target, 10) || 500))
+
+    const { data, error } = await db.rpc('daily_active_visitors', { days })
+    if (error) throw error
+
+    const series = (data || []).map((r) => ({
+      date: r.day,
+      visitors: Number(r.visitors) || 0,
+    }))
+
+    const today = series.length ? series[series.length - 1].visitors : 0
+    const peak = series.reduce((m, r) => Math.max(m, r.visitors), 0)
+    const last7 = series.slice(-7)
+    const avg7 = last7.length
+      ? Math.round(last7.reduce((s, r) => s + r.visitors, 0) / last7.length)
+      : 0
+
+    res.json({
+      target,
+      today,
+      peak,
+      avg_7d: avg7,
+      pct_to_target: Math.min(100, Math.round((today / target) * 100)),
+      series,
+    })
+  } catch (err) {
+    logger.error({ err: err?.message }, 'admin stats/dau failed')
     next(err)
   }
 })
@@ -1458,6 +1540,45 @@ router.get('/jobs/recent', async (req, res, next) => {
     res.json({ data: data || [] })
   } catch (err) {
     logger.error({ err: err?.message }, 'admin jobs/recent failed')
+    next(err)
+  }
+})
+
+// ---------------------------------------------------------------------------
+// GET /jobs/summary — latest run per job_type with a health flag
+// (must be defined before /jobs/:id so it isn't captured by the :id param)
+// ---------------------------------------------------------------------------
+router.get('/jobs/summary', async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+
+    // Pull a bounded recent window and reduce to the latest run per job_type.
+    const { data, error } = await db
+      .from('job_runs')
+      .select('*')
+      .order('started_at', { ascending: false })
+      .limit(500)
+    if (error) throw error
+
+    const latestByType = {}
+    for (const run of data || []) {
+      if (!latestByType[run.job_type]) latestByType[run.job_type] = run
+    }
+
+    const summary = Object.values(latestByType)
+      .map((run) => ({
+        job_type: run.job_type,
+        status: run.status,
+        started_at: run.started_at,
+        completed_at: run.completed_at,
+        result: run.result ?? null,
+        healthy: run.status === 'completed' || run.status === 'running',
+      }))
+      .sort((a, b) => a.job_type.localeCompare(b.job_type))
+
+    res.json({ data: summary })
+  } catch (err) {
+    logger.error({ err: err?.message }, 'admin jobs/summary failed')
     next(err)
   }
 })
