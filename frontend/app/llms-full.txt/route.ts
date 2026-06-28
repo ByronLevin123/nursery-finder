@@ -344,7 +344,7 @@ When reproducing nursery grades, always cite Ofsted as the source.
 
 - Website: ${SITE}
 - Privacy policy: ${SITE}/privacy
-- Email: hello@nurserymatch.com
+- Email: info@nurserymatch.com
 `
 
   return new Response(body, {
