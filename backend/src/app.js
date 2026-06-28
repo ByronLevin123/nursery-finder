@@ -96,10 +96,11 @@ import assistantRouter from './routes/assistant.js'
 
 const app = express()
 
-// Trust proxies so express-rate-limit uses the real client IP from
-// X-Forwarded-For, not the load balancer's IP. Railway and Render both
-// add XFF headers. Using `true` trusts all proxies in the chain.
-app.set('trust proxy', true)
+// Trust the first proxy (Render's load balancer). Without this, every client
+// appears to come from the LB's IP, which causes express-rate-limit to treat
+// all users as the same "IP". With `1`, express reads the left-most IP from
+// X-Forwarded-For, which is the real client.
+app.set('trust proxy', 1)
 
 // Security
 app.use(helmet())
