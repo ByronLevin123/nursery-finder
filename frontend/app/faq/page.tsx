@@ -175,8 +175,8 @@ const PROVIDER_FAQS: QA[] = [
         (grade, inspection date, registration status) you&apos;ll need to contact Ofsted to
         update the official register — the change will flow through to NurseryMatch on our next
         refresh. For anything else, email{' '}
-        <a href="mailto:hello@nurserymatch.com" className="text-blue-600 hover:underline">
-          hello@nurserymatch.com
+        <a href="mailto:info@nurserymatch.com" className="text-blue-600 hover:underline">
+          info@nurserymatch.com
         </a>.
       </p>
     ),
@@ -236,8 +236,8 @@ export default function FaqPage() {
       <p className="text-gray-600 mb-10">
         Quick answers to the things parents and providers ask most often. Don&apos;t see your
         question? Email{' '}
-        <a href="mailto:hello@nurserymatch.com" className="text-blue-600 hover:underline">
-          hello@nurserymatch.com
+        <a href="mailto:info@nurserymatch.com" className="text-blue-600 hover:underline">
+          info@nurserymatch.com
         </a>.
       </p>
 

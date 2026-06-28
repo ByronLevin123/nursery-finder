@@ -1515,4 +1515,97 @@ router.get('/funnel', async (req, res, next) => {
   }
 })
 
+// ---------------------------------------------------------------------------
+// GET /export/nurseries — download all nursery data as CSV
+// GET /export/childminders — download childminder data as CSV
+// GET /export/schools — download school data as CSV
+// ---------------------------------------------------------------------------
+function toCsv(rows, columns) {
+  if (!rows || rows.length === 0) return columns.join(',') + '\n'
+  const header = columns.join(',')
+  const lines = rows.map((r) =>
+    columns.map((c) => {
+      const val = r[c]
+      if (val == null) return ''
+      const str = String(val).replace(/"/g, '""')
+      return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str}"` : str
+    }).join(',')
+  )
+  return header + '\n' + lines.join('\n') + '\n'
+}
+
+const NURSERY_EXPORT_COLS = [
+  'urn', 'name', 'provider_type', 'registration_status', 'country', 'inspection_body',
+  'address_line1', 'town', 'postcode', 'local_authority', 'region',
+  'ofsted_overall_grade', 'quality_tier', 'care_inspectorate_grade', 'ciw_grade',
+  'last_inspection_date', 'enforcement_notice',
+  'total_places', 'places_funded_2yr', 'places_funded_3_4yr',
+  'google_rating', 'google_review_count', 'fee_avg_monthly',
+  'lat', 'lng', 'phone', 'email', 'website',
+]
+
+const SCHOOL_EXPORT_COLS = [
+  'urn', 'name', 'type', 'phase', 'ofsted_rating', 'last_inspection_date',
+  'address', 'town', 'postcode', 'local_authority',
+  'lat', 'lng', 'pupils', 'age_range', 'website',
+]
+
+router.get('/export/nurseries', async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+    const { data, error } = await db
+      .from('nurseries')
+      .select(NURSERY_EXPORT_COLS.join(','))
+      .eq('registration_status', 'Active')
+      .neq('provider_type', 'Childminder')
+      .order('name')
+      .limit(100000)
+    if (error) throw error
+    res.setHeader('Content-Type', 'text/csv')
+    res.setHeader('Content-Disposition', `attachment; filename="nurseries-${new Date().toISOString().slice(0, 10)}.csv"`)
+    res.send(toCsv(data, NURSERY_EXPORT_COLS))
+  } catch (err) {
+    logger.error({ err: err?.message }, 'admin export nurseries failed')
+    next(err)
+  }
+})
+
+router.get('/export/childminders', async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+    const { data, error } = await db
+      .from('nurseries')
+      .select(NURSERY_EXPORT_COLS.join(','))
+      .eq('registration_status', 'Active')
+      .eq('provider_type', 'Childminder')
+      .order('name')
+      .limit(100000)
+    if (error) throw error
+    res.setHeader('Content-Type', 'text/csv')
+    res.setHeader('Content-Disposition', `attachment; filename="childminders-${new Date().toISOString().slice(0, 10)}.csv"`)
+    res.send(toCsv(data, NURSERY_EXPORT_COLS))
+  } catch (err) {
+    logger.error({ err: err?.message }, 'admin export childminders failed')
+    next(err)
+  }
+})
+
+router.get('/export/schools', async (req, res, next) => {
+  try {
+    if (!db) return res.status(503).json({ error: 'Database not configured' })
+    const { data, error } = await db
+      .from('schools')
+      .select(SCHOOL_EXPORT_COLS.join(','))
+      .order('name')
+      .limit(100000)
+    if (error) throw error
+    res.setHeader('Content-Type', 'text/csv')
+    res.setHeader('Content-Disposition', `attachment; filename="schools-${new Date().toISOString().slice(0, 10)}.csv"`)
+    res.send(toCsv(data, SCHOOL_EXPORT_COLS))
+  } catch (err) {
+    logger.error({ err: err?.message }, 'admin export schools failed')
+    next(err)
+  }
+})
+
 export default router
