@@ -15,6 +15,7 @@ import { sendReengagementEmails } from './services/reengagement.js'
 import { processSavedSearchAlerts } from './services/savedSearchAlerts.js'
 import { processOfstedChangeNotifications } from './services/ofstedChangeNotifier.js'
 import { syncGooglePlacesData, refreshStaleGoogleData } from './services/googlePlaces.js'
+import { refreshCrimeForDistricts } from './services/policeApi.js'
 import { callClaude, isClaudeAvailable } from './services/claudeApi.js'
 import { isAvailable as isBufferAvailable, getProfiles, createPost } from './services/bufferService.js'
 import { sendEmail, isEmailAvailable } from './services/emailService.js'
@@ -102,6 +103,12 @@ cron.schedule('0 1 1 * *', async () => {
 // Nightly: crime data batch (takes ~1 hour for 100 districts)
 cron.schedule('0 1 * * *', async () => {
   logger.info('cron: refreshing crime data batch')
+  try {
+    const result = await refreshCrimeForDistricts({ limit: 100, staleDays: 30 })
+    logger.info(result, 'cron: crime data refresh complete')
+  } catch (err) {
+    logger.error({ err: err.message }, 'cron: crime data refresh failed')
+  }
 })
 
 // Nightly: recompute nursery dimension scores (4:30am)
