@@ -6,6 +6,7 @@
 import axios from 'axios'
 import csv from 'csv-parser'
 import { Readable } from 'stream'
+import { createReadStream } from 'fs'
 import db from '../db.js'
 import { logger } from '../logger.js'
 
@@ -43,55 +44,46 @@ function parseDate(str) {
 }
 
 function mapRow(row) {
-  // Care Inspectorate CSV column names (may vary — handle common variants)
-  const regNumber = (
-    row['CareService'] || row['CS Number'] || row['Registration Number'] ||
-    row['ServiceNumber'] || row['Service Number'] || ''
-  ).trim()
-  const name = (
-    row['ServiceName'] || row['Service Name'] || row['Service_Name'] || ''
-  ).trim()
+  const csNumber = (row['CSNumber'] || row['CareService'] || row['CS Number'] || '').trim()
+  const name = (row['ServiceName'] || row['Service Name'] || '').trim()
+  if (!csNumber || !name) return null
 
-  if (!regNumber || !name) return null
+  const careService = (row['CareService'] || row['ServiceType'] || '').trim()
+  const subtype = (row['Subtype'] || '').trim()
 
-  const serviceType = (
-    row['ServiceType'] || row['Service Type'] || row['Service_Type'] || ''
-  ).trim()
+  // Only include childcare services
+  const isChildcare = careService === 'Day Care of Children' ||
+    careService === 'Child Minding' ||
+    subtype.toLowerCase().includes('childminding')
+  if (!isChildcare) return null
 
-  // Only include childcare-related services
-  const childcareTypes = [
-    'Day Care of Children', 'Childminding', 'Child Care Agency',
-    'daycare', 'childminding', 'child care',
-  ]
-  const isChildcare = childcareTypes.some((t) =>
-    serviceType.toLowerCase().includes(t.toLowerCase())
-  )
-  if (!isChildcare && serviceType) return null
+  const status = (row['ServiceStatus'] || '').trim()
+  if (status && status !== 'Active') return null
 
-  const overallGrade = (
-    row['Grades'] || row['Overall Grade'] || row['Quality of care and support'] ||
-    row['GradeQualityCareSupport'] || ''
-  ).trim()
-
-  const postcode = (row['Postcode'] || row['ServicePostcode'] || '').trim().toUpperCase() || null
+  const postcode = (row['Service_Postcode'] || row['Postcode'] || '').trim().toUpperCase() || null
   if (!postcode) return null
 
-  const address = (row['Address'] || row['ServiceAddress'] || '').trim() || null
-  const town = (row['Town'] || row['Council'] || '').trim() || null
-  const localAuthority = (row['Council'] || row['CouncilAreaName'] || '').trim() || null
+  const address = (row['Address_line_1'] || '').trim() || null
+  const town = (row['Service_town'] || row['Town'] || '').trim() || null
+  const localAuthority = (row['Council_Area_Name'] || '').trim() || null
+  const phone = (row['Service_Phone_Number'] || '').trim() || null
+  const email = (row['Eforms_email_address'] || '').trim() || null
 
-  const lastInspection = parseDate(
-    row['Last Inspection Date'] || row['DateOfLatestInspection'] || row['Publication date'] || ''
-  )
+  // Grade: use MinGrade (most conservative) or KQ_Care_Play_and_Learning for childcare
+  const minGrade = (row['MinGrade'] || '').trim()
+  const cplGrade = (row['KQ_Care_Play_and_Learning'] || row['KQ_Support_Wellbeing'] || '').trim()
+  const overallGrade = minGrade || cplGrade || null
 
-  const places = parseInt(row['Places'] || row['Registered Places'] || row['MaxPlaces'] || '', 10)
+  const lastInspection = parseDate(row['Last_inspection_Date'] || row['Last_inspection_Date'] || '')
+  const places = parseInt(row['Registered_Places'] || '', 10)
 
-  const providerType = serviceType.toLowerCase().includes('childminding')
+  const providerType = subtype.toLowerCase().includes('childminding') ||
+    careService === 'Child Minding'
     ? 'Childminder'
     : 'Childcare on non-domestic premises'
 
   return {
-    urn: `CS${regNumber}`,
+    urn: `CS${csNumber.replace(/^CS/i, '')}`,
     name,
     provider_type: providerType,
     registration_status: 'Active',
@@ -108,15 +100,15 @@ function mapRow(row) {
     last_inspection_date: lastInspection,
     total_places: Number.isFinite(places) ? places : null,
     enforcement_notice: false,
-    phone: null,
-    email: null,
+    phone,
+    email,
   }
 }
 
-export async function ingestCareInspectorateData(csvUrl) {
-  if (!csvUrl) {
+export async function ingestCareInspectorateData(csvSource) {
+  if (!csvSource) {
     throw new Error(
-      'CSV URL required. Download the latest childcare services CSV from ' +
+      'CSV URL or file path required. Download the latest childcare services CSV from ' +
       'https://www.careinspectorate.com/index.php/statistics-and-analysis/data-and-analysis'
     )
   }
@@ -126,18 +118,24 @@ export async function ingestCareInspectorateData(csvUrl) {
   let skipped = 0
   let errors = 0
 
-  logger.info({ csvUrl }, 'care-inspectorate: downloading CSV')
-  const response = await axios.get(csvUrl, {
-    responseType: 'arraybuffer',
-    headers: { 'User-Agent': 'NurseryMatch/1.0 (data@nurserymatch.com)' },
-    timeout: 120000,
-  })
+  let csvStream
+  if (csvSource.startsWith('http://') || csvSource.startsWith('https://')) {
+    logger.info({ csvUrl: csvSource }, 'care-inspectorate: downloading CSV')
+    const response = await axios.get(csvSource, {
+      responseType: 'arraybuffer',
+      headers: { 'User-Agent': 'NurseryMatch/1.0 (data@nurserymatch.com)' },
+      timeout: 120000,
+    })
+    csvStream = Readable.from(Buffer.from(response.data).toString('utf-8'))
+  } else {
+    logger.info({ filePath: csvSource }, 'care-inspectorate: reading local CSV')
+    csvStream = createReadStream(csvSource, 'utf-8')
+  }
 
-  const rawCsv = Buffer.from(response.data).toString('utf-8')
   const records = []
 
   await new Promise((resolve, reject) => {
-    Readable.from(rawCsv)
+    csvStream
       .pipe(csv())
       .on('data', (row) => {
         const mapped = mapRow(row)
