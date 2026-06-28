@@ -213,10 +213,9 @@ const validReview = {
 }
 
 describe('POST /api/v1/nurseries/:urn/reviews', () => {
-  it('allows anonymous review submission', async () => {
+  it('rejects anonymous review submission', async () => {
     const res = await request(app).post('/api/v1/nurseries/EY100/reviews').send(validReview)
-    expect(res.status).toBe(201)
-    expect(res.body.user_id).toBeNull()
+    expect(res.status).toBe(401)
   })
 
   it('accepts a valid review and strips ip_hash from the response', async () => {

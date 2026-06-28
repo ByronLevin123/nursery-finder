@@ -3,7 +3,7 @@ import crypto from 'crypto'
 import rateLimit from 'express-rate-limit'
 import db from '../db.js'
 import { extractCategoryScores } from '../services/reviewNlp.js'
-import { optionalAuth } from '../middleware/supabaseAuth.js'
+import { optionalAuth, requireAuth } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
 
 const router = express.Router()
@@ -99,7 +99,7 @@ router.get('/reviews/featured', async (req, res, next) => {
 })
 
 // POST /api/v1/nurseries/:urn/reviews
-router.post('/:urn/reviews', optionalAuth, reviewSubmissionLimiter, async (req, res, next) => {
+router.post('/:urn/reviews', requireAuth, reviewSubmissionLimiter, async (req, res, next) => {
   try {
     const { urn } = req.params
     const {
