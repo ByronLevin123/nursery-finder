@@ -236,14 +236,14 @@ router.post('/google-places-refresh', async (req, res, next) => {
 // POST /api/v1/ingest/care-inspectorate — import Scottish childcare data
 router.post('/care-inspectorate', async (req, res, next) => {
   try {
-    const csvUrl = req.body?.csv_url || req.query.csv_url
-    if (!csvUrl) {
+    const csvSource = req.body?.csv_url || req.body?.file_path || req.query.csv_url
+    if (!csvSource) {
       return res.status(400).json({
-        error: 'csv_url is required. Download from https://www.careinspectorate.com/index.php/statistics-and-analysis/data-and-analysis',
+        error: 'csv_url or file_path is required. Download from https://www.careinspectorate.com/index.php/statistics-and-analysis/data-and-analysis',
       })
     }
-    logger.info({ csvUrl }, 'ingest: starting Care Inspectorate import')
-    const result = await ingestCareInspectorateData(csvUrl)
+    logger.info({ csvSource }, 'ingest: starting Care Inspectorate import')
+    const result = await ingestCareInspectorateData(csvSource)
     res.json(result)
   } catch (err) {
     logger.error({ err: err.message }, 'ingest: Care Inspectorate import failed')
