@@ -525,6 +525,7 @@ const INGEST_STEPS = [
   { id: 'wales', label: 'Wales (CIW)', desc: 'Import Welsh childcare data (requires CSV URL)', path: '/api/v1/ingest/ciw', requiresUrl: true },
   { id: 'google', label: 'Google Places Sync', desc: 'Fetch Google ratings + photos for 100 nurseries', path: '/api/v1/ingest/google-places' },
   { id: 'snapshot', label: 'Snapshot Reports', desc: 'Capture today\'s metrics for the reports timeseries', path: '/api/v1/admin/reports/snapshot' },
+  { id: 'extract-reports', label: 'Extract Ofsted Reports', desc: 'AI-extract staff, curriculum, and safeguarding data from Ofsted reports (10 per batch)', path: '/api/v1/ingest/extract-reports?limit=10' },
 ]
 
 function formatJobResult(result: any): string {
@@ -721,6 +722,7 @@ function IngestPanel() {
     wales: 'ciw_ingest',
     google: 'google_places',
     snapshot: 'snapshot_reports',
+    'extract-reports': 'extract_reports',
   }
 
   return (

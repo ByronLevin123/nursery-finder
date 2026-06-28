@@ -6,7 +6,7 @@ import { geocodeNurseriesBatch } from './services/geocoding.js'
 import { geocodeSchoolsBatch } from './services/schoolIngest.js'
 import { ingestLandRegistryYear, refreshPropertyStats } from './services/landRegistry.js'
 import { runDailyDigest } from './services/digestJob.js'
-import { recomputeAllDimensionScores } from './services/scoringEngine.js'
+import { recomputeAllDimensionScores, computeProviderResponsiveness } from './services/scoringEngine.js'
 import { notifyVisitReminder } from './services/notificationService.js'
 import { processDripQueue } from './services/dripEngine.js'
 import { sendWeeklyDigests } from './services/weeklyDigest.js'
@@ -120,6 +120,17 @@ cron.schedule('30 4 * * *', async () => {
     logger.info(result, 'cron: dimension scores complete')
   } catch (err) {
     logger.error({ err: err.message }, 'cron: dimension scores failed')
+  }
+})
+
+// Nightly: compute provider responsiveness metrics (4:40am, after dimension scores)
+cron.schedule('40 4 * * *', async () => {
+  logger.info('cron: computing provider responsiveness')
+  try {
+    const result = await computeProviderResponsiveness()
+    logger.info(result, 'cron: provider responsiveness complete')
+  } catch (err) {
+    logger.error({ err: err.message }, 'cron: provider responsiveness failed')
   }
 })
 

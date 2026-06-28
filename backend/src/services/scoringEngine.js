@@ -241,3 +241,100 @@ export async function recomputeAllDimensionScores() {
   logger.info({ updated: totalUpdated }, 'scoring: dimension scores recomputed')
   return { updated: totalUpdated }
 }
+
+/**
+ * Compute provider responsiveness metrics for claimed nurseries.
+ * Updates response_time_hours and response_rate_pct on the nurseries table.
+ */
+export async function computeProviderResponsiveness() {
+  if (!db) {
+    logger.warn('computeProviderResponsiveness: database not configured')
+    return { updated: 0 }
+  }
+
+  // Only compute for claimed nurseries (those with a claimed_by_user_id)
+  const { data: claimed, error: claimErr } = await db
+    .from('nurseries')
+    .select('id, urn')
+    .not('claimed_by_user_id', 'is', null)
+
+  if (claimErr) {
+    logger.error({ error: claimErr.message }, 'responsiveness: failed to fetch claimed nurseries')
+    return { updated: 0, error: claimErr.message }
+  }
+
+  if (!claimed || claimed.length === 0) {
+    logger.info('responsiveness: no claimed nurseries found')
+    return { updated: 0 }
+  }
+
+  const ids = claimed.map((n) => n.id)
+
+  // Fetch all enquiries for claimed nurseries
+  const { data: enquiries, error: enqErr } = await db
+    .from('enquiries')
+    .select('nursery_id, sent_at, responded_at, status')
+    .in('nursery_id', ids)
+
+  if (enqErr) {
+    logger.error({ error: enqErr.message }, 'responsiveness: failed to fetch enquiries')
+    return { updated: 0, error: enqErr.message }
+  }
+
+  // Group enquiries by nursery_id
+  const byNursery = new Map()
+  for (const enq of enquiries || []) {
+    if (!byNursery.has(enq.nursery_id)) byNursery.set(enq.nursery_id, [])
+    byNursery.get(enq.nursery_id).push(enq)
+  }
+
+  let updated = 0
+
+  for (const nursery of claimed) {
+    const enqs = byNursery.get(nursery.id) || []
+    if (enqs.length === 0) continue
+
+    // Response rate: percentage of enquiries that got a response
+    const responded = enqs.filter((e) =>
+      e.responded_at || ['responded', 'visit_booked', 'place_offered', 'accepted'].includes(e.status)
+    )
+    const responseRate = Math.round((responded.length / enqs.length) * 100)
+
+    // Median response time in hours (for responded enquiries with both timestamps)
+    const responseTimes = responded
+      .filter((e) => e.sent_at && e.responded_at)
+      .map((e) => {
+        const sent = new Date(e.sent_at).getTime()
+        const resp = new Date(e.responded_at).getTime()
+        return (resp - sent) / (1000 * 60 * 60) // hours
+      })
+      .filter((h) => h >= 0 && h < 720) // exclude negative or > 30 days
+      .sort((a, b) => a - b)
+
+    let medianHours = null
+    if (responseTimes.length > 0) {
+      const mid = Math.floor(responseTimes.length / 2)
+      medianHours =
+        responseTimes.length % 2 === 0
+          ? (responseTimes[mid - 1] + responseTimes[mid]) / 2
+          : responseTimes[mid]
+      medianHours = Math.round(medianHours * 10) / 10 // 1 decimal place
+    }
+
+    try {
+      await db
+        .from('nurseries')
+        .update({
+          response_time_hours: medianHours,
+          response_rate_pct: responseRate,
+        })
+        .eq('id', nursery.id)
+      updated++
+    } catch (err) {
+      logger.warn({ err: err.message, nurseryId: nursery.id }, 'responsiveness: update failed')
+    }
+  }
+
+  logger.info({ updated, totalClaimed: claimed.length }, 'responsiveness: computation complete')
+  return { updated }
+}

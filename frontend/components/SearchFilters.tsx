@@ -9,6 +9,10 @@ export interface SearchFilterValues {
   provider_type: string | null
   has_funded_2yr: boolean
   has_funded_3yr: boolean
+  curriculum: string | null
+  sen: boolean
+  dietary: string | null
+  language: string | null
 }
 
 export const DEFAULT_FILTERS: SearchFilterValues = {
@@ -18,6 +22,10 @@ export const DEFAULT_FILTERS: SearchFilterValues = {
   provider_type: null,
   has_funded_2yr: false,
   has_funded_3yr: false,
+  curriculum: null,
+  sen: false,
+  dietary: null,
+  language: null,
 }
 
 export function countActiveFilters(f: SearchFilterValues): number {
@@ -28,6 +36,10 @@ export function countActiveFilters(f: SearchFilterValues): number {
   if (f.provider_type) count++
   if (f.has_funded_2yr) count++
   if (f.has_funded_3yr) count++
+  if (f.curriculum) count++
+  if (f.sen) count++
+  if (f.dietary) count++
+  if (f.language) count++
   return count
 }
 
@@ -43,6 +55,25 @@ const MIN_RATING_OPTIONS = [
   { value: '3', label: '3+ stars' },
   { value: '4', label: '4+ stars' },
   { value: '4.5', label: '4.5+ stars' },
+]
+
+const CURRICULUM_OPTIONS = [
+  { value: '', label: 'All types' },
+  { value: 'montessori', label: 'Montessori' },
+  { value: 'forest_school', label: 'Forest School' },
+  { value: 'reggio_emilia', label: 'Reggio Emilia' },
+  { value: 'steiner', label: 'Steiner' },
+  { value: 'play_based', label: 'Play-based' },
+  { value: 'academic', label: 'Academic' },
+]
+
+const DIETARY_OPTIONS = [
+  { value: '', label: 'Any' },
+  { value: 'halal', label: 'Halal' },
+  { value: 'kosher', label: 'Kosher' },
+  { value: 'vegetarian', label: 'Vegetarian' },
+  { value: 'vegan', label: 'Vegan' },
+  { value: 'allergy_aware', label: 'Allergy-aware' },
 ]
 
 interface SearchFiltersProps {
@@ -176,6 +207,63 @@ export default function SearchFilters({ filters, onChange }: SearchFiltersProps)
                 Funded 3-4-year-old places
               </label>
             </div>
+          </div>
+
+          {/* Curriculum */}
+          <div>
+            <label className="text-xs text-gray-500 font-medium">Curriculum</label>
+            <select
+              value={filters.curriculum || ''}
+              onChange={(e) => update({ curriculum: e.target.value || null })}
+              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+            >
+              {CURRICULUM_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* SEN friendly */}
+          <div>
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={filters.sen}
+                onChange={(e) => update({ sen: e.target.checked })}
+                className="rounded border-gray-300"
+              />
+              Only show SEN-friendly nurseries
+            </label>
+          </div>
+
+          {/* Dietary options */}
+          <div>
+            <label className="text-xs text-gray-500 font-medium">Dietary options</label>
+            <select
+              value={filters.dietary || ''}
+              onChange={(e) => update({ dietary: e.target.value || null })}
+              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+            >
+              {DIETARY_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Staff language */}
+          <div>
+            <label className="text-xs text-gray-500 font-medium">Staff language</label>
+            <input
+              type="text"
+              value={filters.language || ''}
+              onChange={(e) => update({ language: e.target.value || null })}
+              placeholder="e.g., Hindi, Urdu, Polish"
+              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+            />
           </div>
 
           {/* Clear all */}

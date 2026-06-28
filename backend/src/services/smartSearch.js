@@ -28,6 +28,10 @@ export async function smartSearch({
   provider_type = null,
   has_funded_2yr = false,
   has_funded_3yr = false,
+  curriculum = null,
+  sen = false,
+  dietary = null,
+  language = null,
 }) {
   const cleaned = query.trim()
   if (!cleaned) {
@@ -54,6 +58,10 @@ export async function smartSearch({
     if (provider_type) filtered = filtered.filter((n) => n.provider_type === provider_type)
     if (has_funded_2yr) filtered = filtered.filter((n) => n.places_funded_2yr > 0)
     if (has_funded_3yr) filtered = filtered.filter((n) => n.places_funded_3_4yr > 0)
+    if (curriculum) filtered = filtered.filter((n) => Array.isArray(n.curriculum_types) && n.curriculum_types.includes(curriculum))
+    if (sen) filtered = filtered.filter((n) => n.sen_provision === true)
+    if (dietary) filtered = filtered.filter((n) => Array.isArray(n.dietary_options) && n.dietary_options.includes(dietary))
+    if (language) filtered = filtered.filter((n) => Array.isArray(n.languages) && n.languages.some((l) => l.toLowerCase().includes(language.toLowerCase())))
 
     // Boost featured nurseries to top within same distance band (1km bands)
     const boosted = filtered.sort((a, b) => {
@@ -97,12 +105,21 @@ export async function smartSearch({
   if (has_availability) q = q.gt('spots_available', 0)
   if (min_rating) q = q.gte('google_rating', Number(min_rating))
   if (provider_type) q = q.eq('provider_type', provider_type)
+  if (curriculum) q = q.contains('curriculum_types', [curriculum])
+  if (sen) q = q.eq('sen_provision', true)
+  if (dietary) q = q.contains('dietary_options', [dietary])
 
   const { data, error } = await q
   if (error) throw error
 
+  // Post-filter for language (case-insensitive match on array column)
+  let textFiltered = data || []
+  if (language) {
+    textFiltered = textFiltered.filter((n) => Array.isArray(n.languages) && n.languages.some((l) => l.toLowerCase().includes(language.toLowerCase())))
+  }
+
   // Sort: featured first, then Outstanding first, then by name
-  const sorted = (data || []).sort((a, b) => {
+  const sorted = (textFiltered).sort((a, b) => {
     // Featured nurseries (paid providers) float to top
     const fa = a.featured ? 0 : 1
     const fb = b.featured ? 0 : 1
@@ -159,6 +176,10 @@ export async function smartSearch({
             if (has_availability) filtered = filtered.filter((n) => n.spots_available > 0)
             if (min_rating) filtered = filtered.filter((n) => n.google_rating >= Number(min_rating))
             if (provider_type) filtered = filtered.filter((n) => n.provider_type === provider_type)
+            if (curriculum) filtered = filtered.filter((n) => Array.isArray(n.curriculum_types) && n.curriculum_types.includes(curriculum))
+            if (sen) filtered = filtered.filter((n) => n.sen_provision === true)
+            if (dietary) filtered = filtered.filter((n) => Array.isArray(n.dietary_options) && n.dietary_options.includes(dietary))
+            if (language) filtered = filtered.filter((n) => Array.isArray(n.languages) && n.languages.some((l) => l.toLowerCase().includes(language.toLowerCase())))
 
             return {
               data: filtered,
@@ -222,6 +243,18 @@ export async function smartSearch({
   }
   if (provider_type) {
     fuzzyResults = fuzzyResults.filter((n) => n.provider_type === provider_type)
+  }
+  if (curriculum) {
+    fuzzyResults = fuzzyResults.filter((n) => Array.isArray(n.curriculum_types) && n.curriculum_types.includes(curriculum))
+  }
+  if (sen) {
+    fuzzyResults = fuzzyResults.filter((n) => n.sen_provision === true)
+  }
+  if (dietary) {
+    fuzzyResults = fuzzyResults.filter((n) => Array.isArray(n.dietary_options) && n.dietary_options.includes(dietary))
+  }
+  if (language) {
+    fuzzyResults = fuzzyResults.filter((n) => Array.isArray(n.languages) && n.languages.some((l) => l.toLowerCase().includes(language.toLowerCase())))
   }
 
   // Sort: featured first, then by match_score descending

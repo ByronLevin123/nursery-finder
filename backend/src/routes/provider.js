@@ -16,6 +16,14 @@ const EDITABLE_FIELDS = [
   'website_url',
   'contact_email',
   'contact_phone',
+  'curriculum_types',
+  'sen_provision',
+  'sen_specialisms',
+  'accessibility_features',
+  'languages',
+  'meals_provided',
+  'meal_type',
+  'dietary_options',
 ]
 
 // Fields that free-tier providers can edit (contact info + limited description)
@@ -26,7 +34,21 @@ const FREE_EDITABLE_FIELDS = [
   'website_url',
   'contact_email',
   'contact_phone',
+  'curriculum_types',
+  'sen_provision',
+  'sen_specialisms',
+  'accessibility_features',
+  'languages',
+  'meals_provided',
+  'meal_type',
+  'dietary_options',
 ]
+
+const VALID_CURRICULUM_TYPES = ['eyfs', 'montessori', 'reggio_emilia', 'forest_school', 'steiner', 'play_based', 'academic', 'other']
+const VALID_SEN_SPECIALISMS = ['autism', 'speech_language', 'physical_disability', 'hearing', 'visual', 'behavioural', 'learning_difficulties', 'other']
+const VALID_ACCESSIBILITY_FEATURES = ['wheelchair_access', 'sensory_room', 'quiet_space', 'trained_senco', 'visual_aids', 'hearing_loop']
+const VALID_MEAL_TYPES = ['cooked_onsite', 'catered', 'packed_lunch', 'snacks_only']
+const VALID_DIETARY_OPTIONS = ['halal', 'kosher', 'vegetarian', 'vegan', 'gluten_free', 'dairy_free', 'nut_free', 'allergy_aware']
 
 const FREE_DESCRIPTION_LIMIT = 500
 const FREE_PHOTO_LIMIT = 3
@@ -72,6 +94,47 @@ function validatePatch(patch) {
     (typeof patch.contact_phone !== 'string' || patch.contact_phone.length > 40)
   ) {
     return 'contact_phone must be a string up to 40 chars'
+  }
+  if (patch.curriculum_types != null) {
+    if (!Array.isArray(patch.curriculum_types)) return 'curriculum_types must be an array'
+    for (const v of patch.curriculum_types) {
+      if (!VALID_CURRICULUM_TYPES.includes(v)) return `invalid curriculum_type: ${v}`
+    }
+  }
+  if (patch.sen_provision != null && typeof patch.sen_provision !== 'boolean') {
+    return 'sen_provision must be a boolean'
+  }
+  if (patch.sen_specialisms != null) {
+    if (!Array.isArray(patch.sen_specialisms)) return 'sen_specialisms must be an array'
+    for (const v of patch.sen_specialisms) {
+      if (!VALID_SEN_SPECIALISMS.includes(v)) return `invalid sen_specialism: ${v}`
+    }
+  }
+  if (patch.accessibility_features != null) {
+    if (!Array.isArray(patch.accessibility_features)) return 'accessibility_features must be an array'
+    for (const v of patch.accessibility_features) {
+      if (!VALID_ACCESSIBILITY_FEATURES.includes(v)) return `invalid accessibility_feature: ${v}`
+    }
+  }
+  if (patch.languages != null) {
+    if (!Array.isArray(patch.languages)) return 'languages must be an array'
+    if (!patch.languages.every((v) => typeof v === 'string' && v.length <= 100)) {
+      return 'each language must be a string up to 100 chars'
+    }
+  }
+  if (patch.meals_provided != null && typeof patch.meals_provided !== 'boolean') {
+    return 'meals_provided must be a boolean'
+  }
+  if (patch.meal_type != null) {
+    if (typeof patch.meal_type !== 'string' || !VALID_MEAL_TYPES.includes(patch.meal_type)) {
+      return `invalid meal_type: ${patch.meal_type}`
+    }
+  }
+  if (patch.dietary_options != null) {
+    if (!Array.isArray(patch.dietary_options)) return 'dietary_options must be an array'
+    for (const v of patch.dietary_options) {
+      if (!VALID_DIETARY_OPTIONS.includes(v)) return `invalid dietary_option: ${v}`
+    }
   }
   return null
 }
