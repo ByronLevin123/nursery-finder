@@ -6,6 +6,7 @@ import { smartSearchNurseries, Nursery, SearchResult, AreaSummary, getAreaSummar
 import { trackEvent } from '@/lib/analytics'
 import PostcodeAutocomplete from '@/components/PostcodeAutocomplete'
 import NurseryCard from '@/components/NurseryCard'
+import NurseryCardSkeleton from '@/components/NurseryCardSkeleton'
 import NurseryModal from '@/components/NurseryModal'
 import PreferencesPanel from '@/components/PreferencesPanel'
 import SearchFilters, { SearchFilterValues, DEFAULT_FILTERS } from '@/components/SearchFilters'
@@ -68,6 +69,7 @@ function SearchContent() {
   const [travelTimes, setTravelTimes] = useState<Map<string, number>>(new Map())
   const [promotions, setPromotions] = useState<any[]>([])
   const [sortBy, setSortBy] = useState<SortOption>('relevance')
+  const [displayCount, setDisplayCount] = useState(20)
 
   // Autocomplete state
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([])
@@ -92,6 +94,7 @@ function SearchContent() {
   }
 
   // Fetch area data per district as results arrive (deduplicated)
+  // Uses batch endpoint to reduce N individual calls to 1 request
   useEffect(() => {
     if (!results?.data) return
     const districts = new Set<string>()
@@ -101,23 +104,49 @@ function SearchContent() {
     }
     if (districts.size === 0) return
     let cancelled = false
-    Promise.all(
-      Array.from(districts).map(async d => {
-        try {
-          const a = await getAreaSummary(d)
-          return [d, a] as const
-        } catch {
-          return [d, null] as const
+    const districtList = Array.from(districts)
+
+    // Try batch endpoint first, fall back to individual calls
+    ;(async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/v1/areas/batch`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ districts: districtList }),
+        })
+        if (res.ok) {
+          const { data } = await res.json()
+          // data is Record<string, AreaSummary>
+          if (!cancelled) {
+            setAreas(prev => {
+              const next = new Map(prev)
+              for (const [d, a] of Object.entries(data)) next.set(d, a as AreaSummary)
+              return next
+            })
+          }
+          return
         }
-      })
-    ).then(entries => {
+      } catch { /* batch failed, fall back to individual calls */ }
+
+      // Fallback: individual calls
+      const entries = await Promise.all(
+        districtList.map(async d => {
+          try {
+            const a = await getAreaSummary(d)
+            return [d, a] as const
+          } catch {
+            return [d, null] as const
+          }
+        })
+      )
       if (cancelled) return
       setAreas(prev => {
         const next = new Map(prev)
         for (const [d, a] of entries) next.set(d, a)
         return next
       })
-    })
+    })()
+
     return () => { cancelled = true }
   }, [results]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -274,6 +303,7 @@ function SearchContent() {
         language: advancedFilters.language,
       })
       setResults(data)
+      setDisplayCount(20)
       // Plausible goal — fire after a successful search so we can measure
       // search → result-click → enquiry conversion. Don't include the raw
       // query (might be a postcode = personal data); only the mode + count.
@@ -618,8 +648,14 @@ function SearchContent() {
             </div>
           )}
 
+          {loading && (
+            <div className="space-y-3">
+              {Array.from({ length: 6 }).map((_, i) => <NurseryCardSkeleton key={i} />)}
+            </div>
+          )}
+
           <div className="space-y-3">
-            {visibleResults.map(({ nursery, match }, idx) => (
+            {visibleResults.slice(0, displayCount).map(({ nursery, match }, idx) => (
               <div key={nursery.urn}>
                 <NurseryCard
                   nursery={nursery}
@@ -639,6 +675,14 @@ function SearchContent() {
                 )}
               </div>
             ))}
+            {visibleResults.length > displayCount && (
+              <button
+                onClick={() => setDisplayCount(prev => prev + 20)}
+                className="w-full py-3 mt-3 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100"
+              >
+                Show {Math.min(20, visibleResults.length - displayCount)} more ({visibleResults.length - displayCount} remaining)
+              </button>
+            )}
           </div>
 
           {results && visibleResults.length === 0 && !loading && (

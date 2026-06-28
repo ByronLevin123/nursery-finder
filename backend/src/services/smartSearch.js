@@ -145,141 +145,144 @@ export async function smartSearch({
     }
   }
 
-  // Place name geocode fallback — try to resolve the query as a place name
-  // and do a spatial search around it before falling back to fuzzy
-  try {
+  // Place name geocode + fuzzy fallback — run in parallel for speed
+  logger.info({ query: cleaned }, 'text search empty, trying place geocode + fuzzy in parallel')
+
+  const advancedFilters = { has_availability, min_rating, provider_type, curriculum, sen, dietary, language }
+
+  async function tryPlaceGeocodeSearch() {
     const placeRes = await fetch(
       `https://api.postcodes.io/places?q=${encodeURIComponent(cleaned)}&limit=1`,
       { signal: AbortSignal.timeout(5000) }
     )
-    if (placeRes.ok) {
-      const placeData = await placeRes.json()
-      if (placeData.result && placeData.result.length > 0) {
-        const place = placeData.result[0]
-        const placeLat = place.latitude
-        const placeLng = place.longitude
-        if (placeLat && placeLng) {
-          logger.info(
-            { query: cleaned, place: place.name_1, lat: placeLat, lng: placeLng },
-            'text search empty, resolved as place name'
-          )
-          const { data: placeNurseries, error: placeErr } = await db.rpc('search_nurseries_near', {
-            search_lat: placeLat,
-            search_lng: placeLng,
-            radius_km: Number(radius_km),
-            grade_filter: grade || null,
-            funded_2yr: Boolean(has_funded_2yr),
-            funded_3yr: Boolean(has_funded_3yr),
-          })
-          if (!placeErr && placeNurseries && placeNurseries.length > 0) {
-            let filtered = placeNurseries
-            if (has_availability) filtered = filtered.filter((n) => n.spots_available > 0)
-            if (min_rating) filtered = filtered.filter((n) => n.google_rating >= Number(min_rating))
-            if (provider_type) filtered = filtered.filter((n) => n.provider_type === provider_type)
-            if (curriculum) filtered = filtered.filter((n) => Array.isArray(n.curriculum_types) && n.curriculum_types.includes(curriculum))
-            if (sen) filtered = filtered.filter((n) => n.sen_provision === true)
-            if (dietary) filtered = filtered.filter((n) => Array.isArray(n.dietary_options) && n.dietary_options.includes(dietary))
-            if (language) filtered = filtered.filter((n) => Array.isArray(n.languages) && n.languages.some((l) => l.toLowerCase().includes(language.toLowerCase())))
+    if (!placeRes.ok) return null
+    const placeData = await placeRes.json()
+    if (!placeData.result || placeData.result.length === 0) return null
+    const place = placeData.result[0]
+    const placeLat = place.latitude
+    const placeLng = place.longitude
+    if (!placeLat || !placeLng) return null
 
-            return {
-              data: filtered,
-              meta: {
-                total: filtered.length,
-                search_lat: placeLat,
-                search_lng: placeLng,
-                mode: 'place',
-                query: cleaned.replace(/[<>]/g, ''),
-                place_name: place.name_1,
-              },
-            }
-          }
-        }
-      }
-    }
-  } catch (placeErr) {
-    logger.warn({ err: placeErr?.message, query: cleaned }, 'place name geocode failed')
-  }
+    logger.info(
+      { query: cleaned, place: place.name_1, lat: placeLat, lng: placeLng },
+      'text search empty, resolved as place name'
+    )
+    const { data: placeNurseries, error: placeErr } = await db.rpc('search_nurseries_near', {
+      search_lat: placeLat,
+      search_lng: placeLng,
+      radius_km: Number(radius_km),
+      grade_filter: grade || null,
+      funded_2yr: Boolean(has_funded_2yr),
+      funded_3yr: Boolean(has_funded_3yr),
+    })
+    if (placeErr || !placeNurseries || placeNurseries.length === 0) return null
 
-  // Fuzzy fallback — text search and place geocode returned 0 results
-  logger.info({ query: cleaned }, 'text + place search empty, trying fuzzy fallback')
-  const { data: fuzzyData, error: fuzzyError } = await db.rpc('fuzzy_search_nurseries', {
-    query_text: cleaned,
-    max_results: 50,
-    min_similarity: 0.15,
-  })
+    let filtered = applyAdvancedFilters(placeNurseries, advancedFilters)
 
-  if (fuzzyError) {
-    logger.warn({ error: fuzzyError, query: cleaned }, 'fuzzy search RPC failed')
-    // Return empty results if RPC is not available
     return {
-      data: [],
+      data: filtered,
       meta: {
-        total: 0,
-        search_lat: null,
-        search_lng: null,
-        mode: 'text',
+        total: filtered.length,
+        search_lat: placeLat,
+        search_lng: placeLng,
+        mode: 'place',
         query: cleaned.replace(/[<>]/g, ''),
+        place_name: place.name_1,
       },
     }
   }
 
-  let fuzzyResults = fuzzyData || []
+  async function tryFuzzySearch() {
+    const { data: fuzzyData, error: fuzzyError } = await db.rpc('fuzzy_search_nurseries', {
+      query_text: cleaned,
+      max_results: 50,
+      min_similarity: 0.15,
+    })
 
-  // Apply grade/funded/advanced filters client-side
-  if (grade) {
-    fuzzyResults = fuzzyResults.filter((n) => n.ofsted_overall_grade === grade)
-  }
-  if (has_funded_2yr) {
-    fuzzyResults = fuzzyResults.filter((n) => n.places_funded_2yr > 0)
-  }
-  if (has_funded_3yr) {
-    fuzzyResults = fuzzyResults.filter((n) => n.places_funded_3_4yr > 0)
-  }
-  if (has_availability) {
-    fuzzyResults = fuzzyResults.filter((n) => n.spots_available > 0)
-  }
-  if (min_rating) {
-    fuzzyResults = fuzzyResults.filter((n) => n.google_rating >= Number(min_rating))
-  }
-  if (provider_type) {
-    fuzzyResults = fuzzyResults.filter((n) => n.provider_type === provider_type)
-  }
-  if (curriculum) {
-    fuzzyResults = fuzzyResults.filter((n) => Array.isArray(n.curriculum_types) && n.curriculum_types.includes(curriculum))
-  }
-  if (sen) {
-    fuzzyResults = fuzzyResults.filter((n) => n.sen_provision === true)
-  }
-  if (dietary) {
-    fuzzyResults = fuzzyResults.filter((n) => Array.isArray(n.dietary_options) && n.dietary_options.includes(dietary))
-  }
-  if (language) {
-    fuzzyResults = fuzzyResults.filter((n) => Array.isArray(n.languages) && n.languages.some((l) => l.toLowerCase().includes(language.toLowerCase())))
+    if (fuzzyError) {
+      logger.warn({ error: fuzzyError, query: cleaned }, 'fuzzy search RPC failed')
+      return {
+        data: [],
+        meta: {
+          total: 0,
+          search_lat: null,
+          search_lng: null,
+          mode: 'text',
+          query: cleaned.replace(/[<>]/g, ''),
+        },
+      }
+    }
+
+    let fuzzyResults = fuzzyData || []
+
+    // Apply grade/funded/advanced filters client-side
+    if (grade) fuzzyResults = fuzzyResults.filter((n) => n.ofsted_overall_grade === grade)
+    if (has_funded_2yr) fuzzyResults = fuzzyResults.filter((n) => n.places_funded_2yr > 0)
+    if (has_funded_3yr) fuzzyResults = fuzzyResults.filter((n) => n.places_funded_3_4yr > 0)
+    fuzzyResults = applyAdvancedFilters(fuzzyResults, advancedFilters)
+
+    // Sort: featured first, then by match_score descending
+    fuzzyResults.sort((a, b) => {
+      const fa = a.featured ? 0 : 1
+      const fb = b.featured ? 0 : 1
+      if (fa !== fb) return fa - fb
+      return (b.match_score || 0) - (a.match_score || 0)
+    })
+
+    // Extract "did you mean" from the top match
+    const topMatch = fuzzyResults[0]
+    const didYouMean = topMatch?.matched_field || null
+
+    const firstFuzzyWithCoords = fuzzyResults.find((n) => n.lat != null && n.lng != null)
+
+    return {
+      data: fuzzyResults,
+      meta: {
+        total: fuzzyResults.length,
+        search_lat: firstFuzzyWithCoords?.lat ?? null,
+        search_lng: firstFuzzyWithCoords?.lng ?? null,
+        mode: 'fuzzy',
+        query: cleaned.replace(/[<>]/g, ''),
+        did_you_mean: didYouMean,
+      },
+    }
   }
 
-  // Sort: featured first, then by match_score descending
-  fuzzyResults.sort((a, b) => {
-    const fa = a.featured ? 0 : 1
-    const fb = b.featured ? 0 : 1
-    if (fa !== fb) return fa - fb
-    return (b.match_score || 0) - (a.match_score || 0)
-  })
+  const [placeResult, fuzzyResult] = await Promise.allSettled([
+    tryPlaceGeocodeSearch(),
+    tryFuzzySearch(),
+  ])
 
-  // Extract "did you mean" from the top match
-  const topMatch = fuzzyResults[0]
-  const didYouMean = topMatch?.matched_field || null
+  // Return place result if it found something, otherwise fuzzy
+  if (placeResult.status === 'fulfilled' && placeResult.value?.data?.length > 0) {
+    return placeResult.value
+  }
+  if (fuzzyResult.status === 'fulfilled') {
+    return fuzzyResult.value
+  }
 
-  const firstFuzzyWithCoords = fuzzyResults.find((n) => n.lat != null && n.lng != null)
-
+  // Both failed — return empty
   return {
-    data: fuzzyResults,
+    data: [],
     meta: {
-      total: fuzzyResults.length,
-      search_lat: firstFuzzyWithCoords?.lat ?? null,
-      search_lng: firstFuzzyWithCoords?.lng ?? null,
-      mode: 'fuzzy',
+      total: 0,
+      search_lat: null,
+      search_lng: null,
+      mode: 'text',
       query: cleaned.replace(/[<>]/g, ''),
-      did_you_mean: didYouMean,
     },
   }
+}
+
+/** Apply advanced post-filters common to place geocode and postcode branches */
+function applyAdvancedFilters(nurseries, filters) {
+  let filtered = nurseries
+  if (filters.has_availability) filtered = filtered.filter((n) => n.spots_available > 0)
+  if (filters.min_rating) filtered = filtered.filter((n) => n.google_rating >= Number(filters.min_rating))
+  if (filters.provider_type) filtered = filtered.filter((n) => n.provider_type === filters.provider_type)
+  if (filters.curriculum) filtered = filtered.filter((n) => Array.isArray(n.curriculum_types) && n.curriculum_types.includes(filters.curriculum))
+  if (filters.sen) filtered = filtered.filter((n) => n.sen_provision === true)
+  if (filters.dietary) filtered = filtered.filter((n) => Array.isArray(n.dietary_options) && n.dietary_options.includes(filters.dietary))
+  if (filters.language) filtered = filtered.filter((n) => Array.isArray(n.languages) && n.languages.some((l) => l.toLowerCase().includes(filters.language.toLowerCase())))
+  return filtered
 }

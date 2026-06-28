@@ -16,6 +16,10 @@ export const autocompleteCache = new NodeCache({ stdTTL: 60, checkperiod: 30 })
 export const similarCache = new NodeCache({ stdTTL: 3600, checkperiod: 600 })
 
 export function searchCacheKey(params) {
-  const { postcode, radiusKm, grade, funded2yr, funded3yr } = params
-  return `search:${postcode}:${radiusKm}:${grade || 'any'}:${funded2yr}:${funded3yr}`
+  const {
+    postcode, radiusKm, grade, funded2yr, funded3yr,
+    providerType, hasAvailability, minRating,
+    curriculum, sen, dietary, language,
+  } = params
+  return `search:${postcode}:${radiusKm}:${grade || 'any'}:${funded2yr}:${funded3yr}:${providerType || 'any'}:${hasAvailability || false}:${minRating || 'any'}:${curriculum || 'any'}:${sen || false}:${dietary || 'any'}:${language || 'any'}`
 }
