@@ -10,6 +10,9 @@ import {
   renderQuizCompleteDay0Email,
   renderQuizCompleteDay3Email,
   renderQuizCompleteDay7Email,
+  renderParentWelcomeDay1,
+  renderParentDripDay3,
+  renderParentDripDay7,
 } from './emailTemplates.js'
 
 // ---------- Sequence definitions ----------
@@ -27,6 +30,13 @@ const SEQUENCES = {
       { day: 0, template: 'quiz_complete_day0', render: renderQuizCompleteDay0Email },
       { day: 3, template: 'quiz_complete_day3', render: renderQuizCompleteDay3Email },
       { day: 7, template: 'quiz_complete_day7', render: renderQuizCompleteDay7Email },
+    ],
+  },
+  parent_signup: {
+    steps: [
+      { day: 0, template: 'parent_welcome_day1', render: renderParentWelcomeDay1 },
+      { day: 3, template: 'parent_drip_day3', render: renderParentDripDay3 },
+      { day: 7, template: 'parent_drip_day7', render: renderParentDripDay7, needsPostcode: true },
     ],
   },
 }
@@ -164,7 +174,7 @@ export async function processDripQueue() {
       // Check marketing opt-out
       const { data: profile } = await db
         .from('user_profiles')
-        .select('email_marketing, display_name')
+        .select('email_marketing, display_name, home_postcode')
         .eq('id', row.user_id)
         .maybeSingle()
 
@@ -185,7 +195,11 @@ export async function processDripQueue() {
       }
 
       const userName = profile?.display_name || null
-      const rendered = step.render({ userName })
+      const renderArgs = { userName, name: userName }
+      if (step.needsPostcode && profile?.home_postcode) {
+        renderArgs.postcode = profile.home_postcode
+      }
+      const rendered = step.render(renderArgs)
 
       const result = await sendEmail({
         to: email,

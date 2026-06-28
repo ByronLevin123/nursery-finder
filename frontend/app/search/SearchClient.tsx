@@ -28,6 +28,7 @@ import SaveSearchButton from '@/components/SaveSearchButton'
 import SearchJsonLd from '@/components/SearchJsonLd'
 import RecentlyViewed from '@/components/RecentlyViewed'
 import OglAttribution from '@/components/OglAttribution'
+import ReferralShare from '@/components/ReferralShare'
 
 const NurseryMap = dynamic(() => import('@/components/NurseryMap'), { ssr: false })
 
@@ -291,6 +292,35 @@ function SearchContent() {
     }
     setLoading(false)
   }
+
+  // Dynamic document title — reflects the current search query + mode
+  useEffect(() => {
+    if (!results?.meta) return
+    const mode = results.meta.mode
+    const placeName = (results.meta as any).place_name as string | undefined
+    const searchQuery = query.trim()
+    if (!searchQuery) return
+
+    let title: string
+    if (isChildminderMode) {
+      title = `Childminders near ${searchQuery.toUpperCase()} — NurseryMatch`
+    } else if (mode === 'place' && placeName) {
+      title = `Nurseries in ${placeName} — NurseryMatch`
+    } else if (mode === 'postcode') {
+      title = `Nurseries near ${searchQuery.toUpperCase()} — NurseryMatch`
+    } else if (mode === 'name') {
+      title = `${searchQuery} — NurseryMatch`
+    } else {
+      title = `Nurseries in ${searchQuery} — NurseryMatch`
+    }
+
+    document.title = title
+
+    // Restore default title on unmount
+    return () => {
+      document.title = 'Search | NurseryMatch'
+    }
+  }, [results, query, isChildminderMode])
 
   useEffect(() => {
     if (initialQuery) doSearch()
@@ -617,6 +647,7 @@ function SearchContent() {
             </div>
           )}
 
+          {results && <ReferralShare />}
           {results && <OglAttribution />}
         </div>
       </div>

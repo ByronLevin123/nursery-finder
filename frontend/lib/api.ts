@@ -476,6 +476,52 @@ export async function deleteMyAccount(token: string): Promise<void> {
   if (!res.ok) throw new Error(`Deletion failed: ${res.status}`)
 }
 
+// AI Nursery Advisor -----------------------------------------------------------
+
+export interface NurseryAdvisorContext {
+  postcode?: string
+  childAge?: number
+  priorities?: string[]
+  budget?: string
+}
+
+export interface NurseryAdvisorResponse {
+  response: string
+  suggestions: string[]
+}
+
+export async function nurseryAdvisorChat(
+  message: string,
+  context?: NurseryAdvisorContext
+): Promise<NurseryAdvisorResponse> {
+  try {
+    const res = await fetch(`${API_URL}/api/v1/ai/nursery-advisor`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, context }),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      if (res.status === 429) {
+        return {
+          response: 'You\'ve reached the question limit for now. Please try again in an hour, or use our search to find nurseries near you.',
+          suggestions: ['Search nurseries near you'],
+        }
+      }
+      return {
+        response: 'Sorry, I couldn\'t process your question right now. Please try again shortly, or use our nursery search to get started.',
+        suggestions: ['Search nurseries near you', 'Take the nursery quiz'],
+      }
+    }
+    return await res.json()
+  } catch {
+    return {
+      response: 'Sorry, I\'m having trouble connecting right now. You can still search for nurseries using the search bar above.',
+      suggestions: ['Search nurseries near you'],
+    }
+  }
+}
+
 // AI Family Move Assistant ----------------------------------------------------
 
 export interface AssistantCriteria {

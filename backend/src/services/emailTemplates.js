@@ -1013,6 +1013,196 @@ export function renderQuizCompleteDay7Email({ userName } = {}) {
   return { subject, html, text }
 }
 
+// ---------- 17. Parent signup drip Day 1 (Day 0 — immediate welcome) ----------
+
+export function renderParentWelcomeDay1({ name } = {}) {
+  const greeting = name ? `Hi ${escapeHtml(name)},` : 'Hi,'
+  const subject = 'Welcome to NurseryMatch — here\'s how to get started'
+
+  const html = shell({
+    title: subject,
+    preheader: 'Find and compare Ofsted-rated nurseries near you in under a minute.',
+    bodyHtml: `
+      <p style="margin:0 0 12px 0;">${greeting}</p>
+      <p style="margin:0 0 16px 0;">
+        Welcome to NurseryMatch! We help thousands of UK parents find the right
+        nursery for their family. Here is how to make the most of your account.
+      </p>
+      <p style="margin:0 0 8px 0;font-weight:600;">Three things you can do right now:</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="padding:12px 0;border-bottom:1px solid #f1f5f9;">
+            <div style="font-weight:600;color:#2563eb;">1. Search by postcode</div>
+            <div style="font-size:13px;color:#4b5563;">Enter your postcode and see every nursery within walking distance, with Ofsted ratings and fees.</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0;border-bottom:1px solid #f1f5f9;">
+            <div style="font-weight:600;color:#2563eb;">2. Take the nursery quiz</div>
+            <div style="font-size:13px;color:#4b5563;">Answer a few quick questions and we will rank nurseries by what matters most to your family.</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0;">
+            <div style="font-weight:600;color:#2563eb;">3. Save your shortlist</div>
+            <div style="font-size:13px;color:#4b5563;">Heart any nursery to save it. Compare them side by side whenever you are ready.</div>
+          </td>
+        </tr>
+      </table>
+      <p style="margin:20px 0 0 0;">
+        ${ctaButton(`${FRONTEND_URL}/search`, 'Search nurseries near you')}
+      </p>
+      <p style="margin:16px 0 0 0;font-size:13px;color:#6b7280;">
+        Reply to this email any time if you need help — we read every message.
+      </p>
+      <p style="margin:12px 0 0 0;font-size:12px;color:#9ca3af;">
+        <a href="${UNSUBSCRIBE_URL}" style="color:#9ca3af;text-decoration:underline;">Unsubscribe from these emails</a>
+      </p>
+    `,
+  })
+
+  const text = [
+    greeting,
+    '',
+    'Welcome to NurseryMatch!',
+    '',
+    'Three things you can do right now:',
+    '1. Search by postcode — see every nursery within walking distance.',
+    '2. Take the nursery quiz — we will rank nurseries by your priorities.',
+    '3. Save your shortlist — heart nurseries and compare them side by side.',
+    '',
+    `Search nurseries: ${FRONTEND_URL}/search`,
+    '',
+    'Reply to this email any time if you need help.',
+    '',
+    `Unsubscribe: ${UNSUBSCRIBE_URL}`,
+  ].join('\n')
+
+  return { subject, html, text }
+}
+
+// ---------- 18. Parent signup drip Day 3 ----------
+
+export function renderParentDripDay3({ name } = {}) {
+  const greeting = name ? `Hi ${escapeHtml(name)},` : 'Hi,'
+  const subject = '3 guides every parent should read'
+
+  const html = shell({
+    title: subject,
+    preheader: 'Choosing a nursery is one of the biggest decisions you will make. These guides help.',
+    bodyHtml: `
+      <p style="margin:0 0 12px 0;">${greeting}</p>
+      <p style="margin:0 0 16px 0;">
+        Choosing a nursery is one of the biggest decisions you will make as a parent.
+        We have put together three guides to help you feel confident about it.
+      </p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="padding:12px 0;border-bottom:1px solid #f1f5f9;">
+            <a href="${FRONTEND_URL}/guides/what-to-look-for" style="font-weight:600;color:#2563eb;text-decoration:none;">What to look for in a nursery</a>
+            <div style="font-size:13px;color:#4b5563;">The key things to check beyond the Ofsted rating — from staff ratios to outdoor space.</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0;border-bottom:1px solid #f1f5f9;">
+            <a href="${FRONTEND_URL}/guides/understanding-ofsted" style="font-weight:600;color:#2563eb;text-decoration:none;">Understanding Ofsted ratings</a>
+            <div style="font-size:13px;color:#4b5563;">What Outstanding, Good, Requires Improvement and Inadequate actually mean in practice.</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0;">
+            <a href="${FRONTEND_URL}/guides/funded-hours" style="font-weight:600;color:#2563eb;text-decoration:none;">Free funded hours explained</a>
+            <div style="font-size:13px;color:#4b5563;">How to claim your 15 or 30 free hours and what to watch out for with top-up fees.</div>
+          </td>
+        </tr>
+      </table>
+      <p style="margin:20px 0 0 0;">
+        ${ctaButton(`${FRONTEND_URL}/guides`, 'Read all guides')}
+      </p>
+      <p style="margin:12px 0 0 0;font-size:12px;color:#9ca3af;">
+        <a href="${UNSUBSCRIBE_URL}" style="color:#9ca3af;text-decoration:underline;">Unsubscribe from these emails</a>
+      </p>
+    `,
+  })
+
+  const text = [
+    greeting,
+    '',
+    '3 guides every parent should read:',
+    '',
+    `1. What to look for in a nursery: ${FRONTEND_URL}/guides/what-to-look-for`,
+    `2. Understanding Ofsted ratings: ${FRONTEND_URL}/guides/understanding-ofsted`,
+    `3. Free funded hours explained: ${FRONTEND_URL}/guides/funded-hours`,
+    '',
+    `Read all guides: ${FRONTEND_URL}/guides`,
+    '',
+    `Unsubscribe: ${UNSUBSCRIBE_URL}`,
+  ].join('\n')
+
+  return { subject, html, text }
+}
+
+// ---------- 19. Parent signup drip Day 7 ----------
+
+export function renderParentDripDay7({ name, postcode } = {}) {
+  const greeting = name ? `Hi ${escapeHtml(name)},` : 'Hi,'
+  const safePostcode = escapeHtml(postcode || '')
+  const hasPostcode = !!postcode
+  const subject = hasPostcode
+    ? `New nurseries near ${postcode}`
+    : 'New nurseries near you'
+
+  const searchUrl = hasPostcode
+    ? `${FRONTEND_URL}/search?postcode=${encodeURIComponent(postcode)}`
+    : `${FRONTEND_URL}/search`
+
+  const html = shell({
+    title: subject,
+    preheader: hasPostcode
+      ? `See the latest nurseries near ${postcode} — Ofsted ratings, fees and availability.`
+      : 'Discover nurseries near you with Ofsted ratings, fees and availability.',
+    bodyHtml: `
+      <p style="margin:0 0 12px 0;">${greeting}</p>
+      <p style="margin:0 0 16px 0;">
+        ${hasPostcode
+          ? `We have been keeping an eye on nurseries near <strong>${safePostcode}</strong> for you. Here is a quick way to see what is available.`
+          : 'It has been a week since you joined NurseryMatch. Have you found the right nursery yet?'}
+      </p>
+      <p style="margin:0 0 16px 0;">
+        ${hasPostcode
+          ? 'Search your area to see up-to-date Ofsted ratings, availability, fees and parent reviews for every nursery nearby.'
+          : 'Enter your postcode to see Ofsted ratings, availability, fees and parent reviews for nurseries near you.'}
+      </p>
+      <p style="margin:0 0 20px 0;">
+        ${ctaButton(searchUrl, hasPostcode ? `See nurseries near ${safePostcode}` : 'Search nurseries near you')}
+      </p>
+      <p style="margin:0 0 12px 0;font-size:13px;color:#6b7280;">
+        You can also <a href="${FRONTEND_URL}/compare" style="color:#2563eb;text-decoration:underline;">compare nurseries side by side</a>
+        or <a href="${FRONTEND_URL}/quiz" style="color:#2563eb;text-decoration:underline;">take the nursery quiz</a> to get personalised recommendations.
+      </p>
+      <p style="margin:12px 0 0 0;font-size:12px;color:#9ca3af;">
+        <a href="${UNSUBSCRIBE_URL}" style="color:#9ca3af;text-decoration:underline;">Unsubscribe from these emails</a>
+      </p>
+    `,
+  })
+
+  const text = [
+    greeting,
+    '',
+    hasPostcode
+      ? `We have been keeping an eye on nurseries near ${postcode} for you.`
+      : 'It has been a week since you joined NurseryMatch.',
+    '',
+    `Search nurseries: ${searchUrl}`,
+    `Compare nurseries: ${FRONTEND_URL}/compare`,
+    `Take the quiz: ${FRONTEND_URL}/quiz`,
+    '',
+    `Unsubscribe: ${UNSUBSCRIBE_URL}`,
+  ].join('\n')
+
+  return { subject, html, text }
+}
+
 export default {
   renderWelcomeEmail,
   renderWelcomeDay3Email,
@@ -1030,4 +1220,7 @@ export default {
   renderQuizCompleteDay0Email,
   renderQuizCompleteDay3Email,
   renderQuizCompleteDay7Email,
+  renderParentWelcomeDay1,
+  renderParentDripDay3,
+  renderParentDripDay7,
 }

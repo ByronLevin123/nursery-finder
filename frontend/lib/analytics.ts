@@ -25,6 +25,7 @@ export type AnalyticsEvent =
   // Acquisition
   | 'Signup'
   | 'Newsletter Subscribe'
+  | 'Referral Share'
   // Engagement
   | 'Search'
   | 'Quiz Complete'
