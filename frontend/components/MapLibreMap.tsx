@@ -146,7 +146,7 @@ export default function GoogleMap({
           fillColor: 'transparent',
           fillOpacity: 0,
           strokeWeight: 0,
-          scale: 0,
+          scale: 14,
         },
         clickable: !!(m.popupHtml || m.onClick),
       })
