@@ -3,7 +3,7 @@
 
 import express from 'express'
 import rateLimit from 'express-rate-limit'
-import { isClaudeAvailable, ClaudeUnavailableError } from '../services/claudeApi.js'
+import { isClaudeAvailable, callClaude, ClaudeUnavailableError } from '../services/claudeApi.js'
 import { getNurserySummary } from '../services/aiNurserySummary.js'
 import { getReviewSynthesis } from '../services/aiReviewSynthesis.js'
 import { generateMatchNarrative } from '../services/aiMatchNarrative.js'
@@ -16,6 +16,13 @@ const aiLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 20,
   message: { error: 'Too many AI requests, please slow down' },
+})
+
+// Stricter rate limit for the nursery advisor chat endpoint — 10 req/hour per IP
+const advisorLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  message: { error: 'You have reached the advisor limit. Please try again later.' },
 })
 
 router.use(aiLimiter)

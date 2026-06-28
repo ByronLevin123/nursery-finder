@@ -7,6 +7,7 @@ import OglAttribution from '@/components/OglAttribution'
 
 const RecentlyViewed = dynamic(() => import('@/components/RecentlyViewed'), { ssr: false })
 const TestimonialCarousel = dynamic(() => import('@/components/TestimonialCarousel'), { ssr: false })
+const StatsStrip = dynamic(() => import('@/components/StatsStrip'), { ssr: false })
 
 export const metadata: Metadata = {
   title: 'NurseryMatch — Compare UK Nurseries, Childminders & Schools',
@@ -91,17 +92,7 @@ export default function HomePage() {
           </p>
 
           <HomeHero />
-          <div className="flex flex-wrap justify-center gap-3 mt-6">
-            <span className="px-3 py-1 bg-white/80 rounded-full text-xs font-medium text-gray-700 border border-gray-200 shadow-sm">
-              27,808 nurseries compared
-            </span>
-            <span className="px-3 py-1 bg-white/80 rounded-full text-xs font-medium text-gray-700 border border-gray-200 shadow-sm">
-              2,020 districts
-            </span>
-            <span className="px-3 py-1 bg-white/80 rounded-full text-xs font-medium text-gray-700 border border-gray-200 shadow-sm">
-              Updated daily
-            </span>
-          </div>
+          <StatsStrip />
         </div>
       </section>
 
