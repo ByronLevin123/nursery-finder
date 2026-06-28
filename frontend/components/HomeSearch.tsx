@@ -21,7 +21,7 @@ function buildSearchUrl(query: string, searchType: SearchType): string {
 export default function HomeSearch({ searchType = 'nursery' as SearchType }: { searchType?: SearchType }) {
   const [query, setQuery] = useState('')
   const [error, setError] = useState('')
-  const [smart, setSmart] = useState(false)
+  const [smart, setSmart] = useState(true)
   const [loading, setLoading] = useState(false)
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -170,18 +170,7 @@ export default function HomeSearch({ searchType = 'nursery' as SearchType }: { s
           {loading ? 'Thinking…' : 'Search'}
         </button>
       </form>
-      <div className="flex items-center justify-center gap-2 mt-2">
-        <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={smart}
-            onChange={e => setSmart(e.target.checked)}
-            className="rounded"
-          />
-          ✨ Smart search (try natural language)
-        </label>
-      </div>
-      <p className="text-xs text-gray-500 mt-2 text-center">Try a postcode (SW11 1AA), area (Battersea), or nursery name</p>
+      <p className="text-xs text-gray-500 mt-2 text-center">Try a postcode (SW11 1AA), area (Battersea), or &ldquo;Outstanding nurseries near SW11&rdquo;</p>
       {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
     </div>
   )

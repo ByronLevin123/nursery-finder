@@ -36,18 +36,17 @@ export default function HomeHero() {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-        <a
-          href="/quiz"
-          className="inline-flex items-center justify-center gap-2 px-6 py-4 bg-indigo-600 text-white rounded-xl font-semibold text-lg shadow-md hover:bg-indigo-700 transition"
-        >
-          Take the 2-min quiz &rarr;
-        </a>
-      </div>
       <div id="nursery-search">
         <HomeSearch searchType={searchType} />
       </div>
-      <p className="text-xs text-gray-400 mt-2">Or search by postcode above</p>
+      <div className="flex justify-center mt-6">
+        <a
+          href="/quiz"
+          className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-indigo-600 border-2 border-indigo-600 rounded-xl font-semibold text-base hover:bg-indigo-50 transition"
+        >
+          Not sure? Take the 2-min quiz &rarr;
+        </a>
+      </div>
     </>
   )
 }
