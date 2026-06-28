@@ -260,9 +260,8 @@ export async function createCampaign({ name, dailyBudget, keywords, headlines, d
 
     // 5. Create responsive search ad
     if (headlines?.length && descriptions?.length) {
-      const headlineAssets = headlines.slice(0, 15).map((h, i) => ({
+      const headlineAssets = headlines.slice(0, 15).map((h) => ({
         text: h.slice(0, 30),
-        pinnedField: i < 3 ? undefined : undefined, // no pinning
       }))
       const descriptionAssets = descriptions.slice(0, 4).map((d) => ({
         text: d.slice(0, 90),

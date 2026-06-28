@@ -125,15 +125,23 @@ router.post('/social/post', async (req, res, next) => {
     }
 
     // Save to database
-    const bufferPostId = data?.updates?.[0]?.id || null
-    const status = scheduledAt ? 'scheduled' : 'posted'
+    const bufferPostId = data?.updates?.[0]?.id || data?.id || null
+    const status = bufferPostId ? (scheduledAt ? 'scheduled' : 'posted') : 'draft'
 
     if (db) {
-      // Determine platform from first profile (simplified — Buffer may return profile info)
+      // Resolve platform from Buffer profiles if available
+      let profilePlatforms = {}
+      try {
+        const { data: profiles } = await getProfiles()
+        if (profiles) {
+          for (const p of profiles) profilePlatforms[p.id] = p.service || 'other'
+        }
+      } catch { /* use fallback */ }
+
       for (const pid of profileIds) {
         const { error: dbErr } = await db.from('marketing_posts').insert({
           content: text,
-          platform: 'twitter', // Default; ideally resolve from profile
+          platform: profilePlatforms[pid] || 'other',
           status,
           buffer_post_id: bufferPostId,
           scheduled_at: scheduledAt || null,

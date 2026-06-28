@@ -208,7 +208,7 @@ function ContentGeneratorTab() {
     try {
       const headers = await authHeaders()
       const body: Record<string, string> = {
-        content_type: contentType,
+        type: contentType,
         topic: topic.trim(),
         tone,
       }
@@ -250,13 +250,19 @@ function ContentGeneratorTab() {
     setError(null)
     try {
       const headers = await authHeaders()
+      // Fetch all connected profiles and post to all of them
+      const profilesRes = await fetch(`${API_URL}/api/v1/admin/marketing/social/profiles`, { headers })
+      const profilesData = profilesRes.ok ? await profilesRes.json() : { profiles: [] }
+      const allProfileIds = (profilesData.profiles || []).map((p: any) => p.id)
+      if (allProfileIds.length === 0) {
+        throw new Error('No Buffer profiles connected. Configure Buffer first.')
+      }
       const res = await fetch(`${API_URL}/api/v1/admin/marketing/social/post`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
           text: generatedText,
-          profile_ids: [],
-          schedule: false,
+          profileIds: allProfileIds,
         }),
       })
       if (!res.ok) {
