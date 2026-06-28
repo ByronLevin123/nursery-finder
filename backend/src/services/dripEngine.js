@@ -194,7 +194,7 @@ export async function processDripQueue() {
         continue
       }
 
-      const userName = profile?.display_name || null
+      const userName = profile?.display_name || 'there'
       const renderArgs = { userName, name: userName }
       if (step.needsPostcode && profile?.home_postcode) {
         renderArgs.postcode = profile.home_postcode

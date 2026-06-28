@@ -74,7 +74,7 @@ function mapRow(row) {
   const cplGrade = (row['KQ_Care_Play_and_Learning'] || row['KQ_Support_Wellbeing'] || '').trim()
   const overallGrade = minGrade || cplGrade || null
 
-  const lastInspection = parseDate(row['Last_inspection_Date'] || row['Last_inspection_Date'] || '')
+  const lastInspection = parseDate(row['Last_inspection_Date'] || row['Publication_of_Latest_Grading'] || '')
   const places = parseInt(row['Registered_Places'] || '', 10)
 
   const providerType = subtype.toLowerCase().includes('childminding') ||
