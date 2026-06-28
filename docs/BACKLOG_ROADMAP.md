@@ -1,194 +1,152 @@
-# NurseryMatch — Complete Backlog & Roadmap
+# NurseryMatch — Complete Application Backlog & Roadmap
 
 Last updated: 2026-06-28
 
 ---
 
+## APPLICATION OVERVIEW
+
+| Metric | Value |
+|--------|-------|
+| Backend routes | 43 modules, 10,186 LOC |
+| Frontend pages | 67 pages, all functional |
+| Database migrations | 60 numbered SQL files |
+| Backend tests | 411 passing (100%) |
+| Frontend tests | 117 passing (100%) |
+| Backend services | 43 service modules |
+| Cron jobs | 16 scheduled (all implemented) |
+| Documentation files | 10 in /docs |
+| Phases completed | All 8 original phases + extensions |
+
+---
+
 ## DEPLOYMENT STATUS
 
-All code merged to `main` and auto-deploying via Render (backend) + Vercel (frontend).
-
-**Latest PRs on main (all deployed):**
-
-| PR | What | Status |
-|----|------|--------|
-| #74 | Google Analytics 4 support | Deployed |
-| #73 | Security hardening (4 fixes) | Deployed |
-| #72 | Trust proxy reverted to 1 for Render | Deployed |
-| #71 | Rate limit bumped 300→600 | Deployed |
-| #70 | Map markers clickable on desktop | Deployed |
-| #69 | Quiz below search, smart search default | Deployed |
-| #68 | 8 bugs from code review | Deployed |
-| #67 | AI advisor, referral, exit popup, drip emails, dynamic SEO | Deployed |
-| #66 | Scotland/Wales CSV URL input | Deployed |
-| #65 | Scotland ingest CSV format fix | Deployed |
-| #64 | Retargeting pixels + marketing crons | Deployed |
-| #57 | Marketing Hub | Deployed |
-| #56 | Scotland/Wales, city pages, AI search, social content | Deployed |
-| #55 | soft_play category fix | Deployed |
-| #54 | Critical bugs (N+1, race condition, domain bypass) | Deployed |
-| #53 | Google Ads + AdSense | Deployed |
-| #52 | Data pipeline + CI/CD + admin runbook | Deployed |
-| #50 | Childminder ingest fix | Deployed |
-| #49 | Admin stats 500 fix | Deployed |
+All code on `main`, auto-deploys via Render (backend) + Vercel (frontend).
+26 PRs merged this session (#49-#75).
 
 ---
 
-## COMPLETED (this session — 26 PRs merged)
+## PHASE 0: CRITICAL — DO NOW
 
-### Bug Fixes
-- [x] Admin dashboard 500 (Supabase .catch() bug)
-- [x] Childminder ingest (REDACTED addresses no longer skipped)
-- [x] School geocoding added to nightly cron
-- [x] N+1 query in enquiries route
-- [x] Visit booking race condition (optimistic locking)
-- [x] Domain validation bypass in overlays
-- [x] soft_play promotion category mismatch
-- [x] Press kit placeholder bio
-- [x] Map markers not clickable on desktop (icon scale was 0)
-- [x] Rate limit 429 (bumped 300→600, trust proxy correct for Render)
-- [x] Marketing Hub field name mismatch (content_type→type)
-- [x] Empty profileIds when posting to Buffer
-- [x] Platform hardcoded as 'twitter' for all posts
-- [x] Buffer status 'posted' even on null response
-- [x] Scotland ingest duplicate date fallback
-- [x] Dead ternary in Google Ads headline builder
-- [x] Drip email greeting 'Hi null' → 'Hi there'
-
-### Features Built
-- [x] "Run All Steps" data pipeline with DAG ordering
-- [x] CI/CD post-deploy validation workflow
-- [x] Admin runbook (docs/ADMIN_RUNBOOK.md)
-- [x] Google Ads conversion tracking + AdSense
-- [x] Google Analytics 4 support
-- [x] Scotland + Wales childcare data support
-- [x] City landing pages (20 UK cities)
-- [x] AI search optimization (llms.txt, GPT config, AI crawler robots.txt)
-- [x] Marketing Hub (AI content generator, Buffer social, Google Ads)
-- [x] Retargeting pixels (Meta Pixel, Google Remarketing)
-- [x] Automated marketing crons (provider outreach, social posting, blog generation)
-- [x] Social/outreach content pack (docs/SOCIAL_OUTREACH_CONTENT.md)
-- [x] Promotion seeding script
-- [x] AI nursery advisor (floating chat panel with Claude)
-- [x] Exit-intent popup (quiz CTA on desktop)
-- [x] Referral tracking (UTM-tagged share links)
-- [x] Parent signup drip emails (Day 1, 3, 7)
-- [x] Dynamic search page SEO titles
-- [x] Social proof stats strip on homepage
-- [x] Quiz moved below search, smart search default on
-
-### Security
-- [x] Full security review — no critical vulnerabilities
-- [x] Reviews require authentication (was anonymous)
-- [x] Shared shortlist token rate-limited
-- [x] Public CORS restricted to GET only
-- [x] API key query parameter removed
-
-### Infrastructure
-- [x] Google Search Console — verified, indexing
-- [x] Bing Webmaster Tools — verified, sitemap submitted
-- [x] Sentry — deployed (backend + frontend)
-- [x] Database migrations 057-059
-
----
-
-## PHASE 1: IMMEDIATE — DO THIS NOW
-
-### Database (Supabase SQL Editor)
-- [ ] Verify migration 058 ran (DROP FUNCTION + recreate search_nurseries_near)
-- [ ] Run migration 055 (postcode_areas columns for aggregate/family functions)
+### Database Migrations (Supabase SQL Editor)
+- [ ] Run `DROP FUNCTION search_nurseries_near(...)` then migration 058
+- [ ] Run migration 055 (postcode_areas columns)
 - [ ] Run migration 004 (refresh_postcode_area_nursery_stats function)
 - [ ] Run migration 009 (calculate_all_family_scores function)
-- [ ] Verify admin_reports_cache table exists (migration 034)
+- [ ] Verify admin_reports_cache table exists
 
-### Data Population (Admin Dashboard > Data Ingest)
-- [ ] Run Ofsted Import (includes childminders now)
-- [ ] Run Geocode Nurseries (2-3 times, 2000/batch)
-- [ ] Run Schools Import
-- [ ] Run Geocode Schools (5-10 times, 100/batch)
-- [ ] Import Scotland data (paste CSV URL into admin panel)
-- [ ] Import Wales data (download from careinspectorate.wales)
-- [ ] Run Geocode Nurseries again (for Scotland/Wales)
-- [ ] Run Aggregate Areas
-- [ ] Run Family Scores
-- [ ] Run Crime Data
-- [ ] Run IMD Data
-- [ ] Run Google Places Sync
-- [ ] Run Snapshot Reports
+### Data Population (Admin > Data Ingest)
+- [ ] Ofsted Import (27k+ nurseries + childminders)
+- [ ] Geocode Nurseries (run 2-3x, 2000/batch)
+- [ ] Schools Import (30k schools from GIAS)
+- [ ] Geocode Schools (run 5-10x, 100/batch)
+- [ ] Scotland import (paste CSV URL in admin panel)
+- [ ] Wales import (download from careinspectorate.wales)
+- [ ] Geocode again (for Scotland/Wales records)
+- [ ] Aggregate Areas
+- [ ] Family Scores
+- [ ] Crime Data
+- [ ] IMD Data
+- [ ] Google Places Sync
+- [ ] Snapshot Reports
 
-### Env Vars — Vercel (frontend)
-| Var | Value | Status |
-|-----|-------|--------|
-| `NEXT_PUBLIC_GA4_ID` | `G-1GGW975MQY` | Set now |
-| `NEXT_PUBLIC_BING_VERIFICATION` | Your verification code | Done |
-| `NEXT_PUBLIC_SENTRY_DSN` | Your Sentry DSN | Done |
-| `NEXT_PUBLIC_GOOGLE_ADS_ID` | `AW-XXXXXXXXX` | When ready |
-| `NEXT_PUBLIC_ADSENSE_ID` | `ca-pub-XXXXXXXXX` | When approved |
-| `NEXT_PUBLIC_META_PIXEL_ID` | From Meta Events Manager | When ready |
-| `NEXT_PUBLIC_GOOGLE_REMARKETING_ID` | Same as Ads ID | When ready |
-| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | For Street View | When ready |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | From Cloudflare | Optional |
+### Environment Variables — Render (backend)
+| Var | Priority | Status |
+|-----|----------|--------|
+| `SUPABASE_URL` | Required | Should be set |
+| `SUPABASE_ANON_KEY` | Required | Should be set |
+| `SUPABASE_SERVICE_KEY` | Required | Should be set |
+| `ADMIN_USER` / `ADMIN_PASS` | Required | Should be set |
+| `ANTHROPIC_API_KEY` | **Critical** | AI advisor broken without it |
+| `SENTRY_DSN` | Set | Done |
+| `RESEND_API_KEY` | Needed for emails | Set when ready |
+| `RESEND_AUDIENCE_ID` | Newsletter | Set when ready |
+| `STRIPE_SECRET_KEY` | Billing | Set when ready |
+| `STRIPE_WEBHOOK_SECRET` | Billing | Set when ready |
+| `GOOGLE_PLACES_API_KEY` | Photos/ratings | Set when ready |
+| `BUFFER_API_TOKEN` | Social posting | Need Buffer account |
+| `GOOGLE_ADS_*` (6 vars) | Ad management | Need Google Ads account |
+| `TURNSTILE_SECRET_KEY` | Spam protection | Optional |
+| `PROPERTYDATA_API_KEY` | Property data | Optional |
 
-### Env Vars — Render (backend)
-| Var | Status | Priority |
-|-----|--------|----------|
-| `SENTRY_DSN` | Done | - |
-| `ANTHROPIC_API_KEY` | **Set now** — AI advisor won't work without it | Critical |
-| `BUFFER_API_TOKEN` | Need Buffer account | For social posting |
-| `GOOGLE_ADS_*` (6 vars) | Need Google Ads API access | For ad management |
-| `RESEND_AUDIENCE_ID` | From Resend dashboard | For newsletter |
-| `TURNSTILE_SECRET_KEY` | From Cloudflare | Optional |
+### Environment Variables — Vercel (frontend)
+| Var | Priority | Status |
+|-----|----------|--------|
+| `NEXT_PUBLIC_API_URL` | Required | Should be set |
+| `NEXT_PUBLIC_SUPABASE_URL` | Required | Should be set |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Required | Should be set |
+| `NEXT_PUBLIC_GA4_ID` | `G-1GGW975MQY` | **Set now** |
+| `NEXT_PUBLIC_BING_VERIFICATION` | Done | Done |
+| `NEXT_PUBLIC_SENTRY_DSN` | Done | Done |
+| `NEXT_PUBLIC_GOOGLE_ADS_ID` | When ready | Need account |
+| `NEXT_PUBLIC_ADSENSE_ID` | When approved | Need traffic first |
+| `NEXT_PUBLIC_META_PIXEL_ID` | When ready | Need Meta Business |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Street View | When ready |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Optional | Pair with backend |
 
-### External Accounts to Create
-| Service | What for | Priority |
-|---------|----------|----------|
-| **Buffer** | Auto social posting (cron already built) | High |
-| **Google Ads** | Paid campaigns + conversion tracking | High |
-| **Meta Business** | Facebook/Instagram retargeting pixel | Medium |
-| **Google AdSense** | Display ads for revenue (needs traffic first) | Later |
+### Security — Immediate
+- [ ] Run `npm audit fix` in backend (20 vulnerabilities — axios, undici, qs)
+- [ ] Run `npm audit fix` in frontend (17 vulnerabilities)
+- [ ] Test email sending after any nodemailer update
 
-### Marketing Actions
-- [ ] Post Instagram content (5 posts ready in docs/SOCIAL_OUTREACH_CONTENT.md)
-- [ ] Post in UK parenting Facebook groups
+---
+
+## PHASE 1: LAUNCH & FIRST USERS (Weeks 1-2)
+
+### Marketing Launch
+- [ ] Post 5 Instagram posts (ready in docs/SOCIAL_OUTREACH_CONTENT.md)
+- [ ] Post in 5+ UK parenting Facebook groups
 - [ ] Post on Mumsnet/Netmums forums
-- [ ] Post tweets from content pack
-- [ ] Send provider outreach emails
-- [ ] Email parenting bloggers
+- [ ] Post 5 tweets
+- [ ] Send 10 provider outreach emails manually
+- [ ] Email 5 parenting bloggers
 - [ ] Run promotion seeding script (`node scripts/seed-promotions.js`)
+- [ ] Set up Buffer account → connect social channels
+- [ ] Create Google Ads campaign (£10/day, ad copy in content pack)
 
-### GitHub
-- [ ] Add `PRODUCTION_API_URL` secret for deploy validation workflow
-- [ ] Merge Dependabot PRs #44, #45 (minor/patch bumps)
+### External Accounts
+- [ ] Buffer (social posting automation)
+- [ ] Google Ads (paid acquisition)
+- [ ] Meta Business (Facebook/Instagram pixel)
+- [ ] Google AdSense (when traffic warrants)
+
+### Developer Platform
+- [ ] Create Custom GPT (docs/CUSTOM_GPT_SETUP.md)
+- [ ] List API on RapidAPI
+- [ ] Submit to Product Hunt
+- [ ] List on Public APIs (github.com/public-apis/public-apis)
+
+### GitHub Housekeeping
+- [ ] Add `PRODUCTION_API_URL` secret for deploy validation
+- [ ] Merge Dependabot PRs #44, #45 (safe minor/patch bumps)
 
 ---
 
 ## PHASE 2: FIRST 1,000 USERS (Weeks 2-4)
 
 ### Growth Features
-- [ ] Add "First time here?" onboarding modal for new visitors
-- [ ] Add "Share" button to nursery cards in search results
-- [ ] Add provider count to homepage ("Join X nurseries on NurseryMatch")
+- [ ] "First time here?" onboarding modal for new visitors
+- [ ] "Share" button on nursery cards in search results
+- [ ] Provider count on homepage ("Join X nurseries")
+- [ ] Review and publish auto-generated blog drafts (Admin > Marketing)
 
 ### SEO & Content
 - [ ] Expand 3 shortest blog guides to 1500+ words
 - [ ] Add internal links from guides to search/comparison pages
-- [ ] Add "Resources" section to footer linking top 3 guides
-- [ ] Review and publish auto-generated blog drafts (Admin > Marketing)
+- [ ] Add "Resources" section to footer
 - [ ] Add LocalBusiness schema to district/area pages
 
 ### Data Quality
-- [ ] Verify childminder count (~40k expected after ingest fix)
-- [ ] Check "Nurseries without location" in admin — should be <5%
+- [ ] Verify childminder count (~40k expected)
+- [ ] Check "Nurseries without location" — should be <5%
 - [ ] Verify school progression data on nursery profiles
+- [ ] Run Google Places sync for photos/ratings
 
 ### Provider Acquisition
 - [ ] Source nursery email addresses (Issue #46)
-- [ ] Monitor automated provider outreach cron results
-
-### Developer Platform
-- [ ] List API on RapidAPI, Public APIs, API List, Postman Network
-- [ ] Submit to Product Hunt
-- [ ] Create Custom GPT and publish (docs/CUSTOM_GPT_SETUP.md)
+- [ ] Monitor automated provider outreach cron (daily 10am)
+- [ ] Track claim conversion rate
 
 ---
 
@@ -197,14 +155,14 @@ All code merged to `main` and auto-deploying via Render (backend) + Vercel (fron
 ### Revenue
 - [ ] Apply for Google AdSense
 - [ ] Onboard first 10 paying providers (Pro @ £29/month)
-- [ ] Sell first local promotions to kids activity businesses
-- [ ] Set up Stripe live keys + webhook for production billing
+- [ ] Sell local promotions to kids activity businesses
+- [ ] Set up Stripe live keys + webhooks
 
-### Performance & Reliability
-- [ ] Self-host OSRM for travel time (Docker)
-- [ ] Code-split `/provider/reports` page (256kB bundle)
+### Performance
+- [ ] Self-host OSRM for travel time (Docker — free demo won't scale)
+- [ ] Code-split `/provider/reports` page (256kB → ~150kB with next/dynamic)
 - [ ] Migrate nursery profile images to next/image
-- [ ] Add skeleton loaders for TestimonialCarousel and search results
+- [ ] Add skeleton loaders for TestimonialCarousel + search results
 - [ ] Establish Lighthouse CI baseline
 
 ### Platform Improvements
@@ -212,47 +170,57 @@ All code merged to `main` and auto-deploying via Render (backend) + Vercel (fron
 - [ ] Provider bulk enquiry export (CSV)
 - [ ] Provider analytics comparison over time
 - [ ] Nursery photo OG images for social shares
-- [ ] "Nurseries near me" geolocation search (browser GPS)
+- [ ] "Nurseries near me" browser GPS search
 - [ ] Web push notifications for saved search alerts
 
+### Code Quality
+- [ ] Fix 10 React Hook dependency warnings (stale closures)
+- [ ] Add E2E test suite (Playwright) — search → profile → enquiry
+- [ ] Add DOMPurify to blog markdown renderer
+- [ ] Prettier formatting pass on backend (7 files)
+
 ### Testing
-- [ ] E2E test suite (Playwright) — search → profile → enquiry flow
+- [ ] E2E tests (Playwright) — critical user flows
 - [ ] API load testing (k6 or Artillery)
 - [ ] OWASP ZAP security scan
-- [ ] Fix 10 React Hook dependency warnings
+- [ ] Accessibility audit (WCAG 2.1 AA)
 
 ---
 
 ## PHASE 4: SCALE (Months 3-6)
 
-### Expansion
-- [ ] Northern Ireland childcare data
+### Geographic Expansion
+- [ ] Northern Ireland childcare data (HSC Trusts)
 - [ ] Republic of Ireland (Tusla)
-- [ ] Mobile app (React Native or PWA)
+
+### Mobile
+- [ ] Progressive Web App (PWA) or React Native app
 
 ### Partnerships
 - [ ] Mortgage broker referral program
-- [ ] Property portal affiliate integration (Rightmove/Zoopla)
+- [ ] Property portal affiliate (Rightmove/Zoopla)
 - [ ] API reseller / white-label for councils
+- [ ] A/B testing infrastructure
 
 ### Marketing Automation
 - [ ] Buffer scheduling UI (not just auto-post)
 - [ ] Google Ads automated bid management
 - [ ] Advertiser self-service portal
-- [ ] Referral incentive program
+- [ ] Referral incentive program (reward parents who share)
 
 ### Infrastructure
-- [ ] Staging environment (separate Render + Vercel projects)
+- [ ] Staging environment (separate Render + Vercel)
 - [ ] Database backup drill
 - [ ] Centralized log aggregation
 - [ ] APM for slow query detection
 - [ ] Automated database migration runner
 
 ### Compliance
-- [ ] ICO data controller registration (UK GDPR)
-- [ ] Cookie policy review (retargeting pixels may need consent)
+- [ ] ICO data controller registration (UK GDPR requirement)
+- [ ] Cookie consent flow for retargeting pixels (Meta/Google)
 - [ ] Lawyer review of terms/privacy for Scotland/Wales
-- [ ] DPIA for marketing automation + retargeting
+- [ ] DPIA review for marketing automation + retargeting
+- [ ] Formal accessibility audit (WCAG 2.1 AA)
 
 ---
 
@@ -269,16 +237,16 @@ All code merged to `main` and auto-deploying via Render (backend) + Vercel (fron
 
 ---
 
-## OPEN GITHUB ISSUES
+## OPEN ISSUES
 
 | # | Title | Priority |
 |---|-------|----------|
 | #46 | Provider emails — Ofsted CSV sets email to null | Medium |
 
-## OPEN DEPENDABOT PRs
+## DEPENDABOT PRs
 
-| # | Type | Risk |
-|---|------|------|
+| # | Package | Risk |
+|---|---------|------|
 | #44 | Backend minor/patch bumps | Low — safe to merge |
 | #45 | Frontend minor/patch bumps | Low — safe to merge |
 | #2 | actions/setup-node 4→6 | Low |
@@ -290,4 +258,41 @@ All code merged to `main` and auto-deploying via Render (backend) + Vercel (fron
 | #10 | tailwindcss 3→4 | High — breaking changes |
 | #11 | eslint 8→10 | High — breaking changes |
 | #12 | eslint-config-next 14→16 | High — breaking changes |
-| #13 | react-dom types bump | Low |
+| #13 | react-dom types | Low |
+
+---
+
+## ARCHITECTURE REFERENCE
+
+```
+nursery-finder/
+├── backend/                    43 routes, 43 services, 411 tests
+│   ├── src/routes/             API endpoints (Express)
+│   ├── src/services/           Business logic
+│   ├── src/middleware/         Auth, rate limiting, error handling
+│   ├── test/                   Vitest test suite
+│   └── Dockerfile
+├── frontend/                   67 pages, 40+ components, 117 tests
+│   ├── app/                    Next.js App Router pages
+│   ├── components/             Reusable React components
+│   ├── lib/                    API client, analytics, preferences
+│   └── test/                   Jest + React Testing Library
+├── database/migrations/        60 numbered SQL files
+├── docs/                       10 operational documents
+├── scripts/                    Deploy checks, data seeding
+├── .github/workflows/          CI, deploy validation, Lighthouse
+└── CLAUDE.md                   Project context (read every session)
+```
+
+## KEY URLS
+
+| Resource | URL |
+|----------|-----|
+| Frontend | nurserymatch.com |
+| Backend API | nursery-finder-api on Render |
+| API Docs | /api/docs (Swagger UI) |
+| Admin | /admin |
+| Sitemap | /sitemap.xml |
+| LLMs.txt | /llms.txt |
+| OpenAPI | /api/openapi.json |
+| GPT spec | /api/openapi-gpt.json |
