@@ -84,6 +84,7 @@ function mapRow(row) {
     total_places: parseInt(row['Places']) || null,
     places_funded_2yr: null,
     places_funded_3_4yr: null,
+    registered_date: parseOfstedDate(row['Registration Date'] || row['DateReg'] || ''),
   }
 }
 
@@ -190,6 +191,39 @@ export async function ingestOfstedRegister() {
       errors += batch.length
     } else {
       imported += batch.length
+
+      // Record inspection history for nurseries with a grade and inspection date
+      try {
+        const inspections = batch
+          .filter((r) => r.urn && r.ofsted_overall_grade && r.last_inspection_date)
+          .map((r) => ({
+            urn: r.urn,
+            grade: r.ofsted_overall_grade,
+            inspection_date: r.last_inspection_date,
+            inspection_body: 'Ofsted',
+          }))
+
+        if (inspections.length > 0) {
+          const { error: inspErr } = await db
+            .from('nursery_inspections')
+            .upsert(inspections, {
+              onConflict: 'urn,inspection_date',
+              ignoreDuplicates: true,
+            })
+
+          if (inspErr) {
+            logger.warn(
+              { error: inspErr.message, batchStart: i },
+              'ofsted: inspection history insert failed'
+            )
+          }
+        }
+      } catch (inspErr) {
+        logger.warn(
+          { err: inspErr?.message, batchStart: i },
+          'ofsted: inspection history recording failed, continuing'
+        )
+      }
     }
 
     if (i % 2000 === 0) {

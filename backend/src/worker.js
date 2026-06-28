@@ -15,6 +15,7 @@ import { sendReengagementEmails } from './services/reengagement.js'
 import { processSavedSearchAlerts } from './services/savedSearchAlerts.js'
 import { processOfstedChangeNotifications } from './services/ofstedChangeNotifier.js'
 import { syncGooglePlacesData, refreshStaleGoogleData } from './services/googlePlaces.js'
+import { computeAllDataCompleteness } from './services/dataCompleteness.js'
 import { refreshCrimeForDistricts } from './services/policeApi.js'
 import { callClaude, isClaudeAvailable } from './services/claudeApi.js'
 import { isAvailable as isBufferAvailable, getProfiles, createPost } from './services/bufferService.js'
@@ -119,6 +120,17 @@ cron.schedule('30 4 * * *', async () => {
     logger.info(result, 'cron: dimension scores complete')
   } catch (err) {
     logger.error({ err: err.message }, 'cron: dimension scores failed')
+  }
+})
+
+// Nightly: compute data completeness percentages (4:45am, after dimension scores)
+cron.schedule('45 4 * * *', async () => {
+  logger.info('cron: computing data completeness')
+  try {
+    const result = await computeAllDataCompleteness()
+    logger.info(result, 'cron: data completeness complete')
+  } catch (err) {
+    logger.error({ err: err.message }, 'cron: data completeness failed')
   }
 })
 
