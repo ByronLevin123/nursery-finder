@@ -268,6 +268,10 @@ function SearchContent() {
         provider_type: advancedFilters.provider_type,
         has_funded_2yr: advancedFilters.has_funded_2yr || funded2yr,
         has_funded_3yr: advancedFilters.has_funded_3yr || funded3yr,
+        curriculum: advancedFilters.curriculum,
+        sen: advancedFilters.sen,
+        dietary: advancedFilters.dietary,
+        language: advancedFilters.language,
       })
       setResults(data)
       // Plausible goal — fire after a successful search so we can measure

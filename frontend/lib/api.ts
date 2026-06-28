@@ -101,6 +101,10 @@ export async function smartSearchNurseries(params: {
   provider_type?: string | null
   has_funded_2yr?: boolean
   has_funded_3yr?: boolean
+  curriculum?: string | null
+  sen?: boolean
+  dietary?: string | null
+  language?: string | null
 }): Promise<SearchResult> {
   const res = await fetch(`${API_URL}/api/v1/nurseries/smart-search`, {
     method: 'POST',

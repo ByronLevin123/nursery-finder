@@ -269,6 +269,21 @@ router.post('/ciw', async (req, res, next) => {
   }
 })
 
+// POST /api/v1/ingest/extract-reports?limit=10
+router.post('/extract-reports', async (req, res, next) => {
+  try {
+    const { batchExtractReports } = await import('../services/ofstedPdfExtractor.js')
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 10))
+    logger.info({ limit }, 'ingest: starting Ofsted report extraction')
+    const result = await batchExtractReports(limit)
+    logger.info(result, 'ingest: Ofsted report extraction complete')
+    res.json(result)
+  } catch (err) {
+    logger.error({ err: err.message }, 'ingest: Ofsted report extraction failed')
+    next(err)
+  }
+})
+
 // ---------------------------------------------------------------------------
 // POST /api/v1/ingest/full-cycle — run all ingest steps in dependency order
 // ---------------------------------------------------------------------------

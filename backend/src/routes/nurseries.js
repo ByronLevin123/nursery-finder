@@ -100,6 +100,10 @@ router.post('/smart-search', async (req, res, next) => {
       provider_type = null,
       has_funded_2yr = false,
       has_funded_3yr = false,
+      curriculum = null,
+      sen = false,
+      dietary = null,
+      language = null,
     } = req.body
     if (!query || !query.trim()) {
       return res.status(400).json({ error: 'query is required' })
@@ -116,6 +120,10 @@ router.post('/smart-search', async (req, res, next) => {
       providerType: provider_type,
       hasFunded2yr: has_funded_2yr,
       hasFunded3yr: has_funded_3yr,
+      curriculum,
+      sen,
+      dietary,
+      language,
     })
     const cached = searchCache.get(cacheKey)
     if (cached) return res.json({ ...cached, cached: true })
@@ -129,6 +137,10 @@ router.post('/smart-search', async (req, res, next) => {
       provider_type,
       has_funded_2yr,
       has_funded_3yr,
+      curriculum,
+      sen,
+      dietary,
+      language,
     })
     searchCache.set(cacheKey, result)
     logger.info(
