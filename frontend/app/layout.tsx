@@ -75,6 +75,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const plausibleDomain = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN
   const bingVerification = process.env.NEXT_PUBLIC_BING_VERIFICATION
+  const ga4Id = process.env.NEXT_PUBLIC_GA4_ID
   const googleAdsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID
   const adsenseId = process.env.NEXT_PUBLIC_ADSENSE_ID
   const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID
@@ -108,14 +109,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: jsonLdScript(websiteSchema()) }}
         />
-        {googleAdsId && (
+        {(ga4Id || googleAdsId) && (
           <>
             <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${googleAdsId}`}
+              src={`https://www.googletagmanager.com/gtag/js?id=${ga4Id || googleAdsId}`}
               strategy="afterInteractive"
             />
             <Script id="gtag-init" strategy="afterInteractive">
-              {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${googleAdsId}');`}
+              {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());${ga4Id ? `gtag('config','${ga4Id}');` : ''}${googleAdsId ? `gtag('config','${googleAdsId}');` : ''}`}
             </Script>
           </>
         )}
