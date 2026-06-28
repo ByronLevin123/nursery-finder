@@ -29,6 +29,7 @@ interface Props {
   activityMarkers?: MarkerDef[]
   homeLocation?: { lat: number; lng: number }
   workLocation?: { lat: number; lng: number }
+  travelBoundary?: { lat: number; lng: number; radiusM: number; mode: string }
   onBoundsChanged?: (center: { lat: number; lng: number }, zoom: number) => void
   showLegend?: boolean
 }
@@ -42,6 +43,7 @@ export default function NurseryMap({
   activityMarkers = [],
   homeLocation,
   workLocation,
+  travelBoundary,
   onBoundsChanged,
   showLegend = true,
 }: Props) {
@@ -116,26 +118,41 @@ export default function NurseryMap({
     [nurseryMarkers, schoolMarkers, activityMarkers, locationMarkers]
   )
 
-  // Build commute band circles for home/work locations
+  // Build commute band circles for home/work locations + travel boundary
   const commuteBandCircles: CircleDef[] = useMemo(() => {
     const cs: CircleDef[] = []
-    const locations = [homeLocation, workLocation].filter(Boolean) as Array<{ lat: number; lng: number }>
-    for (const loc of locations) {
-      // Render bands from largest to smallest so inner bands paint on top
-      for (let i = COMMUTE_BANDS.length - 1; i >= 0; i--) {
-        const band = COMMUTE_BANDS[i]
-        cs.push({
-          lat: loc.lat,
-          lng: loc.lng,
-          radiusM: band.radiusM,
-          color: band.color,
-          opacity: band.opacity,
-          label: band.label,
-        })
+
+    // Travel boundary — the main filter circle from home
+    if (travelBoundary) {
+      cs.push({
+        lat: travelBoundary.lat,
+        lng: travelBoundary.lng,
+        radiusM: travelBoundary.radiusM,
+        color: '#2563eb',
+        opacity: 0.12,
+        label: `${Math.round(travelBoundary.radiusM / (travelBoundary.mode === 'walk' ? 83 : travelBoundary.mode === 'cycle' ? 250 : 500))} min ${travelBoundary.mode}`,
+      })
+    }
+
+    // Commute bands from home/work (only show if no travel boundary active — avoid clutter)
+    if (!travelBoundary) {
+      const locations = [homeLocation, workLocation].filter(Boolean) as Array<{ lat: number; lng: number }>
+      for (const loc of locations) {
+        for (let i = COMMUTE_BANDS.length - 1; i >= 0; i--) {
+          const band = COMMUTE_BANDS[i]
+          cs.push({
+            lat: loc.lat,
+            lng: loc.lng,
+            radiusM: band.radiusM,
+            color: band.color,
+            opacity: band.opacity,
+            label: band.label,
+          })
+        }
       }
     }
     return cs
-  }, [homeLocation, workLocation])
+  }, [homeLocation, workLocation, travelBoundary])
 
   return (
     <div className="relative h-full w-full">

@@ -392,9 +392,16 @@ function SearchContent() {
     return list
   }, [results, prefs, prefsActive, areas])
 
-  // Refine by travel time — fetches for top 20 results only
+  // Travel boundary radius in meters (for map circle)
+  const travelBoundaryM = useMemo(() => {
+    if (!travelEnabled || !homeLocation) return 0
+    const speedMPerMin = travelMode === 'walk' ? 83 : travelMode === 'cycle' ? 250 : 500
+    return travelMaxMin * speedMPerMin
+  }, [travelEnabled, homeLocation, travelMode, travelMaxMin])
+
+  // Refine by travel time — use home location, fetches for top 20 results
   useEffect(() => {
-    if (!travelEnabled || !travelFrom.trim() || !results?.data) {
+    if (!travelEnabled || !homeLocation || !results?.data) {
       setTravelTimes(new Map())
       return
     }
@@ -403,7 +410,7 @@ function SearchContent() {
     Promise.all(
       top.map(async (n) => {
         const r = await getTravelTime(
-          { postcode: travelFrom.trim() },
+          { lat: homeLocation.lat, lng: homeLocation.lng },
           { lat: n.lat!, lng: n.lng! },
           travelMode
         )
@@ -418,12 +425,12 @@ function SearchContent() {
     return () => {
       cancelled = true
     }
-  }, [travelEnabled, travelFrom, travelMode, results])
+  }, [travelEnabled, homeLocation, travelMode, results])
 
   const visibleResults = useMemo(() => {
     let list = scoredResults
     if (prefsActive && !showExcluded) list = list.filter((r) => !r.match?.excluded)
-    if (travelEnabled && travelFrom.trim() && travelTimes.size) {
+    if (travelEnabled && homeLocation && travelTimes.size) {
       list = list.filter((r) => {
         const s = travelTimes.get(r.nursery.urn)
         return s != null && s <= travelMaxMin * 60
@@ -722,7 +729,7 @@ function SearchContent() {
             {/* Advanced filters */}
             <SearchFilters filters={advancedFilters} onChange={setAdvancedFilters} />
 
-            {/* Travel time filter */}
+            {/* Travel time filter — uses home postcode as origin */}
             <div className="border-t border-gray-200 pt-3">
               <label className="flex items-center gap-2 text-sm text-gray-700 font-medium">
                 <input
@@ -731,18 +738,21 @@ function SearchContent() {
                   onChange={(e) => setTravelEnabled(e.target.checked)}
                   className="rounded"
                 />
-                Travel time filter
+                Filter by travel time from home
               </label>
               {travelEnabled && (
                 <div className="mt-2 space-y-2">
+                  {!homePostcode.trim() && (
+                    <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">Enter your home postcode above to enable travel time filtering.</p>
+                  )}
                   <div className="flex items-center gap-2 text-xs text-gray-600">
                     Within
                     <input
                       type="number"
                       min={1}
-                      max={120}
+                      max={60}
                       value={travelMaxMin}
-                      onChange={(e) => setTravelMaxMin(Number(e.target.value) || 20)}
+                      onChange={(e) => setTravelMaxMin(Number(e.target.value) || 15)}
                       className="w-14 px-2 py-1 border border-gray-300 rounded text-sm"
                     />
                     min by
@@ -755,15 +765,11 @@ function SearchContent() {
                       <option value="cycle">Cycle</option>
                       <option value="drive">Drive</option>
                     </select>
+                    from {'\u{1F3E0}'} home
                   </div>
-                  <PostcodeAutocomplete
-                    value={travelFrom}
-                    onChange={setTravelFrom}
-                    placeholder="From postcode…"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Showing estimated drive times.
-                  </p>
+                  {homeLocation && (
+                    <p className="text-xs text-green-600">Showing boundary on map. Nurseries outside are hidden.</p>
+                  )}
                 </div>
               )}
             </div>
@@ -938,6 +944,7 @@ function SearchContent() {
               activityMarkers={mapLayers.activities ? activityMarkers : []}
               homeLocation={homeLocation || undefined}
               workLocation={workLocation || undefined}
+              travelBoundary={travelBoundaryM > 0 && homeLocation ? { lat: homeLocation.lat, lng: homeLocation.lng, radiusM: travelBoundaryM, mode: travelMode } : undefined}
               onBoundsChanged={handleBoundsChanged}
               showLegend={true}
             />
