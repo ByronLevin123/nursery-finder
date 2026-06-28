@@ -61,7 +61,7 @@ function incrementUsage(keyId) {
 export function apiKeyAuth(req, _res, next) {
   if (!db) return next()
 
-  const raw = req.headers['x-api-key'] || req.query.api_key
+  const raw = req.headers['x-api-key']
   if (!raw) return next()
 
   const hash = hashKey(raw)

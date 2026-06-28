@@ -155,7 +155,7 @@ const publicCorsPaths = [
   '/api/openapi.json',
   '/api/openapi-gpt.json',
 ]
-app.use(publicCorsPaths, cors({ origin: '*', methods: ['GET', 'POST'] }))
+app.use(publicCorsPaths, cors({ origin: '*', methods: ['GET'] }))
 
 // Default CORS for everything else (auth-protected etc.)
 const allowedOrigins = [

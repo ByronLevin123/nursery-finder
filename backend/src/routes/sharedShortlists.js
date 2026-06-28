@@ -1,9 +1,16 @@
 import express from 'express'
+import rateLimit from 'express-rate-limit'
 import db from '../db.js'
 import { requireAuth } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
 
 const router = express.Router()
+
+const tokenLookupLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 15,
+  message: { error: 'Too many requests, please try again later' },
+})
 
 // POST /api/v1/shortlist/share — create a shared shortlist
 router.post('/share', requireAuth, async (req, res, next) => {
@@ -38,7 +45,7 @@ router.post('/share', requireAuth, async (req, res, next) => {
 })
 
 // GET /api/v1/shortlist/shared/:token — view a shared shortlist
-router.get('/shared/:token', async (req, res, next) => {
+router.get('/shared/:token', tokenLookupLimiter, async (req, res, next) => {
   try {
     if (!db) return res.status(503).json({ error: 'Database not configured' })
 
