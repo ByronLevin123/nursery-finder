@@ -3,6 +3,7 @@ import Script from 'next/script'
 import { Analytics } from '@vercel/analytics/react'
 import CookieBanner from '@/components/CookieBanner'
 import ExitIntentPopup from '@/components/ExitIntentPopup'
+import NurseryAdvisor from '@/components/NurseryAdvisor'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import Footer from '@/components/Footer'
 import Nav from '@/components/Nav'
@@ -164,6 +165,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <ErrorBoundary>{children}</ErrorBoundary>
           </main>
           <Footer />
+          <NurseryAdvisor />
+          <ExitIntentPopup />
           <CookieBanner />
           <Analytics />
         </SessionProvider>
