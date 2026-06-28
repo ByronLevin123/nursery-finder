@@ -44,6 +44,7 @@ export default function NurseryCardThumbnail({ name, photos, lat, lng }: Props) 
           src={photos[0]}
           alt={`${name} photo`}
           className="w-full h-full object-cover"
+          loading="lazy"
         />
       </div>
     )
@@ -60,6 +61,7 @@ export default function NurseryCardThumbnail({ name, photos, lat, lng }: Props) 
           src={`https://tile.openstreetmap.org/${zoom}/${x}/${y}.png`}
           alt={`Map near ${name}`}
           className="w-full h-full object-cover"
+          loading="lazy"
           draggable={false}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />

@@ -116,6 +116,29 @@ router.get('/family-search', async (req, res, next) => {
   }
 })
 
+// POST /api/v1/areas/batch — fetch multiple district summaries in one call
+router.post('/batch', async (req, res, next) => {
+  try {
+    const { districts } = req.body
+    if (!Array.isArray(districts) || districts.length === 0) {
+      return res.status(400).json({ error: 'districts array required' })
+    }
+    const limited = districts.slice(0, 50) // cap at 50
+    const { data, error } = await db
+      .from('postcode_areas')
+      .select('*')
+      .in('postcode_district', limited)
+    if (error) throw error
+    const result = {}
+    for (const row of (data || [])) {
+      result[row.postcode_district] = row
+    }
+    res.json({ data: result })
+  } catch (err) {
+    next(err)
+  }
+})
+
 // GET /api/v1/areas/:district — area summary (stats + property + score)
 router.get('/:district', async (req, res, next) => {
   try {
