@@ -91,11 +91,16 @@ router.get('/', requireAuth, async (req, res, next) => {
       if (insErr) {
         return res.status(404).json({ error: 'Profile not found' })
       }
-      // New profile — start welcome drip sequence
+      // New profile — start welcome drip sequence + parent signup drip
       try {
         await startSequence(req.user.id, 'welcome')
       } catch (seqErr) {
         logger.warn({ err: seqErr?.message }, 'welcome drip start failed')
+      }
+      try {
+        await startSequence(req.user.id, 'parent_signup')
+      } catch (seqErr) {
+        logger.warn({ err: seqErr?.message }, 'parent_signup drip start failed')
       }
       return res.json(created)
     }

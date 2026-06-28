@@ -42,6 +42,7 @@ const StreetViewPanorama = dynamic(() => import('@/components/StreetViewPanorama
 const StickyProfileNav = dynamic(() => import('@/components/StickyProfileNav'), { ssr: false })
 const JoinWaitlistButton = dynamic(() => import('@/components/JoinWaitlistButton'), { ssr: false })
 const ShareButtons = dynamic(() => import('@/components/ShareButtons'), { ssr: false })
+const ReferralShare = dynamic(() => import('@/components/ReferralShare'), { ssr: false })
 const NewsletterPopup = dynamic(() => import('@/components/NewsletterPopup'), { ssr: false })
 const AdUnit = dynamic(() => import('@/components/AdUnit'), { ssr: false })
 
@@ -227,6 +228,7 @@ export default async function NurseryPage({ params }: { params: { urn: string } 
         url={`https://www.nurserymatch.com/nursery/${nursery.urn}`}
         title={nursery.name}
       />
+      <ReferralShare />
 
       <StickyProfileNav />
 
