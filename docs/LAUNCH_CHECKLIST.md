@@ -27,7 +27,7 @@ Last reviewed: 2026-04-27
 
 ### Render env vars (backend)
 
-- [ ] `EMAIL_FROM=NurseryMatch <info@nurserymatch.com>`
+- [ ] `EMAIL_FROM=NurseryMatch <hello@nurserymatch.com>`
 - [ ] `FRONTEND_URL=https://nurserymatch.com`
 - [ ] `RESEND_API_KEY=re_…` (from Resend dashboard)
 - [ ] `RESEND_AUDIENCE_ID=aud_…` (from Resend audience created above)

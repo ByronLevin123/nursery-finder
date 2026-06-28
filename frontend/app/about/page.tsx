@@ -99,8 +99,8 @@ export default function AboutPage() {
           <h2 className="text-2xl font-semibold text-gray-900 mb-3">Get in touch</h2>
           <p className="text-gray-700 leading-relaxed">
             Questions, feedback, or want to partner? Email{' '}
-            <a href="mailto:info@nurserymatch.com" className="text-blue-600 hover:underline">
-              info@nurserymatch.com
+            <a href="mailto:hello@nurserymatch.com" className="text-blue-600 hover:underline">
+              hello@nurserymatch.com
             </a>{' '}
             or visit our{' '}
             <Link href="/contact" className="text-blue-600 hover:underline">contact page</Link>.

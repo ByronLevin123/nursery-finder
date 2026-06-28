@@ -25,8 +25,8 @@ export default function RefundPage() {
             under the Consumer Contracts Regulations 2013. If you cancel a new subscription
             within 14 days of starting it, you&apos;re entitled to a full refund — even if
             you&apos;ve used the service. Email{' '}
-            <a href="mailto:info@nurserymatch.com" className="text-blue-600 hover:underline">
-              info@nurserymatch.com
+            <a href="mailto:hello@nurserymatch.com" className="text-blue-600 hover:underline">
+              hello@nurserymatch.com
             </a>{' '}
             from the email address on the account and we&apos;ll process the refund within 5
             working days.
@@ -103,8 +103,8 @@ export default function RefundPage() {
           <h2 className="text-xl font-semibold text-gray-900 mb-3">How to request a refund</h2>
           <p>
             Email{' '}
-            <a href="mailto:info@nurserymatch.com" className="text-blue-600 hover:underline">
-              info@nurserymatch.com
+            <a href="mailto:hello@nurserymatch.com" className="text-blue-600 hover:underline">
+              hello@nurserymatch.com
             </a>{' '}
             from the address on the account, with:
           </p>

@@ -51,7 +51,7 @@ export default function SalesSheetPage() {
               </div>
               <div className="text-right text-xs text-gray-500 leading-snug shrink-0">
                 <div>nurserymatch.com</div>
-                <div>info@nurserymatch.com</div>
+                <div>hello@nurserymatch.com</div>
               </div>
             </div>
           </header>

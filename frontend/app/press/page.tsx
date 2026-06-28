@@ -89,8 +89,8 @@ export default function PressPage() {
           </p>
           <p className="mt-3 text-sm text-gray-500">
             Press contact:{' '}
-            <a href="mailto:info@nurserymatch.com" className="text-blue-600 hover:underline">
-              info@nurserymatch.com
+            <a href="mailto:hello@nurserymatch.com" className="text-blue-600 hover:underline">
+              hello@nurserymatch.com
             </a>
           </p>
         </div>
@@ -169,8 +169,8 @@ export default function PressPage() {
         <h2 className="text-xl font-semibold text-gray-900 mb-2">Get in touch</h2>
         <p className="text-gray-700">
           Press, partnerships and interview requests:{' '}
-          <a href="mailto:info@nurserymatch.com" className="text-blue-700 font-semibold hover:underline">
-            info@nurserymatch.com
+          <a href="mailto:hello@nurserymatch.com" className="text-blue-700 font-semibold hover:underline">
+            hello@nurserymatch.com
           </a>
           . We typically respond within 24 hours during the UK working week.
         </p>
