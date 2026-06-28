@@ -13,6 +13,16 @@ export interface MarkerDef {
   radius?: number
   popupHtml?: string
   onClick?: () => void
+  type?: 'nursery' | 'school' | 'home' | 'work' | 'activity' | 'park' | 'family'
+}
+
+export interface CircleDef {
+  lat: number
+  lng: number
+  radiusM: number
+  color: string
+  opacity?: number
+  label?: string
 }
 
 export interface PolygonDef {
@@ -29,14 +39,31 @@ interface Props {
   zoom?: number
   markers?: MarkerDef[]
   polygons?: PolygonDef[]
+  circles?: CircleDef[]
   style?: string // ignored — kept for API compat
   scrollZoom?: boolean
   className?: string
   heightClassName?: string
   radiusKm?: number
+  onBoundsChanged?: (center: { lat: number; lng: number }, zoom: number) => void
 }
 
 /* ── Helpers ── */
+
+const TYPE_EMOJI: Record<string, string> = {
+  nursery: '\u{1F476}',
+  school: '\u{1F3EB}',
+  home: '\u{1F3E0}',
+  work: '\u{1F4BC}',
+  activity: '⭐',
+  park: '\u{1F333}',
+  family: '\u{1F468}‍\u{1F469}‍\u{1F467}',
+}
+
+function getMarkerEmoji(type?: string): string {
+  if (!type) return '\u{1F476}'
+  return TYPE_EMOJI[type] || '\u{1F4CD}'
+}
 
 /** Convert GeoJSON [lng, lat] ring to google.maps.LatLng array */
 function ringToLatLngs(ring: [number, number][]): any[] {
@@ -51,10 +78,12 @@ export default function GoogleMap({
   zoom = 13,
   markers = [],
   polygons = [],
+  circles = [],
   scrollZoom = true,
   className = '',
   heightClassName = 'h-full w-full',
   radiusKm,
+  onBoundsChanged,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<any>(null)
@@ -62,6 +91,8 @@ export default function GoogleMap({
   const infoWindowRef = useRef<any>(null)
   const polygonObjectsRef = useRef<any[]>([])
   const circleRef = useRef<any>(null)
+  const extraCirclesRef = useRef<any[]>([])
+  const idleListenerRef = useRef<any>(null)
   const readyRef = useRef(false)
   const [mapReady, setMapReady] = useState(false)
 
@@ -103,7 +134,12 @@ export default function GoogleMap({
       markerObjectsRef.current = []
       polygonObjectsRef.current.forEach((p) => p.setMap(null))
       polygonObjectsRef.current = []
+      extraCirclesRef.current.forEach((c) => c.setMap(null))
+      extraCirclesRef.current = []
       if (circleRef.current) circleRef.current.setMap(null)
+      if (idleListenerRef.current && mapRef.current) {
+        window.google?.maps?.event?.removeListener(idleListenerRef.current)
+      }
       if (infoWindowRef.current) infoWindowRef.current.close()
       mapRef.current = null
       readyRef.current = false
@@ -133,12 +169,13 @@ export default function GoogleMap({
       const color = m.color ?? '#3b82f6'
       const r = m.radius ?? 9
       const scale = r / 9 // normalize against default 9px
+      const emoji = getMarkerEmoji(m.type)
 
       const marker = new google.maps.Marker({
         position: { lat: m.lat, lng: m.lng },
         map,
         label: {
-          text: '👶',
+          text: emoji,
           fontSize: '20px',
         },
         icon: {
@@ -214,6 +251,60 @@ export default function GoogleMap({
       polygonObjectsRef.current.push(poly)
     }
   }, [polygons, radiusKm, center[0], center[1], mapReady])
+
+  // Render extra circles (commute bands etc.)
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !readyRef.current || !window.google) return
+
+    const google = window.google
+
+    // Clear old extra circles
+    extraCirclesRef.current.forEach((c) => c.setMap(null))
+    extraCirclesRef.current = []
+
+    for (const c of circles) {
+      const circle = new google.maps.Circle({
+        map,
+        center: { lat: c.lat, lng: c.lng },
+        radius: c.radiusM,
+        fillColor: c.color,
+        fillOpacity: c.opacity ?? 0.08,
+        strokeColor: c.color,
+        strokeWeight: 1,
+        strokeOpacity: 0.4,
+        clickable: false,
+      })
+      extraCirclesRef.current.push(circle)
+    }
+  }, [circles, mapReady])
+
+  // Fire onBoundsChanged on map idle (after pan/zoom)
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !readyRef.current || !window.google || !onBoundsChanged) return
+
+    const google = window.google
+
+    // Remove previous listener
+    if (idleListenerRef.current) {
+      google.maps.event.removeListener(idleListenerRef.current)
+    }
+
+    idleListenerRef.current = map.addListener('idle', () => {
+      const c = map.getCenter()
+      if (c) {
+        onBoundsChanged({ lat: c.lat(), lng: c.lng() }, map.getZoom() || 13)
+      }
+    })
+
+    return () => {
+      if (idleListenerRef.current) {
+        google.maps.event.removeListener(idleListenerRef.current)
+        idleListenerRef.current = null
+      }
+    }
+  }, [onBoundsChanged, mapReady])
 
   return <div ref={containerRef} className={`${heightClassName} ${className}`} />
 }

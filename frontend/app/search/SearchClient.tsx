@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { smartSearchNurseries, Nursery, SearchResult, AreaSummary, getAreaSummary, postcodeDistrict, getTravelTime, TravelMode, getSearchSuggestions, SearchSuggestion, API_URL } from '@/lib/api'
+import { smartSearchNurseries, Nursery, SearchResult, AreaSummary, getAreaSummary, postcodeDistrict, getTravelTime, TravelMode, getSearchSuggestions, SearchSuggestion, getNearbySchools, API_URL } from '@/lib/api'
+import { MarkerDef } from '@/components/MapLibreMap'
 import { trackEvent } from '@/lib/analytics'
 import PostcodeAutocomplete from '@/components/PostcodeAutocomplete'
 import NurseryCard from '@/components/NurseryCard'
@@ -32,6 +33,7 @@ import OglAttribution from '@/components/OglAttribution'
 import ReferralShare from '@/components/ReferralShare'
 
 const NurseryMap = dynamic(() => import('@/components/NurseryMap'), { ssr: false })
+const MapLayerToggle = dynamic(() => import('@/components/MapLayerToggle'), { ssr: false })
 
 function SearchContent() {
   const searchParams = useSearchParams()
@@ -70,6 +72,20 @@ function SearchContent() {
   const [promotions, setPromotions] = useState<any[]>([])
   const [sortBy, setSortBy] = useState<SortOption>('relevance')
   const [displayCount, setDisplayCount] = useState(20)
+
+  // Map layer state
+  const [mapLayers, setMapLayers] = useState<Record<string, boolean>>({
+    nurseries: true,
+    schools: false,
+    parks: false,
+    activities: false,
+  })
+  const [schoolMarkers, setSchoolMarkers] = useState<MarkerDef[]>([])
+  const [activityMarkers, setActivityMarkers] = useState<MarkerDef[]>([])
+  const [homeLocation, setHomeLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [workLocation, setWorkLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null)
+  const [showSearchThisArea, setShowSearchThisArea] = useState(false)
 
   // Autocomplete state
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([])
@@ -189,6 +205,122 @@ function SearchContent() {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
+
+  // Load home/work locations from sessionStorage on mount
+  useEffect(() => {
+    try {
+      const h = sessionStorage.getItem('nurserymatch_home')
+      if (h) setHomeLocation(JSON.parse(h))
+      const w = sessionStorage.getItem('nurserymatch_work')
+      if (w) setWorkLocation(JSON.parse(w))
+    } catch { /* ignore */ }
+  }, [])
+
+  // Fetch school markers when schools layer is toggled on
+  useEffect(() => {
+    if (!mapLayers.schools || !results?.meta?.search_lat || !results?.meta?.search_lng) {
+      setSchoolMarkers([])
+      return
+    }
+    let cancelled = false
+    getNearbySchools(results.meta.search_lat, results.meta.search_lng, radiusKm, 'Primary')
+      .then((schools) => {
+        if (cancelled) return
+        setSchoolMarkers(
+          schools
+            .filter((s) => s.lat != null && s.lng != null)
+            .map((s) => ({
+              id: `school_${s.urn}`,
+              lat: s.lat!,
+              lng: s.lng!,
+              type: 'school' as const,
+              color: '#8b5cf6',
+              radius: 8,
+              popupHtml: `
+                <div style="min-width:180px;max-width:260px;font-size:13px;font-family:system-ui,sans-serif">
+                  <div style="font-weight:700;color:#7c3aed">${s.name}</div>
+                  <div style="font-size:11px;color:#6b7280;margin-top:2px">${s.phase || 'School'}${s.ofsted_rating ? ` · ${s.ofsted_rating}` : ''}</div>
+                  ${s.distance_km != null ? `<div style="font-size:11px;color:#9ca3af">${s.distance_km.toFixed(1)}km away</div>` : ''}
+                </div>`,
+            }))
+        )
+      })
+      .catch(() => { if (!cancelled) setSchoolMarkers([]) })
+    return () => { cancelled = true }
+  }, [mapLayers.schools, results?.meta?.search_lat, results?.meta?.search_lng, radiusKm])
+
+  // Fetch activity (promotions) markers when activities layer is toggled on
+  useEffect(() => {
+    if (!mapLayers.activities || !results?.meta?.search_lat || !results?.meta?.search_lng) {
+      setActivityMarkers([])
+      return
+    }
+    let cancelled = false
+    fetch(`${API_URL}/api/v1/promotions/nearby?lat=${results.meta.search_lat}&lng=${results.meta.search_lng}`)
+      .then((r) => r.json())
+      .then((p) => {
+        if (cancelled) return
+        const promos = p.data || []
+        setActivityMarkers(
+          promos
+            .filter((pr: any) => pr.lat != null && pr.lng != null)
+            .map((pr: any) => ({
+              id: `activity_${pr.id}`,
+              lat: pr.lat,
+              lng: pr.lng,
+              type: 'activity' as const,
+              color: '#f59e0b',
+              radius: 8,
+              popupHtml: `
+                <div style="min-width:160px;max-width:240px;font-size:13px;font-family:system-ui,sans-serif">
+                  <div style="font-weight:700;color:#d97706">${pr.title || 'Activity'}</div>
+                  ${pr.description ? `<div style="font-size:11px;color:#6b7280;margin-top:2px">${pr.description}</div>` : ''}
+                </div>`,
+            }))
+        )
+      })
+      .catch(() => { if (!cancelled) setActivityMarkers([]) })
+    return () => { cancelled = true }
+  }, [mapLayers.activities, results?.meta?.search_lat, results?.meta?.search_lng])
+
+  // Handle map bounds changed — show "Search this area" when panned far enough
+  const handleBoundsChanged = useCallback(
+    (center: { lat: number; lng: number }, zoom: number) => {
+      setMapCenter(center)
+      if (!results?.meta?.search_lat || !results?.meta?.search_lng) return
+      // Haversine approximation for small distances
+      const dlat = center.lat - results.meta.search_lat
+      const dlng = center.lng - results.meta.search_lng
+      const dist = Math.sqrt(dlat * dlat + dlng * dlng) * 111000 // rough meters
+      setShowSearchThisArea(dist > 500)
+    },
+    [results?.meta?.search_lat, results?.meta?.search_lng]
+  )
+
+  // Search this area handler
+  const searchThisArea = useCallback(() => {
+    if (!mapCenter) return
+    // Use reverse geocoded coordinates by setting query as lat,lng
+    // The smart search endpoint accepts coordinates
+    setShowSearchThisArea(false)
+    const latLngQuery = `${mapCenter.lat.toFixed(6)},${mapCenter.lng.toFixed(6)}`
+    doSearch(latLngQuery)
+  }, [mapCenter]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Set home/work from search center
+  const setAsHome = useCallback(() => {
+    if (!results?.meta?.search_lat || !results?.meta?.search_lng) return
+    const loc = { lat: results.meta.search_lat, lng: results.meta.search_lng }
+    setHomeLocation(loc)
+    try { sessionStorage.setItem('nurserymatch_home', JSON.stringify(loc)) } catch { /* ignore */ }
+  }, [results?.meta?.search_lat, results?.meta?.search_lng])
+
+  const setAsWork = useCallback(() => {
+    if (!results?.meta?.search_lat || !results?.meta?.search_lng) return
+    const loc = { lat: results.meta.search_lat, lng: results.meta.search_lng }
+    setWorkLocation(loc)
+    try { sessionStorage.setItem('nurserymatch_work', JSON.stringify(loc)) } catch { /* ignore */ }
+  }, [results?.meta?.search_lat, results?.meta?.search_lng])
 
   const prefsActive = useMemo(() => prefsLoaded && hasActivePreferences(prefs), [prefs, prefsLoaded])
 
@@ -464,6 +596,44 @@ function SearchContent() {
             </button>
           </div>
 
+          {/* Set as home / work location */}
+          {results?.meta?.search_lat && results?.meta?.search_lng && (
+            <div className="flex gap-2 mb-3">
+              <button
+                onClick={setAsHome}
+                className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-lg border transition ${
+                  homeLocation ? 'bg-green-50 border-green-300 text-green-700' : 'bg-white border-gray-200 text-gray-600 hover:border-green-300'
+                }`}
+              >
+                {'\u{1F3E0}'} {homeLocation ? 'Home set' : 'Set as home'}
+              </button>
+              <button
+                onClick={setAsWork}
+                className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-lg border transition ${
+                  workLocation ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-white border-gray-200 text-gray-600 hover:border-indigo-300'
+                }`}
+              >
+                {'\u{1F4BC}'} {workLocation ? 'Work set' : 'Set as work'}
+              </button>
+              {(homeLocation || workLocation) && (
+                <button
+                  onClick={() => {
+                    setHomeLocation(null)
+                    setWorkLocation(null)
+                    try {
+                      sessionStorage.removeItem('nurserymatch_home')
+                      sessionStorage.removeItem('nurserymatch_work')
+                    } catch { /* ignore */ }
+                  }}
+                  className="px-2 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-300 transition"
+                  title="Clear locations"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Mobile filter toggle */}
           <button
             onClick={() => setShowMobileFilters(v => !v)}
@@ -701,14 +871,35 @@ function SearchContent() {
       </div>
 
       {/* Right panel: map */}
-      <div className={`w-full lg:w-2/3 lg:h-full sticky top-0 ${mobileView === 'map' ? 'h-[calc(100vh-64px)]' : 'hidden lg:block'}`}>
+      <div className={`w-full lg:w-2/3 lg:h-full sticky top-0 relative ${mobileView === 'map' ? 'h-[calc(100vh-64px)]' : 'hidden lg:block'}`}>
         {results?.meta.search_lat && results?.meta.search_lng ? (
-          <NurseryMap
-            nurseries={results.data}
-            centerLat={results.meta.search_lat}
-            centerLng={results.meta.search_lng}
-            radiusKm={radiusKm}
-          />
+          <>
+            <NurseryMap
+              nurseries={mapLayers.nurseries ? results.data : []}
+              centerLat={results.meta.search_lat}
+              centerLng={results.meta.search_lng}
+              radiusKm={radiusKm}
+              schoolMarkers={mapLayers.schools ? schoolMarkers : []}
+              activityMarkers={mapLayers.activities ? activityMarkers : []}
+              homeLocation={homeLocation || undefined}
+              workLocation={workLocation || undefined}
+              onBoundsChanged={handleBoundsChanged}
+              showLegend={true}
+            />
+            {/* Layer toggle */}
+            <MapLayerToggle active={mapLayers} onChange={setMapLayers} />
+            {/* Search this area button */}
+            {showSearchThisArea && (
+              <div className="absolute top-14 left-1/2 -translate-x-1/2 z-20">
+                <button
+                  onClick={searchThisArea}
+                  className="px-4 py-2 bg-white text-sm font-medium text-blue-700 rounded-full shadow-lg border border-blue-200 hover:bg-blue-50 transition"
+                >
+                  Search this area
+                </button>
+              </div>
+            )}
+          </>
         ) : (
           <div className="h-full bg-gray-100 flex items-center justify-center">
             <p className="text-gray-400">Search by postcode, area, or {entityLabel} name</p>
