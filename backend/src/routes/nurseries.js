@@ -93,6 +93,8 @@ router.post('/smart-search', async (req, res, next) => {
   try {
     const {
       query,
+      lat,
+      lng,
       radius_km = 5,
       grade = null,
       has_availability = false,
@@ -105,12 +107,12 @@ router.post('/smart-search', async (req, res, next) => {
       dietary = null,
       language = null,
     } = req.body
-    if (!query || !query.trim()) {
-      return res.status(400).json({ error: 'query is required' })
+    if ((!query || !query.trim()) && lat == null && lng == null) {
+      return res.status(400).json({ error: 'query or lat/lng is required' })
     }
 
     const cacheKey = searchCacheKey({
-      postcode: `smart:${query}`,
+      postcode: lat != null ? `coord:${lat},${lng}` : `smart:${query}`,
       radiusKm: radius_km,
       grade,
       funded2yr: has_funded_2yr,
@@ -129,7 +131,9 @@ router.post('/smart-search', async (req, res, next) => {
     if (cached) return res.json({ ...cached, cached: true })
 
     const result = await smartSearch({
-      query,
+      query: query || '',
+      lat,
+      lng,
       radius_km,
       grade,
       has_availability,
