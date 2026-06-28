@@ -43,7 +43,7 @@ async function findPlaceId(nursery) {
       'Content-Type': 'application/json',
       'X-Goog-Api-Key': API_KEY,
       'X-Goog-FieldMask':
-        'places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.photos,places.reviews',
+        'places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.photos,places.reviews,places.currentOpeningHours',
     },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(15000),
@@ -155,14 +155,24 @@ export async function syncGooglePlacesData(
       const rating = place.rating ?? null
       const reviewCount = place.userRatingCount ?? null
 
+      // Step 2b: Extract opening hours if available
+      const openingHours = place.currentOpeningHours?.weekdayDescriptions
+        ? { weekday_text: place.currentOpeningHours.weekdayDescriptions }
+        : null
+
       // Step 3: Update nursery record
+      const updatePayload = {
+        google_place_id: placeId,
+        google_rating: rating,
+        google_review_count: reviewCount,
+      }
+      if (openingHours) {
+        updatePayload.opening_hours = openingHours
+      }
+
       const { error: updateErr } = await db
         .from('nurseries')
-        .update({
-          google_place_id: placeId,
-          google_rating: rating,
-          google_review_count: reviewCount,
-        })
+        .update(updatePayload)
         .eq('id', nursery.id)
 
       if (updateErr) {
