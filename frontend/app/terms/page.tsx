@@ -122,8 +122,8 @@ export default function TermsPage() {
           <h2 className="text-xl font-semibold text-gray-900 mb-3">12. Contact</h2>
           <p className="text-gray-600">
             Questions about these terms? Email us at{' '}
-            <a href="mailto:hello@nurserymatch.com" className="text-blue-600 hover:underline">
-              hello@nurserymatch.com
+            <a href="mailto:info@nurserymatch.com" className="text-blue-600 hover:underline">
+              info@nurserymatch.com
             </a>
           </p>
         </section>

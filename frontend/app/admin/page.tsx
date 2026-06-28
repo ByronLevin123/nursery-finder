@@ -495,6 +495,17 @@ export default function AdminOverview() {
         </Link>
       </div>
 
+      {/* Data export */}
+      <h3 className="text-sm font-semibold text-gray-700 mb-3">Data Export</h3>
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 mb-8">
+        <p className="text-xs text-gray-500 mb-4">Download all data as CSV files.</p>
+        <div className="flex flex-wrap gap-3">
+          <a href={`${API_URL}/api/v1/admin/export/nurseries`} className="px-4 py-2 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Nurseries CSV</a>
+          <a href={`${API_URL}/api/v1/admin/export/childminders`} className="px-4 py-2 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Childminders CSV</a>
+          <a href={`${API_URL}/api/v1/admin/export/schools`} className="px-4 py-2 text-sm font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Schools CSV</a>
+        </div>
+      </div>
+
       {/* Data ingest panel */}
       <IngestPanel />
     </div>
@@ -508,7 +519,7 @@ const INGEST_STEPS = [
   { id: 'family', label: 'Family Scores', desc: 'Recompute family scores for all districts', path: '/api/v1/ingest/family-scores' },
   { id: 'crime', label: 'Crime Data', desc: 'Import police crime data', path: '/api/v1/ingest/crime' },
   { id: 'imd', label: 'IMD Data', desc: 'Import deprivation index data', path: '/api/v1/ingest/imd' },
-  { id: 'schools', label: 'Schools Import', desc: 'Import UK schools from GIAS CSV (run Geocode Schools after)', path: '/api/v1/overlays/schools/ingest' },
+  { id: 'schools', label: 'Schools Import', desc: 'Import UK schools from GIAS CSV (run Geocode Schools after). Download from get-information-schools.service.gov.uk/Downloads', path: '/api/v1/overlays/schools/ingest', requiresUrl: true },
   { id: 'schools-geo', label: 'Geocode Schools', desc: 'Geocode schools missing lat/lng (500 per batch)', path: '/api/v1/overlays/schools/geocode' },
   { id: 'scotland', label: 'Scotland (Care Inspectorate)', desc: 'Import Scottish childcare data (requires CSV URL)', path: '/api/v1/ingest/care-inspectorate', requiresUrl: true },
   { id: 'wales', label: 'Wales (CIW)', desc: 'Import Welsh childcare data (requires CSV URL)', path: '/api/v1/ingest/ciw', requiresUrl: true },

@@ -66,8 +66,8 @@ export default function DmcaPage() {
           </p>
           <p className="mt-3">
             For urgent factual corrections that fall outside those, email{' '}
-            <a href="mailto:hello@nurserymatch.com" className="text-blue-600 hover:underline">
-              hello@nurserymatch.com
+            <a href="mailto:info@nurserymatch.com" className="text-blue-600 hover:underline">
+              info@nurserymatch.com
             </a>{' '}
             with the listing URL and the correction.
           </p>
@@ -80,8 +80,8 @@ export default function DmcaPage() {
             defamatory, contains personal data about individual staff, or is clearly fake. If
             you believe a review on your nursery&apos;s listing breaches our review guidelines,
             email{' '}
-            <a href="mailto:hello@nurserymatch.com" className="text-blue-600 hover:underline">
-              hello@nurserymatch.com
+            <a href="mailto:info@nurserymatch.com" className="text-blue-600 hover:underline">
+              info@nurserymatch.com
             </a>{' '}
             with:
           </p>

@@ -1,6 +1,6 @@
 # NurseryMatch — Support inbox triage
 
-What lands in `hello@nurserymatch.com`, how to triage it, and SLAs to aim
+What lands in `info@nurserymatch.com`, how to triage it, and SLAs to aim
 for. Designed for solo support — keep it simple; upgrade to a help desk
 (HelpScout / Intercom) only when the volume justifies it.
 
@@ -10,7 +10,7 @@ Last reviewed: 2026-04-27
 
 ## Inbox setup
 
-- `hello@nurserymatch.com` — primary inbox, all general enquiries
+- `info@nurserymatch.com` — primary inbox, all general enquiries
 - `support@nurserymatch.com` — alias forwarded to `hello@`
 - `legal@nurserymatch.com` — DMCA / takedown requests (referenced on /dmca)
 - `privacy@nurserymatch.com` — GDPR data requests (referenced on /privacy)
