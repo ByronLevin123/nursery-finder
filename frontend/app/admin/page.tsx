@@ -510,8 +510,8 @@ const INGEST_STEPS = [
   { id: 'imd', label: 'IMD Data', desc: 'Import deprivation index data', path: '/api/v1/ingest/imd' },
   { id: 'schools', label: 'Schools Import', desc: 'Import UK schools from GIAS CSV (run Geocode Schools after)', path: '/api/v1/overlays/schools/ingest' },
   { id: 'schools-geo', label: 'Geocode Schools', desc: 'Geocode schools missing lat/lng (500 per batch)', path: '/api/v1/overlays/schools/geocode' },
-  { id: 'scotland', label: 'Scotland (Care Inspectorate)', desc: 'Import Scottish childcare data (requires CSV URL)', path: '/api/v1/ingest/care-inspectorate' },
-  { id: 'wales', label: 'Wales (CIW)', desc: 'Import Welsh childcare data (requires CSV URL)', path: '/api/v1/ingest/ciw' },
+  { id: 'scotland', label: 'Scotland (Care Inspectorate)', desc: 'Import Scottish childcare data (requires CSV URL)', path: '/api/v1/ingest/care-inspectorate', requiresUrl: true },
+  { id: 'wales', label: 'Wales (CIW)', desc: 'Import Welsh childcare data (requires CSV URL)', path: '/api/v1/ingest/ciw', requiresUrl: true },
   { id: 'google', label: 'Google Places Sync', desc: 'Fetch Google ratings + photos for 100 nurseries', path: '/api/v1/ingest/google-places' },
   { id: 'snapshot', label: 'Snapshot Reports', desc: 'Capture today\'s metrics for the reports timeseries', path: '/api/v1/admin/reports/snapshot' },
 ]
@@ -536,6 +536,7 @@ function IngestPanel() {
   const [showHistory, setShowHistory] = useState<string | null>(null)
   const [fullCycleRunning, setFullCycleRunning] = useState(false)
   const [fullCycleError, setFullCycleError] = useState<string | null>(null)
+  const [csvUrls, setCsvUrls] = useState<Record<string, string>>({})
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const fullCyclePollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -649,12 +650,21 @@ function IngestPanel() {
   async function runStep(step: typeof INGEST_STEPS[0]) {
     const token = await getAuthToken()
     if (!token) return
+    if ((step as any).requiresUrl && !csvUrls[step.id]?.trim()) {
+      setResults((prev) => ({ ...prev, [step.id]: { ok: false, status: 'failed', error: 'Please enter a CSV URL first' } }))
+      return
+    }
     setRunning(step.id)
     setResults((prev) => ({ ...prev, [step.id]: { ok: true, status: 'running' } }))
     try {
+      const body: Record<string, string> = {}
+      if ((step as any).requiresUrl && csvUrls[step.id]?.trim()) {
+        body.csv_url = csvUrls[step.id].trim()
+      }
       const res = await fetch(`${API_URL}${step.path}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.error || `Failed (${res.status})`)
@@ -758,6 +768,15 @@ function IngestPanel() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900">{step.label}</p>
                     <p className="text-xs text-gray-500 truncate">{step.desc}</p>
+                    {(step as any).requiresUrl && (
+                      <input
+                        type="url"
+                        placeholder="Paste CSV URL here..."
+                        value={csvUrls[step.id] || ''}
+                        onChange={(e) => setCsvUrls((prev) => ({ ...prev, [step.id]: e.target.value }))}
+                        className="mt-1 w-full px-2 py-1.5 border border-gray-300 rounded-md text-xs bg-white"
+                      />
+                    )}
                     {result?.status === 'running' && (
                       <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
                         <span className="inline-block w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
