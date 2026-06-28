@@ -20,7 +20,9 @@ export function isPostcode(query) {
 }
 
 export async function smartSearch({
-  query,
+  query = '',
+  lat = null,
+  lng = null,
   radius_km = 5,
   grade = null,
   has_availability = false,
@@ -33,7 +35,31 @@ export async function smartSearch({
   dietary = null,
   language = null,
 }) {
-  const cleaned = query.trim()
+  // Direct coordinate search (from "Search this area" map interaction)
+  if (lat != null && lng != null) {
+    const { data, error } = await db.rpc('search_nurseries_near', {
+      search_lat: lat,
+      search_lng: lng,
+      radius_km: Number(radius_km),
+      grade_filter: grade || null,
+      funded_2yr: Boolean(has_funded_2yr),
+      funded_3yr: Boolean(has_funded_3yr),
+    })
+    if (error) throw error
+    let filtered = applyAdvancedFilters(data || [], { has_availability, min_rating, provider_type, curriculum, sen, dietary, language })
+    filtered.sort((a, b) => {
+      const fa = a.featured ? 0 : 1
+      const fb = b.featured ? 0 : 1
+      if (fa !== fb) return fa - fb
+      return (a.distance_km || 0) - (b.distance_km || 0)
+    })
+    return {
+      data: filtered,
+      meta: { total: filtered.length, search_lat: lat, search_lng: lng, mode: 'coordinates' },
+    }
+  }
+
+  const cleaned = (query || '').trim()
   if (!cleaned) {
     return { data: [], meta: { total: 0, search_lat: null, search_lng: null, mode: 'empty' } }
   }

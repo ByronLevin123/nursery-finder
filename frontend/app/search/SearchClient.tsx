@@ -84,8 +84,12 @@ function SearchContent() {
   const [activityMarkers, setActivityMarkers] = useState<MarkerDef[]>([])
   const [homeLocation, setHomeLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [workLocation, setWorkLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [homePostcode, setHomePostcode] = useState('')
+  const [workPostcode, setWorkPostcode] = useState('')
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | null>(null)
   const [showSearchThisArea, setShowSearchThisArea] = useState(false)
+  const schoolsFetchedRef = useRef(false)
+  const activitiesFetchedRef = useRef(false)
 
   // Autocomplete state
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([])
@@ -95,9 +99,33 @@ function SearchContent() {
   const searchWrapperRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
+  // Geocode a postcode client-side via postcodes.io
+  async function geocodePostcodeClient(postcode: string) {
+    try {
+      const res = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(postcode.trim())}`)
+      if (!res.ok) return null
+      const data = await res.json()
+      if (!data.result) return null
+      return { lat: data.result.latitude as number, lng: data.result.longitude as number }
+    } catch { return null }
+  }
+
+  // Load saved home/work postcodes on mount
   useEffect(() => {
     setPrefs(loadPreferences())
     setPrefsLoaded(true)
+    try {
+      const savedHome = sessionStorage.getItem('nurserymatch_home_postcode')
+      if (savedHome) {
+        setHomePostcode(savedHome)
+        geocodePostcodeClient(savedHome).then(loc => { if (loc) setHomeLocation(loc) })
+      }
+      const savedWork = sessionStorage.getItem('nurserymatch_work_postcode')
+      if (savedWork) {
+        setWorkPostcode(savedWork)
+        geocodePostcodeClient(savedWork).then(loc => { if (loc) setWorkLocation(loc) })
+      }
+    } catch { /* ignore */ }
   }, [])
 
   function updatePrefs(p: Preferences) {
@@ -297,30 +325,51 @@ function SearchContent() {
     [results?.meta?.search_lat, results?.meta?.search_lng]
   )
 
-  // Search this area handler
-  const searchThisArea = useCallback(() => {
+  // Search this area — pass coordinates directly to backend
+  const searchThisArea = useCallback(async () => {
     if (!mapCenter) return
-    // Use reverse geocoded coordinates by setting query as lat,lng
-    // The smart search endpoint accepts coordinates
     setShowSearchThisArea(false)
-    const latLngQuery = `${mapCenter.lat.toFixed(6)},${mapCenter.lng.toFixed(6)}`
-    doSearch(latLngQuery)
-  }, [mapCenter]) // eslint-disable-line react-hooks/exhaustive-deps
+    setLoading(true)
+    setError('')
+    try {
+      const data = await smartSearchNurseries({
+        lat: mapCenter.lat,
+        lng: mapCenter.lng,
+        radius_km: radiusKm,
+        grade: advancedFilters.grade || grade,
+        has_availability: advancedFilters.has_availability,
+        min_rating: advancedFilters.min_rating,
+        provider_type: advancedFilters.provider_type,
+        has_funded_2yr: advancedFilters.has_funded_2yr || funded2yr,
+        has_funded_3yr: advancedFilters.has_funded_3yr || funded3yr,
+      })
+      setResults(data)
+      setDisplayCount(20)
+      schoolsFetchedRef.current = false
+      activitiesFetchedRef.current = false
+    } catch (err: any) {
+      setError(err.message || 'Search failed')
+    }
+    setLoading(false)
+  }, [mapCenter, radiusKm, advancedFilters, grade, funded2yr, funded3yr]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Set home/work from search center
-  const setAsHome = useCallback(() => {
-    if (!results?.meta?.search_lat || !results?.meta?.search_lng) return
-    const loc = { lat: results.meta.search_lat, lng: results.meta.search_lng }
-    setHomeLocation(loc)
-    try { sessionStorage.setItem('nurserymatch_home', JSON.stringify(loc)) } catch { /* ignore */ }
-  }, [results?.meta?.search_lat, results?.meta?.search_lng])
-
-  const setAsWork = useCallback(() => {
-    if (!results?.meta?.search_lat || !results?.meta?.search_lng) return
-    const loc = { lat: results.meta.search_lat, lng: results.meta.search_lng }
-    setWorkLocation(loc)
-    try { sessionStorage.setItem('nurserymatch_work', JSON.stringify(loc)) } catch { /* ignore */ }
-  }, [results?.meta?.search_lat, results?.meta?.search_lng])
+  // Geocode home/work postcodes
+  async function geocodeHome() {
+    if (!homePostcode.trim()) { setHomeLocation(null); return }
+    const loc = await geocodePostcodeClient(homePostcode)
+    if (loc) {
+      setHomeLocation(loc)
+      try { sessionStorage.setItem('nurserymatch_home_postcode', homePostcode.trim()) } catch { /* ignore */ }
+    }
+  }
+  async function geocodeWork() {
+    if (!workPostcode.trim()) { setWorkLocation(null); return }
+    const loc = await geocodePostcodeClient(workPostcode)
+    if (loc) {
+      setWorkLocation(loc)
+      try { sessionStorage.setItem('nurserymatch_work_postcode', workPostcode.trim()) } catch { /* ignore */ }
+    }
+  }
 
   const prefsActive = useMemo(() => prefsLoaded && hasActivePreferences(prefs), [prefs, prefsLoaded])
 
@@ -596,43 +645,49 @@ function SearchContent() {
             </button>
           </div>
 
-          {/* Set as home / work location */}
-          {results?.meta?.search_lat && results?.meta?.search_lng && (
-            <div className="flex gap-2 mb-3">
-              <button
-                onClick={setAsHome}
-                className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-lg border transition ${
-                  homeLocation ? 'bg-green-50 border-green-300 text-green-700' : 'bg-white border-gray-200 text-gray-600 hover:border-green-300'
-                }`}
-              >
-                {'\u{1F3E0}'} {homeLocation ? 'Home set' : 'Set as home'}
-              </button>
-              <button
-                onClick={setAsWork}
-                className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-lg border transition ${
-                  workLocation ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-white border-gray-200 text-gray-600 hover:border-indigo-300'
-                }`}
-              >
-                {'\u{1F4BC}'} {workLocation ? 'Work set' : 'Set as work'}
-              </button>
-              {(homeLocation || workLocation) && (
-                <button
-                  onClick={() => {
-                    setHomeLocation(null)
-                    setWorkLocation(null)
-                    try {
-                      sessionStorage.removeItem('nurserymatch_home')
-                      sessionStorage.removeItem('nurserymatch_work')
-                    } catch { /* ignore */ }
-                  }}
-                  className="px-2 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-300 transition"
-                  title="Clear locations"
-                >
-                  ×
-                </button>
-              )}
+          {/* Home / Work postcode inputs for commute bands */}
+          <div className="flex gap-2 mb-3">
+            <div className="flex-1 flex items-center gap-1">
+              <span className="text-sm flex-shrink-0">{'\u{1F3E0}'}</span>
+              <input
+                type="text"
+                placeholder="Home postcode"
+                value={homePostcode}
+                onChange={e => setHomePostcode(e.target.value)}
+                onBlur={geocodeHome}
+                onKeyDown={e => { if (e.key === 'Enter') geocodeHome() }}
+                className={`flex-1 px-2 py-1.5 text-xs border rounded-lg ${homeLocation ? 'border-green-300 bg-green-50' : 'border-gray-200'}`}
+              />
             </div>
-          )}
+            <div className="flex-1 flex items-center gap-1">
+              <span className="text-sm flex-shrink-0">{'\u{1F4BC}'}</span>
+              <input
+                type="text"
+                placeholder="Work postcode"
+                value={workPostcode}
+                onChange={e => setWorkPostcode(e.target.value)}
+                onBlur={geocodeWork}
+                onKeyDown={e => { if (e.key === 'Enter') geocodeWork() }}
+                className={`flex-1 px-2 py-1.5 text-xs border rounded-lg ${workLocation ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200'}`}
+              />
+            </div>
+            {(homeLocation || workLocation) && (
+              <button
+                onClick={() => {
+                  setHomeLocation(null); setWorkLocation(null)
+                  setHomePostcode(''); setWorkPostcode('')
+                  try {
+                    sessionStorage.removeItem('nurserymatch_home_postcode')
+                    sessionStorage.removeItem('nurserymatch_work_postcode')
+                  } catch { /* ignore */ }
+                }}
+                className="px-2 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-300 transition"
+                title="Clear locations"
+              >
+                ×
+              </button>
+            )}
+          </div>
 
           {/* Mobile filter toggle */}
           <button

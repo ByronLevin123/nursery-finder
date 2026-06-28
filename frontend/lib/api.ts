@@ -93,7 +93,9 @@ export async function searchNurseries(params: {
 }
 
 export async function smartSearchNurseries(params: {
-  query: string
+  query?: string
+  lat?: number
+  lng?: number
   radius_km?: number
   grade?: string | null
   has_availability?: boolean
