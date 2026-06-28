@@ -111,11 +111,19 @@ All code on `main`, auto-deploys via Render (backend) + Vercel (frontend).
 - [ ] Meta Business (Facebook/Instagram pixel)
 - [ ] Google AdSense (when traffic warrants)
 
-### Developer Platform
-- [ ] Create Custom GPT (docs/CUSTOM_GPT_SETUP.md)
+### Developer Platform & AI Integrations
+- [x] Create Custom GPT (done — docs/CUSTOM_GPT_SETUP.md)
 - [ ] List API on RapidAPI
 - [ ] Submit to Product Hunt
 - [ ] List on Public APIs (github.com/public-apis/public-apis)
+- [ ] Publish Postman collection for NurseryMatch API
+- [ ] Create Claude MCP server config file for Claude Desktop users
+- [ ] List on MCP directories (glama.ai/mcp/servers, mcp.so, smithery.ai)
+- [ ] Add MCP setup instructions to /developers page
+- [ ] Create embeddable nursery search widget (JS snippet for third-party sites)
+- [ ] Pitch to property platforms (Rightmove/Zoopla) for "nearby nurseries" widget
+- [ ] Pitch to council/NHS family services portals for nursery search embedding
+- [ ] Contact parenting app developers to integrate NurseryMatch API
 
 ### GitHub Housekeeping
 - [ ] Add `PRODUCTION_API_URL` secret for deploy validation
