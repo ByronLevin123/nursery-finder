@@ -143,19 +143,19 @@ app.use((req, res, next) => {
   next()
 })
 
-// Open CORS for public read endpoints (LLM agents + Custom GPT actions)
-const publicCorsPaths = [
-  '/api/v1/nurseries',
+// Open CORS for public endpoints (LLM agents + Custom GPT actions)
+// GET-only for read endpoints; nurseries + schools also allow POST for search
+const publicReadPaths = [
   '/api/v1/areas',
   '/api/v1/properties/districts',
   '/api/v1/overlays',
-  '/api/v1/schools',
   '/api/v1/public',
   '/api/v1/blog',
   '/api/openapi.json',
   '/api/openapi-gpt.json',
 ]
-app.use(publicCorsPaths, cors({ origin: '*', methods: ['GET'] }))
+app.use(publicReadPaths, cors({ origin: '*', methods: ['GET'] }))
+app.use(['/api/v1/nurseries', '/api/v1/schools'], cors({ origin: '*', methods: ['GET', 'POST'] }))
 
 // Default CORS for everything else (auth-protected etc.)
 const allowedOrigins = [
