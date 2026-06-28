@@ -1,12 +1,70 @@
 import express from 'express'
+import rateLimit from 'express-rate-limit'
 import db from '../db.js'
 import { geocodePostcode } from '../services/geocoding.js'
 import { refreshDistrictPropertyData } from '../services/propertyData.js'
+import { findFamilyAreas } from '../services/familyRelocationEngine.js'
 import { requireRole } from '../middleware/supabaseAuth.js'
 import { logger } from '../logger.js'
 import { escapeLike } from '../utils.js'
 
 const router = express.Router()
+
+// Stricter rate limit for the family-match endpoint (expensive query)
+const familyMatchLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many relocation searches — please wait a minute and try again' },
+})
+
+// POST /api/v1/areas/family-match — Family Relocation Engine
+// Scores postcode districts by nursery quality, schools, affordability,
+// commute, safety, green space and flood risk.
+router.post('/family-match', familyMatchLimiter, async (req, res, next) => {
+  try {
+    const { budget_min, budget_max, child_ages, work_postcodes, max_commute_min, region, nursery_requirements, school_requirements, preferences } = req.body
+
+    // Validate required fields
+    if (!budget_max) {
+      return res.status(400).json({ error: 'budget_max is required' })
+    }
+    if (!child_ages || !Array.isArray(child_ages) || child_ages.length === 0) {
+      return res.status(400).json({ error: 'child_ages is required (array of ages in months)' })
+    }
+
+    const results = await findFamilyAreas({
+      budget_min: Number(budget_min) || 0,
+      budget_max: Number(budget_max),
+      child_ages,
+      work_postcodes: work_postcodes || [],
+      max_commute_min: Number(max_commute_min) || 45,
+      region: region || null,
+      nursery_requirements: nursery_requirements || {},
+      school_requirements: school_requirements || {},
+      preferences: preferences || {},
+    })
+
+    res.json({
+      data: results,
+      meta: {
+        total: results.length,
+        query_params: {
+          budget_min: Number(budget_min) || 0,
+          budget_max: Number(budget_max),
+          child_ages,
+          work_postcodes: work_postcodes || [],
+          max_commute_min: Number(max_commute_min) || 45,
+          region: region || null,
+        },
+      },
+    })
+  } catch (err) {
+    logger.error({ err: err.message }, 'familyMatch: request failed')
+    next(err)
+  }
+})
 
 // GET /api/v1/areas/family-search — MUST be defined before /:district
 router.get('/family-search', async (req, res, next) => {

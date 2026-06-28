@@ -63,6 +63,9 @@ export default function Nav() {
               <Link href="/find-an-area" className="text-sm text-gray-600 hover:text-gray-900">
                 Find an Area
               </Link>
+              <Link href="/relocate" className="text-sm text-gray-600 hover:text-gray-900">
+                Relocate
+              </Link>
               <Link href="/shortlist" className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1">
                 Shortlist
                 {shortlistCount > 0 && (
@@ -244,6 +247,7 @@ export default function Nav() {
               <Link href="/search?provider_type=Childminder" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Childminders</Link>
               <Link href="/search/schools" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Schools</Link>
               <Link href="/find-an-area" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Find an Area</Link>
+              <Link href="/relocate" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>Relocate</Link>
               <Link href="/shortlist" className="block text-sm text-gray-600" onClick={() => setMenuOpen(false)}>
                 Shortlist {shortlistCount > 0 && `(${shortlistCount})`}
               </Link>
